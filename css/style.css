@@ -1,0 +1,603 @@
+/* Estilos gerais */
+:root {
+    --primary-color: #1a4b8c; /* Azul principal */
+    --secondary-color: #4caf50; /* Verde secundário */
+    --light-color: #f5f5f5;
+    --dark-color: #333;
+    --warning-color: #ff9800;
+    --danger-color: #f44336;
+    --success-color: #4caf50;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+}
+
+/* Estilos da página de login */
+.login-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo img {
+    max-width: 100px;
+    margin-bottom: 10px;
+}
+
+.logo h1 {
+    color: var(--primary-color);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, 
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #0d3a6b;
+}
+
+.links {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.links a {
+    color: var(--primary-color);
+    text-decoration: none;
+    margin: 0 5px;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+/* Estilos do dashboard */
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+header {
+    width: 250px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 20px;
+    position: fixed;
+    height: 100%;
+}
+
+header .logo {
+    margin-bottom: 30px;
+}
+
+header .logo img {
+    max-width: 80px;
+}
+
+header .logo h1 {
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+nav ul {
+    list-style: none;
+}
+
+nav ul li {
+    margin-bottom: 10px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 8px 0;
+}
+
+nav ul li a:hover, 
+nav ul li a.active {
+    font-weight: bold;
+    border-left: 3px solid white;
+    padding-left: 10px;
+}
+
+nav ul li a.logout {
+    color: var(--warning-color);
+    margin-top: 30px;
+}
+
+main {
+    margin-left: 250px;
+    flex: 1;
+    padding: 20px;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Estilos específicos para o dashboard do coordenador */
+.stats-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    flex: 1;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.stat-card p {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.charts-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.charts-container canvas {
+    flex: 1;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Estilos específicos para o dashboard do aluno */
+.banners {
+    width: 30%;
+    float: left;
+    padding-right: 20px;
+}
+
+.banner {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.banner img {
+    width: 100%;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.banner-info p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.content {
+    width: 70%;
+    float: right;
+}
+
+.materias-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.materia-card {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    cursor: pointer;
+}
+
+.materia-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos do quiz */
+.quiz-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.quiz-question {
+    margin-bottom: 20px;
+}
+
+.quiz-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.quiz-options button {
+    padding: 12px;
+    text-align: left;
+    background-color: #f5f5f5;
+    color: var(--dark-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.quiz-options button:hover {
+    background-color: #e0e0e0;
+}
+
+.quiz-feedback {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.correct {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: var(--success-color);
+}
+
+.incorrect {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: var(--danger-color);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .dashboard {
+        flex-direction: column;
+    }
+    
+    header {
+        width: 100%;
+        position: relative;
+        height: auto;
+    }
+    
+    main {
+        margin-left: 0;
+    }
+    
+    .stats-container, .charts-container {
+        flex-direction: column;
+    }
+    
+    .banners, .content {
+        width: 100%;
+        float: none;
+    }
+    
+    .banners {
+        padding-right: 0;
+        margin-bottom: 20px;
+    }
+    /* Estilos específicos para o dashboard do professor */
+.form-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.opcoes-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.opcao-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.opcao-item input[type="radio"] {
+    margin: 0;
+}
+
+.opcao-item input[type="text"] {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.perguntas-salvas, .conteudos-adicionados {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.filtros {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filtros select, .filtros button {
+    padding: 8px 12px;
+}
+
+.filtros button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.tabela-perguntas {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tabela-perguntas table {
+    width: 100%;
+}
+
+.tabela-perguntas th, .tabela-perguntas td {
+    padding: 10px;
+    text-align: left;
+}
+
+.tabela-perguntas th {
+    background-color: var(--primary-color);
+    color: white;
+    position: sticky;
+    top: 0;
+}
+
+.btn-editar, .btn-download {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.btn-excluir, .btn-remover {
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.lista-conteudos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.conteudo-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.conteudo-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.conteudo-header i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.conteudo-header h4 {
+    margin: 0;
+}
+
+.conteudo-info {
+    flex: 1;
+    margin-bottom: 15px;
+}
+
+.conteudo-info p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.conteudo-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.filtros-desempenho {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filtros-desempenho select, .filtros-desempenho button {
+    padding: 8px 12px;
+}
+
+.filtros-desempenho button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.graficos-desempenho {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.graficos-desempenho canvas {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.tabela-desempenho {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+}
+
+.tabela-desempenho table {
+    width: 100%;
+    min-width: 800px;
+}
+
+.tabela-desempenho th, .tabela-desempenho td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.tabela-desempenho th {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Ícones (simulados - em produção, use Font Awesome ou similar) */
+.fas {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+.fa-file {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm160-14.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z'/%3E%3C/svg%3E");
+}
+
+.fa-video {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3Cpath d='M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z'/%3E%3C/svg%3E");
+}
+
+.fa-image {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 496 512'%3E%3Cpath d='M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm0 448c-110.3 0-200-89.7-200-200S137.7 56 248 56s200 89.7 200 200-89.7 200-200 200zm-80-216c17.7 0 32-14.3 32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zm160 0c17.7 0 32-14.3 32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zm4 72.6c-20.8 25-51.5 39.4-84 39.4s-63.2-14.3-84-39.4c-8.5-10.2-23.7-11.5-33.8-3.1-10.2 8.5-11.5 23.6-3.1 33.8 30 36 74.1 56.6 120.9 56.6s90.9-20.6 120.9-56.6c8.5-10.2 7.1-25.3-3.1-33.8-10.1-8.4-25.3-7.1-33.8 3.1z'/%3E%3C/svg%3E");
+}
+
+.fa-file-pdf {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M181.9 256.1c-5-16-4.9-46.9-2-64.9l7.1-36.4H136c-6.6 0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h50.6c19.2 0 40.8 4.2 62.2 12.2 4.5 1.7 9.4 2.5 14.2 2.5h58.2c7.8 0 14-6.3 14-14V14c0-7.8-6.3-14-14-14h-66.7C196.2 0 165.4 4.1 131.3 14.8c-21.3 6.7-39.9 16.9-54.4 29.4-5.4 4.6-8.9 11-8.9 18.4v172.9c0 20.9 25.4 31.8 41.2 16.5L160 224v72c0 6.6 5.4 12 12 12h9.3c3.4 0 6.6-1.4 8.9-3.9l93.6-93.6c4.7-4.7 4.7-12.3 0-17l-93.6-93.6c-2.2-2.5-5.5-3.9-8.9-3.9H172c-6.6 0-12 5.4-12 12v44.2c0 6.6 5.4 12 12 12h30.8l-6.6 33.4c-4.3 21.8-.4 58.3 5.1 79.1 1.9 7.3 22.5 5.5 23.7-2.6 2.5-17.1 5.8-27.9 5.8-27.9l2.1-8.2h8.9c6.6 0 12-5.4 12-12v-40c0-6.6-5.4-12-12-12h-15.5c-8.1 0-15.4 4.1-19.7 11l-22.9 38.2c-3.3 5.5-5.9 11-5.9 11-1.5 2.8-4.3 4.6-7.4 4.6H160v24.5c0 4.2 1.7 8.3 4.7 11.3l28.3 28.3c3 3 7.1 4.7 11.3 4.7H248c6.6 0 12-5.4 12-12v-40c0-6.6-5.4-12-12-12h-33.5c-3.3 0-6.5-1.4-8.8-3.9l-25.4-25.4c-2.3-2.5-3.5-5.7-3.5-8.9 0-3.2 1.3-6.4 3.5-8.9l25.4-25.4c2.3-2.5 5.5-3.9 8.8-3.9H248c6.6 0 12-5.4 12-12v-40c0-6.6-5.4-12-12-12h-43.9c-4.2 0-8.3 1.7-11.3 4.7l-28.3 28.3c-3 3-4.7 7.1-4.7 11.3v24.5h-1.1c-3.1 0-5.9-1.8-7.4-4.6z'/%3E%3C/svg%3E");
+}
+
+.fa-file-word {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3E%3Cpath d='M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm57.1 120H305c7.7 0 13.4 7.1 11.7 14.7l-38 168c-1.2 5.5-6.1 9.3-11.7 9.3h-38c-5.5 0-10.3-3.8-11.6-9.1-25.8-103.5-20.8-81.2-25.6-110.5h-.5c-1.1 14.3-2.4 17.4-25.6 110.5-1.3 5.3-6.1 9.1-11.6 9.1H117c-5.6 0-10.5-3.9-11.7-9.4l-37.8-168c-1.7-7.5 4-14.6 11.7-14.6h24.5c5.7 0 10.7 4 11.8 9.7 15.6 78 20.1 109.5 21 122.2 1.6-10.2 7.3-32.7 29.4-122.7 1.3-5.4 6.1-9.1 11.7-9.1h29.1c5.6 0 10.4 3.8 11.7 9.2 24 100.4 28.8 124 29.6 129.4-.2-11.2-2.6-17.8 21.6-129.2 1-5.6 5.9-9.5 11.5-9.5zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z'/%3E%3C/svg%3E");
+}
+}
