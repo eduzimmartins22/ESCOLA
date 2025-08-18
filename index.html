@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ESTUDE — MVP</title>
+<style>
+  :root{
+    --azul:#0A5BAA;    /* Azul principal suave */
+    --azul-2:#0f73d1;
+    --verde:#2EA36A;   /* Verde secundário leve */
+    --cinza:#f5f7fa;
+    --borda:#e2e8f0;
+    --txt:#1f2937;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Arial,system-ui;background:var(--cinza);color:var(--txt)}
+  header{display:flex;align-items:center;gap:12px;background:var(--azul);color:#fff;padding:14px 18px}
+  header img{height:36px;border-radius:6px;background:#fff}
+  header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.5px}
+  /* Auth */
+  .auth{max-width:980px;margin:40px auto;background:#fff;border:1px solid var(--borda);border-radius:14px;overflow:hidden;box-shadow:0 10px 20px rgba(2,6,23,.05)}
+  .auth .top{display:flex}
+  .auth .left{flex:1;padding:24px}
+  .auth .right{flex:1;min-height:320px;background:linear-gradient(135deg, var(--azul), var(--verde));color:#fff;padding:24px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid rgba(255,255,255,.2)}
+  .role-tabs{display:flex;gap:8px;margin-bottom:14px}
+  .role-tabs button{flex:1;padding:10px;border:1px solid var(--borda);background:#fff;border-radius:10px;cursor:pointer}
+  .role-tabs button.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row > div{display:flex;flex-direction:column}
+  label{font-size:13px;margin-bottom:4px}
+  input, select{padding:10px;border:1px solid var(--borda);border-radius:10px;background:#fff}
+  .actions{display:flex;gap:10px;margin-top:14px}
+  .btn{padding:10px 14px;border:0;border-radius:10px;cursor:pointer}
+  .btn.azul{background:var(--azul);color:#fff}
+  .btn.verde{background:var(--verde);color:#fff}
+  .btn.outline{background:#fff;border:1px solid var(--borda)}
+  .muted{font-size:12px;color:#6b7280;margin-top:6px}
+  /* App layout */
+  .app{display:none;height:calc(100vh - 64px)}
+  .layout{display:flex;height:100%}
+  .sidebar{width:240px;background:#fff;border-right:1px solid var(--borda);padding:16px;overflow:auto}
+  .userbox{background:linear-gradient(135deg, var(--azul), var(--azul-2));color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .menu h4{font-size:12px;color:#6b7280;margin:14px 8px 6px}
+  .menu button{width:100%;text-align:left;padding:10px 12px;border:0;background:#fff;border-radius:10px;cursor:pointer;border:1px solid var(--borda);margin:6px 0}
+  .menu button.active{background:var(--cinza)}
+  .content{flex:1;padding:18px;overflow:auto}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:14px}
+  .title{font-size:18px;margin:0 0 10px;font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid var(--borda);padding:10px;text-align:left}
+  th{background:var(--cinza)}
+  .tag{display:inline-block;padding:4px 8px;background:#e8f5ef;color:#14532d;border:1px solid #bbf7d0;border-radius:999px;font-size:11px}
+  .pill{display:inline-block;padding:4px 8px;background:#e7f0fb;color:#0b3c74;border:1px solid #c7ddff;border-radius:999px;font-size:11px}
+  .banner{display:flex;gap:12px;border:1px dashed var(--borda);border-radius:14px;padding:12px;background:#fff}
+  .banner img{width:120px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--borda)}
+  .hidden{display:none}
+  .notice{font-size:13px;color:#64748b}
+  .chart{width:100%;height:180px;border:1px solid var(--borda);border-radius:12px}
+  /* Quiz / Student */
+  .student-layout{display:grid;grid-template-columns:30% 70%;gap:14px}
+  .banner-col{display:flex;flex-direction:column;gap:12px}
+  .quizbox{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:14px}
+  .answers button{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border:1px solid var(--borda);border-radius:10px;background:#fff;cursor:pointer}
+  .answers button:hover{background:#f3f4f6}
+  .progress{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+  .progress > div{height:8px;background:var(--verde);width:0%}
+  .ranktable th{text-align:center}
+  .ranktable td{text-align:center}
+  .salas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+  .sala-card{padding:12px;border-radius:14px;border:1px solid var(--borda);background:linear-gradient(135deg,#e6f0fb,#e9f9f1)}
+  .sala-card strong{display:block}
+</style>
+</head>
+<body>
+<header>
+  <img src="" alt="Logo" onerror="this.style.display='none'"/>
+  <h1>ESTUDE — Jogo Institucional</h1>
+</header>
+
+<!-- =============== AUTENTICAÇÃO =============== -->
+<section class="auth" id="auth">
+  <div class="top">
+    <div class="left">
+      <div class="role-tabs">
+        <button class="active" data-role="aluno">Aluno</button>
+        <button data-role="professor">Professor</button>
+        <button data-role="coordenador">Coordenador</button>
+      </div>
+      <div id="form-aluno">
+        <div class="row">
+          <div><label>Nome</label><input id="a_nome" placeholder="Ex.: Ana Souza"/></div>
+          <div><label>RA (Matrícula)</label><input id="a_ra" placeholder="Ex.: 123456"/></div>
+        </div>
+        <div class="row">
+          <div><label>Senha</label><input id="a_senha" type="password"/></div>
+          <div><label>Escolher Sala</label><select id="a_salaSelect"><option value="">(opcional)</option></select></div>
+        </div>
+        <div class="actions">
+          <button class="btn verde" onclick="register('aluno')">Cadastrar</button>
+          <button class="btn azul" onclick="login('aluno')">Entrar</button>
+          <button class="btn outline" onclick="toggleMode()">Alternar: Login / Cadastro</button>
+        </div>
+        <div class="muted">O aluno pode se cadastrar e associar uma sala depois.</div>
+      </div>
+
+      <div id="form-professor" class="hidden">
+        <div class="row">
+          <div><label>Nome</label><input id="p_nome"/></div>
+          <div><label>CPF</label><input id="p_cpf"/></div>
+        </div>
+        <div class="row">
+          <div><label>Matrícula na escola</label><input id="p_mat"/></div>
+          <div><label>Senha</label><input id="p_senha" type="password"/></div>
+        </div>
+        <div class="actions">
+          <button class="btn verde" onclick="register('professor')">Cadastrar</button>
+          <button class="btn azul" onclick="login('professor')">Entrar</button>
+          <button class="btn outline" onclick="toggleMode()">Alternar: Login / Cadastro</button>
+        </div>
+      </div>
+
+      <div id="form-coordenador" class="hidden">
+        <div class="row">
+          <div><label>Nome</label><input id="c_nome"/></div>
+          <div><label>CPF</label><input id="c_cpf"/></div>
+        </div>
+        <div class="row">
+          <div><label>Matrícula na escola</label><input id="c_mat"/></div>
+          <div><label>Senha</label><input id="c_senha" type="password"/></div>
+        </div>
+        <div class="actions">
+          <button class="btn verde" onclick="register('coordenador')">Cadastrar</button>
+          <button class="btn azul" onclick="login('coordenador')">Entrar</button>
+          <button class="btn outline" onclick="toggleMode()">Alternar: Login / Cadastro</button>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <h2 style="margin:0 0 8px">Bem-vindo ao ESTUDE</h2>
+      <p>Gamificação para apoiar professores e coordenadores, e engajar alunos com quizzes de 5 alternativas e níveis adaptativos.</p>
+      <ul>
+        <li>Crie salas e matérias</li>
+        <li>Envie conteúdos (PDF, imagens, vídeos)</li>
+        <li>Monte bancos de questões por nível</li>
+        <li>Monitore acessos e desempenho</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- =============== APP =============== -->
+<section class="app" id="app">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="userbox">
+        <div id="ub-nome" style="font-weight:600"></div>
+        <div id="ub-role" class="muted" style="color:#d1fae5"></div>
+      </div>
+      <div class="menu" id="menu-aluno" class="hidden">
+        <h4>Aluno</h4>
+        <button data-tab="a_materias">Escolher Matéria</button>
+        <button data-tab="a_sala">Entrar em Sala</button>
+        <button data-tab="a_ranking">Ranking</button>
+      </div>
+      <div class="menu" id="menu-professor" class="hidden">
+        <h4>Professor</h4>
+        <button data-tab="p_materias">Criar/Ver Matérias</button>
+        <button data-tab="p_questoes">Perguntas e Distribuição</button>
+        <button data-tab="p_conteudos">Conteúdos</button>
+      </div>
+      <div class="menu" id="menu-coordenador" class="hidden">
+        <h4>Coordenador</h4>
+        <button data-tab="c_dash">Dashboard</button>
+        <button data-tab="c_prof">Criar Professor</button>
+        <button data-tab="c_salas">Criar Sala</button>
+        <button data-tab="c_materias">Criar Matéria</button>
+        <button data-tab="c_banners">Banners de Provas</button>
+      </div>
+      <div class="menu">
+        <h4>Sessão</h4>
+        <button onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- ====== ALUNO ====== -->
+      <section id="a_materias" class="hidden">
+        <h2 class="title">Matérias</h2>
+        <div class="notice">Escolha uma matéria para acessar <b>Conteúdos</b> e <b>Jogo</b>.</div>
+        <div class="grid2">
+          <div class="card">
+            <label>Selecione sua sala</label>
+            <select id="a_selSala"></select>
+            <div class="muted">Se a sala estiver vazia, peça ao professor/coordenador para criá-la.</div>
+            <button class="btn outline" style="margin-top:8px" onclick="alunoVincularSala()">Vincular-me a esta sala</button>
+          </div>
+          <div class="card">
+            <label>Matérias da sala</label>
+            <select id="a_selMateria"></select>
+            <div class="actions" style="margin-top:10px">
+              <button class="btn verde" onclick="abrirMateriaAluno()">Abrir</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="a_materiaView" class="hidden" style="margin-top:14px">
+          <div class="grid2">
+            <div class="card">
+              <h3 style="margin:0 0 6px">Conteúdos</h3>
+              <div id="a_conteudos"></div>
+            </div>
+            <div class="card">
+              <h3 style="margin:0 0 6px">Jogo (Quiz)</h3>
+              <div class="progress"><div id="a_prog"></div></div>
+              <p id="a_nivel">Nível: Fácil</p>
+              <div class="quizbox">
+                <div id="a_q" style="font-weight:600;margin-bottom:8px"></div>
+                <div id="a_ans" class="answers"></div>
+                <div id="a_fb" class="muted" style="margin-top:6px"></div>
+                <div class="actions" style="margin-top:8px">
+                  <button class="btn outline" onclick="quizTentarNovamente()">Tentar novamente</button>
+                  <button class="btn outline" onclick="quizSair()">Sair</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px">Banners de Provas</h3>
+        <div class="student-layout">
+          <div class="banner-col" id="a_bannersCol"></div>
+          <div class="card">
+            <h3 style="margin-top:0">Informações</h3>
+            <p class="muted">Selecione um banner à esquerda para ver os detalhes.</p>
+            <div id="a_bannerInfo"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="a_sala" class="hidden">
+        <h2 class="title">Sala — Alunos</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Minha sala</label>
+            <select id="a_salaView"></select>
+            <button class="btn outline" style="margin-top:8px" onclick="renderAlunosSala()">Ver alunos</button>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">Alunos cadastrados</h3>
+            <table>
+              <thead><tr><th>Nome</th><th>RA</th></tr></thead>
+              <tbody id="a_tbAlunos"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="a_ranking" class="hidden">
+        <h2 class="title">Ranking</h2>
+        <table class="ranktable">
+          <thead><tr><th>Posição</th><th>Nome</th><th>Sequência Máx.</th></tr></thead>
+          <tbody id="a_tbRanking"></tbody>
+        </table>
+      </section>
+
+      <!-- ====== PROFESSOR ====== -->
+      <section id="p_materias" class="hidden">
+        <h2 class="title">Criar / Ver Matérias</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Sala</label>
+            <select id="p_selSala"></select>
+            <label style="margin-top:8px">Nome da matéria</label>
+            <input id="p_matNome" placeholder="Ex.: Matemática 9º A"/>
+            <button class="btn verde" style="margin-top:10px" onclick="criarMateria('professor')">Criar Matéria</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Minhas matérias</h3>
+            <div id="p_listaMaterias" class="cards"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="p_questoes" class="hidden">
+        <h2 class="title">Perguntas e Distribuição</h2>
+        <div class="grid3">
+          <div class="card">
+            <label>Matéria</label>
+            <select id="p_q_materia"></select>
+            <label style="margin-top:8px">Nível</label>
+            <select id="p_q_nivel">
+              <option value="facil">Fácil</option>
+              <option value="medio">Médio</option>
+              <option value="dificil">Difícil</option>
+            </select>
+            <label style="margin-top:8px">Enunciado</label>
+            <input id="p_q_enun" placeholder="Digite a pergunta"/>
+            <label style="margin-top:8px">Alternativas (5)</label>
+            <input id="p_q_a0" placeholder="A"/>
+            <input id="p_q_a1" placeholder="B"/>
+            <input id="p_q_a2" placeholder="C"/>
+            <input id="p_q_a3" placeholder="D"/>
+            <input id="p_q_a4" placeholder="E"/>
+            <label style="margin-top:8px">Índice da correta (0-4)</label>
+            <input id="p_q_cor" type="number" min="0" max="4" value="0"/>
+            <button class="btn verde" style="margin-top:10px" onclick="adicionarPergunta()">Adicionar Pergunta</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Distribuição de Níveis</h3>
+            <div class="row">
+              <div><label>% Fácil</label><input id="p_dist_facil" type="number" value="60"/></div>
+              <div><label>% Médio</label><input id="p_dist_medio" type="number" value="30"/></div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <div><label>% Difícil</label><input id="p_dist_dificil" type="number" value="10"/></div>
+              <div><label>&nbsp;</label><button class="btn outline" onclick="salvarDistribuicao()">Salvar</button></div>
+            </div>
+            <div class="muted">A soma deve dar 100%.</div>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Resumo</h3>
+            <div id="p_q_resumo" class="notice">Selecione a matéria.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="p_conteudos" class="hidden">
+        <h2 class="title">Conteúdos da Matéria</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Matéria</label>
+            <select id="p_c_materia"></select>
+            <label style="margin-top:8px">Adicionar arquivo</label>
+            <input id="p_c_file" type="file" multiple/>
+            <button class="btn verde" style="margin-top:10px" onclick="adicionarConteudo()">Enviar</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Arquivos</h3>
+            <div id="p_c_lista"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== COORDENADOR ====== -->
+      <section id="c_dash" class="hidden">
+        <h2 class="title">Dashboard — Monitoramento</h2>
+        <div class="grid3">
+          <div class="card"><strong>Total Logins</strong><div id="d1" style="font-size:28px;margin-top:6px">0</div></div>
+          <div class="card"><strong>Questões Respondidas</strong><div id="d2" style="font-size:28px;margin-top:6px">0</div></div>
+          <div class="card"><strong>Matérias</strong><div id="d3" style="font-size:28px;margin-top:6px">0</div></div>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div class="card">
+            <h3 style="margin:0 0 6px">Acessos (entradas/saídas)</h3>
+            <table>
+              <thead><tr><th>Usuário</th><th>Papel</th><th>Entrou</th><th>Saiu</th></tr></thead>
+              <tbody id="c_tbLogs"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Logins por Papel (gráfico)</h3>
+            <canvas id="c_chart" class="chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section id="c_prof" class="hidden">
+        <h2 class="title">Criar Professor</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Nome</label><input id="c_p_nome"/>
+            <label style="margin-top:8px">CPF</label><input id="c_p_cpf"/>
+            <label style="margin-top:8px">Matrícula</label><input id="c_p_mat"/>
+            <label style="margin-top:8px">Senha</label><input id="c_p_senha" type="password"/>
+            <button class="btn verde" style="margin-top:10px" onclick="coordCriarProfessor()">Cadastrar Professor</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Professores</h3>
+            <table>
+              <thead><tr><th>Nome</th><th>CPF</th><th>Matrícula</th></tr></thead>
+              <tbody id="c_tbProfs"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="c_salas" class="hidden">
+        <h2 class="title">Criar Sala</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Nome da sala (ex.: 9º A)</label><input id="c_s_nome"/>
+            <label style="margin-top:8px">Capacidade</label><input id="c_s_cap" type="number" value="30"/>
+            <button class="btn verde" style="margin-top:10px" onclick="criarSala()">Criar Sala</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Salas</h3>
+            <div id="c_salasGrid" class="salas-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="c_materias" class="hidden">
+        <h2 class="title">Criar Matéria</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Sala</label><select id="c_m_selSala"></select>
+            <label style="margin-top:8px">Nome da matéria</label><input id="c_m_nome"/>
+            <button class="btn verde" style="margin-top:10px" onclick="criarMateria('coordenador')">Criar Matéria</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Matérias por sala</h3>
+            <div id="c_m_list" class="cards"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="c_banners" class="hidden">
+        <h2 class="title">Banners de Provas</h2>
+        <div class="grid2">
+          <div class="card">
+            <label>Imagem</label><input id="ban_img" type="file" accept="image/*"/>
+            <label style="margin-top:8px">Título</label><input id="ban_tit" placeholder="PAEBES"/>
+            <div class="row">
+              <div><label>Data</label><input id="ban_data" type="date"/></div>
+              <div><label>Hora</label><input id="ban_hora" type="time"/></div>
+            </div>
+            <label style="margin-top:8px">Local</label><input id="ban_local" placeholder="Auditório / Escola"/>
+            <label style="margin-top:8px">Matérias da prova</label><input id="ban_mats" placeholder="Matemática; Português; ..." />
+            <label style="margin-top:8px">Dicas</label><input id="ban_dicas" placeholder="Revisar frações, leitura..." />
+            <button class="btn verde" style="margin-top:10px" onclick="salvarBanner()">Salvar Banner</button>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 6px">Pré-visualização (até 3)</h3>
+            <div id="c_bannersList" class="banner-col"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</section>
+
+<script>
+/* ========= Helpers de Storage ========= */
+const LS = {
+  get(k, def){ try{ return JSON.parse(localStorage.getItem(k)) ?? def; }catch(e){ return def; } },
+  set(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+};
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+/* ========= Estado ========= */
+let state = {
+  user:null, // {role, id, nome, ...}
+  mode:'login' // alterna info de UI (não essencial, só pro texto do botão)
+};
+
+/* ========= Bootstrap inicial ========= */
+initData();
+populateLoginSalaSelects();
+bindRoleTabs();
+restoreSession();
+
+/* ========= Dados base ========= */
+function initData(){
+  if(!LS.get('users')){
+    LS.set('users',{ alunos:[], professores:[], coordenadores:[] });
+  }
+  if(!LS.get('salas')) LS.set('salas',[]);
+  if(!LS.get('materias')) LS.set('materias',[]);
+  if(!LS.get('banners')) LS.set('banners',[]);
+  if(!LS.get('logs')) LS.set('logs',[]);  // {user, role, in, out?}
+  if(!LS.get('ranking')) LS.set('ranking',[]); // {nome, score}
+  if(!LS.get('stats')) LS.set('stats',{ respostas:0 });
+}
+
+/* ========= Login / Cadastro ========= */
+function bindRoleTabs(){
+  document.querySelectorAll('.role-tabs button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.role-tabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      ['aluno','professor','coordenador'].forEach(r=>{
+        document.getElementById('form-'+r).classList.toggle('hidden', r!==btn.dataset.role);
+      });
+    });
+  });
+}
+function toggleMode(){
+  state.mode = state.mode==='login'?'cadastro':'login';
+  alert('Modo: '+state.mode.toUpperCase());
+}
+
+function register(role){
+  const users = LS.get('users');
+  if(role==='aluno'){
+    const nome = val('a_nome'), ra = val('a_ra'), senha = val('a_senha');
+    if(!nome||!ra||!senha) return alert('Preencha nome, RA e senha.');
+    if(users.alunos.some(a=>a.ra===ra)) return alert('RA já cadastrado.');
+    const salaId = sel('a_salaSelect').value || null;
+    users.alunos.push({id:uid(),nome,ra,senha,salaId});
+    LS.set('users',users);
+    alert('Aluno cadastrado!');
+  }
+  if(role==='professor'){
+    const nome=val('p_nome'), cpf=val('p_cpf'), mat=val('p_mat'), senha=val('p_senha');
+    if(!nome||!cpf||!senha) return alert('Preencha nome, CPF e senha.');
+    if(users.professores.some(p=>p.cpf===cpf)) return alert('CPF já cadastrado.');
+    users.professores.push({id:uid(),nome,cpf,mat,senha});
+    LS.set('users',users);
+    alert('Professor cadastrado!');
+  }
+  if(role==='coordenador'){
+    const nome=val('c_nome'), cpf=val('c_cpf'), mat=val('c_mat'), senha=val('c_senha');
+    if(!nome||!cpf||!senha) return alert('Preencha nome, CPF e senha.');
+    if(users.coordenadores.some(p=>p.cpf===cpf)) return alert('CPF já cadastrado.');
+    users.coordenadores.push({id:uid(),nome,cpf,mat,senha});
+    LS.set('users',users);
+    alert('Coordenador cadastrado!');
+  }
+  populateLoginSalaSelects();
+}
+
+function login(role){
+  const users = LS.get('users');
+  let user=null;
+  if(role==='aluno'){
+    const ra=val('a_ra'), senha=val('a_senha');
+    user = users.alunos.find(u=>u.ra==ra && u.senha===senha);
+  }else if(role==='professor'){
+    const cpf=val('p_cpf'), senha=val('p_senha');
+    user = users.professores.find(u=>u.cpf==cpf && u.senha===senha);
+  }else{
+    const cpf=val('c_cpf'), senha=val('c_senha');
+    user = users.coordenadores.find(u=>u.cpf==cpf && u.senha===senha);
+  }
+  if(!user) return alert('Credenciais inválidas.');
+  state.user = {...user, role};
+  sessionStorage.setItem('sessionUser', JSON.stringify(state.user));
+  registrarLog('in');
+  enterApp();
+}
+
+function logout(){
+  registrarLog('out');
+  state.user=null;
+  sessionStorage.removeItem('sessionUser');
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth').style.display='block';
+}
+
+function restoreSession(){
+  const u = sessionStorage.getItem('sessionUser');
+  if(!u) return;
+  state.user = JSON.parse(u);
+  enterApp();
+}
+
+function registrarLog(type){
+  const logs = LS.get('logs');
+  if(type==='in'){
+    logs.push({id:uid(),user:(state.user?.nome)||val('a_nome')||val('p_nome')||val('c_nome'),role:(state.user?.role)||document.querySelector('.role-tabs .active')?.dataset.role,in:new Date().toLocaleString(),out:null});
+  }else{
+    const open = [...logs].reverse().find(l=>l.user===state.user.nome && !l.out);
+    if(open) open.out = new Date().toLocaleString();
+  }
+  LS.set('logs',logs);
+}
+
+/* ========= Entrar na aplicação ========= */
+function enterApp(){
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').style.display='block';
+  byId('ub-nome').textContent = state.user.nome;
+  byId('ub-role').textContent = state.user.role.toUpperCase();
+
+  // menus
+  showMenuForRole(state.user.role);
+  // carregar selects
+  refreshAllSelects();
+  // abrir primeira aba do papel
+  openFirstTab(state.user.role);
+  // dashboard números
+  if(state.user.role==='coordenador') renderDashboard();
+}
+
+function showMenuForRole(role){
+  ['menu-aluno','menu-professor','menu-coordenador'].forEach(id=>byId(id).classList.add('hidden'));
+  if(role==='aluno') byId('menu-aluno').classList.remove('hidden');
+  if(role==='professor') byId('menu-professor').classList.remove('hidden');
+  if(role==='coordenador') byId('menu-coordenador').classList.remove('hidden');
+  // bind navegação
+  document.querySelectorAll('.menu button[data-tab]').forEach(btn=>{
+    btn.onclick = ()=>openTab(btn.dataset.tab, btn);
+  });
+}
+
+function openFirstTab(role){
+  const first = {
+    aluno:'a_materias',
+    professor:'p_materias',
+    coordenador:'c_dash'
+  }[role];
+  openTab(first, document.querySelector(`.menu button[data-tab="${first}"]`));
+}
+function openTab(id, btn){
+  document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+  byId(id).classList.remove('hidden');
+  document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  // renders por aba
+  if(id==='a_materias'){ renderAlunoMaterias(); renderBannersAluno(); }
+  if(id==='a_sala'){ renderSalasAlunoSelects(); renderAlunosSala(); }
+  if(id==='a_ranking'){ renderRanking(); }
+  if(id==='p_materias'){ renderProfMaterias(); }
+  if(id==='p_questoes'){ renderPQSelects(); renderResumoQuestoes(); }
+  if(id==='p_conteudos'){ renderPConteudos(); }
+  if(id==='c_dash'){ renderDashboard(); }
+  if(id==='c_salas'){ renderSalasCoord(); }
+  if(id==='c_materias'){ renderMateriasCoord(); }
+  if(id==='c_prof'){ renderProfsCoord(); }
+  if(id==='c_banners'){ renderBannersCoord(); }
+}
+
+/* ========= Salas ========= */
+function criarSala(){
+  const nome = val('c_s_nome'); const cap = parseInt(val('c_s_cap')||'0',10);
+  if(!nome||!cap) return alert('Preencha nome e capacidade.');
+  const salas = LS.get('salas');
+  salas.push({id:uid(),nome,capacidade:cap, alunos:[]});
+  LS.set('salas',salas);
+  byId('c_s_nome').value=''; byId('c_s_cap').value=30;
+  renderSalasCoord(); refreshAllSelects();
+}
+function renderSalasCoord(){
+  const salas = LS.get('salas');
+  const grid = byId('c_salasGrid'); grid.innerHTML='';
+  salas.forEach(s=>{
+    const d = document.createElement('div');
+    d.className='sala-card';
+    d.innerHTML = `<strong>${s.nome}</strong><span class="muted">Cap.: ${s.capacidade}</span>`;
+    grid.appendChild(d);
+  });
+}
+
+/* ========= Matérias ========= */
+function criarMateria(orig){
+  const salas = LS.get('salas'); const materias = LS.get('materias');
+  const salaId = (orig==='coordenador'? sel('c_m_selSala').value : sel('p_selSala').value);
+  const nome = (orig==='coordenador'? val('c_m_nome') : val('p_matNome'));
+  if(!salaId || !nome) return alert('Selecione sala e informe um nome.');
+  materias.push({id:uid(), nome, salaId, ownerId: state.user.id, quizConfig:{facil:60,medio:30,dificil:10}, perguntas:[], conteudos:[], inscritos:[]});
+  LS.set('materias',materias);
+  if(orig==='coordenador'){ byId('c_m_nome').value=''; renderMateriasCoord(); }
+  else{ byId('p_matNome').value=''; renderProfMaterias(); }
+  refreshAllSelects();
+}
+
+function renderMateriasCoord(){
+  const list = byId('c_m_list'); list.innerHTML='';
+  const salas = LS.get('salas'); const materias = LS.get('materias');
+  salas.forEach(s=>{
+    const bloco = document.createElement('div'); bloco.className='card';
+    bloco.innerHTML = `<strong>${s.nome}</strong><div class="muted">Matérias:</div>`;
+    const ul = document.createElement('ul');
+    materias.filter(m=>m.salaId===s.id).forEach(m=>{
+      const li=document.createElement('li'); li.textContent = m.nome; ul.appendChild(li);
+    });
+    bloco.appendChild(ul);
+    list.appendChild(bloco);
+  });
+}
+
+/* ========= Professor: matérias / perguntas / conteúdos ========= */
+function renderProfMaterias(){
+  const container = byId('p_listaMaterias'); container.innerHTML='';
+  const materias = LS.get('materias').filter(m=>m.ownerId===state.user.id);
+  materias.forEach(m=>{
+    const c = document.createElement('div'); c.className='card';
+    c.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${salaNome(m.salaId)}</div>
+      <div class="muted">Inscritos: ${m.inscritos.length}</div>`;
+    container.appendChild(c);
+  });
+}
+
+function renderPQSelects(){
+  fillSelectWithMaterias('p_q_materia', true);
+  fillSelectWithMaterias('p_c_materia', true);
+}
+
+function adicionarPergunta(){
+  const materiaId = sel('p_q_materia').value;
+  if(!materiaId) return alert('Selecione a matéria.');
+  const nivel = sel('p_q_nivel').value;
+  const enun = val('p_q_enun');
+  const alts = [0,1,2,3,4].map(i=>val('p_q_a'+i));
+  const cor = parseInt(val('p_q_cor')||'0',10);
+  if(!enun || alts.some(a=>!a) || cor<0 || cor>4) return alert('Preencha a pergunta corretamente.');
+  const materias = LS.get('materias');
+  const m = materias.find(x=>x.id===materiaId);
+  m.perguntas.push({nivel, q:enun, a:alts, correta:cor});
+  LS.set('materias',materias);
+  byId('p_q_enun').value=''; [0,1,2,3,4].forEach(i=>byId('p_q_a'+i).value=''); byId('p_q_cor').value=0;
+  renderResumoQuestoes();
+  alert('Pergunta adicionada!');
+}
+
+function salvarDistribuicao(){
+  const materiaId = sel('p_q_materia').value; if(!materiaId) return alert('Selecione a matéria.');
+  const f=parseInt(val('p_dist_facil')||'0',10), m=parseInt(val('p_dist_medio')||'0',10), d=parseInt(val('p_dist_dificil')||'0',10);
+  if(f+m+d!==100) return alert('A soma deve ser 100%.');
+  const materias = LS.get('materias');
+  const mt = materias.find(x=>x.id===materiaId);
+  mt.quizConfig = {facil:f, medio:m, dificil:d};
+  LS.set('materias',materias);
+  alert('Distribuição salva!');
+}
+
+function renderResumoQuestoes(){
+  const materiaId = sel('p_q_materia').value;
+  const box = byId('p_q_resumo');
+  if(!materiaId){ box.textContent='Selecione a matéria.'; return; }
+  const m = LS.get('materias').find(x=>x.id===materiaId);
+  const c = m.quizConfig;
+  const counts = {facil:0, medio:0, dificil:0};
+  m.perguntas.forEach(p=>counts[p.nivel]++);
+  box.innerHTML = `
+    <div><span class="pill">Fácil: ${counts.facil}</span> <span class="pill">Médio: ${counts.medio}</span> <span class="pill">Difícil: ${counts.dificil}</span></div>
+    <div class="muted" style="margin-top:6px">Distribuição: ${c.facil}% / ${c.medio}% / ${c.dificil}%</div>
+  `;
+}
+
+function adicionarConteudo(){
+  const materiaId = sel('p_c_materia').value; if(!materiaId) return alert('Selecione a matéria.');
+  const files = byId('p_c_file').files; if(!files.length) return alert('Selecione arquivos.');
+  const materias = LS.get('materias'); const m = materias.find(x=>x.id===materiaId);
+  [...files].forEach(f=>{
+    const url = URL.createObjectURL(f);
+    m.conteudos.push({id:uid(), nome:f.name, tipo:f.type, url});
+  });
+  LS.set('materias',materias);
+  byId('p_c_file').value='';
+  renderPConteudos();
+}
+
+function renderPConteudos(){
+  const materiaId = sel('p_c_materia').value;
+  const list = byId('p_c_lista'); list.innerHTML='';
+  if(!materiaId){ list.innerHTML='<span class="muted">Selecione a matéria.</span>'; return; }
+  const m = LS.get('materias').find(x=>x.id===materiaId);
+  if(!m || !m.conteudos.length){ list.innerHTML='<span class="muted">Sem arquivos.</span>'; return; }
+  m.conteudos.forEach(c=>{
+    const d=document.createElement('div'); d.className='banner'; 
+    d.innerHTML=`<img src="${c.url}" onerror="this.src=''; this.style.background='#eef2ff'">
+    <div><strong>${c.nome}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
+    list.appendChild(d);
+  });
+}
+
+/* ========= Coordenador: Professores ========= */
+function coordCriarProfessor(){
+  const nome=val('c_p_nome'), cpf=val('c_p_cpf'), mat=val('c_p_mat'), senha=val('c_p_senha');
+  if(!nome||!cpf||!senha) return alert('Preencha nome, CPF e senha.');
+  const users = LS.get('users');
+  if(users.professores.some(p=>p.cpf===cpf)) return alert('CPF já cadastrado.');
+  users.professores.push({id:uid(),nome,cpf,mat,senha});
+  LS.set('users',users);
+  ['c_p_nome','c_p_cpf','c_p_mat','c_p_senha'].forEach(id=>byId(id).value='');
+  renderProfsCoord();
+  alert('Professor criado!');
+}
+function renderProfsCoord(){
+  const tb = byId('c_tbProfs'); tb.innerHTML='';
+  const users = LS.get('users');
+  users.professores.forEach(p=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${p.nome}</td><td>${p.cpf}</td><td>${p.mat||'-'}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ========= Coordenador: Banners ========= */
+function salvarBanner(){
+  const img = byId('ban_img').files[0];
+  const tit=val('ban_tit'), data=val('ban_data'), hora=val('ban_hora'), local=val('ban_local'), mats=val('ban_mats'), dicas=val('ban_dicas');
+  if(!tit) return alert('Informe o título.');
+  const banners = LS.get('banners');
+  const pushBanner = (imageUrl)=>{
+    banners.unshift({id:uid(), tit, data, hora, local, materias:mats, dicas, img:imageUrl});
+    LS.set('banners', banners.slice(0,3));
+    renderBannersCoord();
+    alert('Banner salvo!');
+  };
+  if(img){
+    const url = URL.createObjectURL(img);
+    pushBanner(url);
+  }else{
+    pushBanner('');
+  }
+}
+function renderBannersCoord(){
+  const col = byId('c_bannersList'); col.innerHTML='';
+  LS.get('banners').forEach(b=>{
+    const d=document.createElement('div'); d.className='banner';
+    d.innerHTML=`<img src="${b.img}" onerror="this.style.background='#eef2ff'">
+    <div><strong>${b.tit}</strong>
+      <div class="muted">${b.data||''} ${b.hora||''} • ${b.local||''}</div>
+      <div class="muted">Matérias: ${b.materias||'-'}</div>
+      <div class="muted">Dicas: ${b.dicas||'-'}</div>
+    </div>`;
+    col.appendChild(d);
+  });
+}
+
+/* ========= Dashboard ========= */
+function renderDashboard(){
+  const logs = LS.get('logs');
+  const materias = LS.get('materias');
+  const stats = LS.get('stats');
+  byId('d1').textContent = logs.filter(l=>l.in).length;
+  byId('d2').textContent = stats.respostas||0;
+  byId('d3').textContent = materias.length;
+  // tabela
+  const tb = byId('c_tbLogs'); tb.innerHTML='';
+  logs.slice(-15).reverse().forEach(l=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${l.user}</td><td>${l.role}</td><td>${l.in}</td><td>${l.out||'-'}</td>`;
+    tb.appendChild(tr);
+  });
+  // gráfico simples
+  const ctx = byId('c_chart').getContext('2d');
+  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  const counts = {aluno:0, professor:0, coordenador:0};
+  logs.forEach(l=>{ counts[l.role] = (counts[l.role]||0)+1; });
+  const labels=['Aluno','Professor','Coordenador'];
+  const vals=[counts.aluno||0, counts.professor||0, counts.coordenador||0];
+  const W=ctx.canvas.width, H=ctx.canvas.height, pad=30, bw=40, gap=40;
+  labels.forEach((lb,i)=>{
+    const x=pad+i*(bw+gap); const max=Math.max(...vals,1);
+    const h = (H-2*pad)* (vals[i]/max);
+    ctx.fillStyle = i===0?'#8ecae6':(i===1?'#90be6d':'#219ebc');
+    ctx.fillRect(x, H-pad-h, bw, h);
+    ctx.fillStyle='#111'; ctx.fillText(lb, x, H-pad+14);
+    ctx.fillText(vals[i], x+12, H-pad-h-6);
+  });
+}
+
+/* ========= Aluno ========= */
+function renderAlunoMaterias(){
+  fillSelect('a_selSala', LS.get('salas'), state.user.salaId||'');
+  if(state.user.salaId) fillSelect('a_selMateria', LS.get('materias').filter(m=>m.salaId===state.user.salaId));
+  else byId('a_selMateria').innerHTML='<option value="">Selecione uma sala</option>';
+  // limpar view
+  byId('a_materiaView').classList.add('hidden');
+}
+function abrirMateriaAluno(){
+  const salaId = sel('a_selSala').value; const materiaId = sel('a_selMateria').value;
+  if(!salaId || !materiaId) return alert('Selecione sala e matéria.');
+  // conteúdos
+  const m = LS.get('materias').find(x=>x.id===materiaId);
+  const cont = byId('a_conteudos'); cont.innerHTML='';
+  if(m.conteudos.length===0) cont.innerHTML='<span class="muted">Sem conteúdos cadastrados.</span>';
+  m.conteudos.forEach(c=>{
+    const d=document.createElement('div'); d.className='banner';
+    d.innerHTML=`<img src="${c.url}" onerror="this.style.background='#eef2ff'"><div><strong>${c.nome}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
+    cont.appendChild(d);
+  });
+  // quiz start
+  quizStart(materiaId);
+  byId('a_materiaView').classList.remove('hidden');
+}
+function alunoVincularSala(){
+  const salaId = sel('a_selSala').value;
+  if(!salaId) return alert('Selecione uma sala.');
+  const users = LS.get('users');
+  const a = users.alunos.find(x=>x.id===state.user.id);
+  a.salaId = salaId;
+  LS.set('users',users);
+  state.user = {...state.user, salaId};
+  sessionStorage.setItem('sessionUser', JSON.stringify(state.user));
+  alert('Vinculado à sala!');
+  renderAlunoMaterias();
+}
+
+function renderSalasAlunoSelects(){
+  fillSelect('a_salaView', LS.get('salas'), state.user.salaId||'');
+}
+function renderAlunosSala(){
+  const salaId = sel('a_salaView').value || state.user.salaId;
+  const tb = byId('a_tbAlunos'); tb.innerHTML='';
+  if(!salaId){ tb.innerHTML='<tr><td colspan="2">Selecione uma sala.</td></tr>'; return; }
+  const alunos = LS.get('users').alunos.filter(a=>a.salaId===salaId);
+  alunos.forEach(a=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${a.nome}</td><td>${a.ra}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ========= Banners na visão do aluno ========= */
+function renderBannersAluno(){
+  const col = byId('a_bannersCol'); col.innerHTML='';
+  const banners = LS.get('banners');
+  banners.forEach(b=>{
+    const d=document.createElement('div'); d.className='banner'; d.style.cursor='pointer';
+    d.onclick = ()=> showBannerInfo(b);
+    d.innerHTML=`<img src="${b.img}" onerror="this.style.background='#eef2ff'">
+    <div><strong>${b.tit}</strong><div class="muted">${b.data||''} ${b.hora||''}</div></div>`;
+    col.appendChild(d);
+  });
+}
+function showBannerInfo(b){
+  byId('a_bannerInfo').innerHTML = `
+    <div class="banner">
+      <img src="${b.img}" onerror="this.style.background='#eef2ff'">
+      <div>
+        <strong>${b.tit}</strong>
+        <div class="muted">${b.data||''} ${b.hora||''} • ${b.local||''}</div>
+        <div class="muted">Matérias: ${b.materias||'-'}</div>
+        <div class="muted">Dicas: ${b.dicas||'-'}</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ========= Quiz com níveis + Ranking ========= */
+let Q = { materiaId:null, nivel:'facil', streak:0, best:0, pergunta:null };
+function quizStart(materiaId){
+  Q = { materiaId, nivel:'facil', streak:0, best:0, pergunta:null };
+  byId('a_nivel').textContent='Nível: Fácil';
+  setProgress(0);
+  novaPergunta();
+}
+function setProgress(pct){ byId('a_prog').style.width=(pct||0)+'%'; }
+
+function perguntasPorNivel(materiaId, nivel){
+  const m = LS.get('materias').find(x=>x.id===materiaId);
+  return (m?.perguntas||[]).filter(q=>q.nivel===nivel);
+}
+function novaPergunta(){
+  const pool = perguntasPorNivel(Q.materiaId, Q.nivel);
+  if(!pool.length){
+    byId('a_q').textContent='Sem perguntas neste nível.';
+    byId('a_ans').innerHTML='';
+    return;
+  }
+  Q.pergunta = pool[Math.floor(Math.random()*pool.length)];
+  byId('a_q').textContent=Q.pergunta.q;
+  const ans = byId('a_ans'); ans.innerHTML='';
+  Q.pergunta.a.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.textContent = t;
+    b.onclick = ()=>responder(i);
+    ans.appendChild(b);
+  });
+}
+function responder(i){
+  const stats = LS.get('stats');
+  if(i===Q.pergunta.correta){
+    Q.streak++; Q.best = Math.max(Q.best, Q.streak);
+    byId('a_fb').textContent='✅ Correto!';
+    setProgress(Math.min(100, (Q.streak%5)*20));
+    // sobe de nível a cada 5 seguidas
+    if(Q.streak>0 && Q.streak%5===0){
+      if(Q.nivel==='facil') Q.nivel='medio';
+      else if(Q.nivel==='medio') Q.nivel='dificil';
+      byId('a_nivel').textContent='Nível: '+cap(Q.nivel);
+    }
+  }else{
+    byId('a_fb').textContent='❌ Errou! Sequência final: '+Q.streak;
+    salvarRanking(state.user.nome, Q.streak);
+    Q.streak = 0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0);
+  }
+  stats.respostas=(stats.respostas||0)+1; LS.set('stats',stats);
+  novaPergunta();
+}
+function quizTentarNovamente(){ Q.streak=0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0); novaPergunta(); }
+function quizSair(){ salvarRanking(state.user.nome, Q.streak); alert('Jogo encerrado. Sequência salva no ranking.'); }
+
+function salvarRanking(nome, score){
+  const r = LS.get('ranking'); r.push({nome, score}); r.sort((a,b)=>b.score-a.score); LS.set('ranking', r.slice(0,50));
+}
+function renderRanking(){
+  const r = LS.get('ranking'); const tb = byId('a_tbRanking'); tb.innerHTML='';
+  r.slice(0,20).forEach((x,i)=>{
+    const tr=document.createElement('tr'); tr.innerHTML=`<td>${i+1}º</td><td>${x.nome}</td><td>${x.score}</td>`; tb.appendChild(tr);
+  });
+}
+
+/* ========= Selects utilitários ========= */
+function refreshAllSelects(){
+  // auth aluno
+  populateLoginSalaSelects();
+  // aluno
+  fillSelect('a_selSala', LS.get('salas'), state.user?.salaId||'');
+  fillSelectWithMaterias('a_selMateria', false, state.user?.salaId);
+  fillSelect('a_salaView', LS.get('salas'), state.user?.salaId||'');
+  // professor
+  fillSelect('p_selSala', LS.get('salas'));
+  fillSelectWithMaterias('p_q_materia', true);
+  fillSelectWithMaterias('p_c_materia', true);
+  // coordenador
+  fillSelect('c_m_selSala', LS.get('salas'));
+}
+function populateLoginSalaSelects(){
+  fillSelect('a_salaSelect', LS.get('salas'));
+}
+function fillSelect(id, arr, selectedId){
+  const el = sel(id); if(!el) return;
+  el.innerHTML = (arr.length? '':'') + arr.map(o=>`<option value="${o.id}" ${o.id===selectedId?'selected':''}>${o.nome}</option>`).join('') || '<option value="">(sem itens)</option>';
+}
+function fillSelectWithMaterias(id, onlyOwned=false, salaFilter=null){
+  const el = sel(id); if(!el) return;
+  let mats = LS.get('materias');
+  if(onlyOwned) mats = mats.filter(m=>m.ownerId===state.user.id);
+  if(salaFilter) mats = mats.filter(m=>m.salaId===salaFilter);
+  el.innerHTML = mats.length? mats.map(m=>`<option value="${m.id}">${m.nome} — ${salaNome(m.salaId)}</option>`).join('') : '<option value="">(sem matérias)</option>';
+}
+function salaNome(id){ return LS.get('salas').find(s=>s.id===id)?.nome || '-'; }
+
+/* ========= Util ========= */
+function byId(id){ return document.getElementById(id); }
+function sel(id){ return document.getElementById(id); }
+function val(id){ return byId(id)?.value?.trim(); }
+function cap(s){ return s[0].toUpperCase()+s.slice(1); }
+
+/* ========= Render Coord extras ========= */
+function renderSalasCoordOnMaterias(){
+  fillSelect('c_m_selSala', LS.get('salas'));
+}
+</script>
+</body>
+</html>
