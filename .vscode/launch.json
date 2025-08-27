@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
+            "url": "https://chatgpt.com/c/68ae565e-cec8-832b-ac14-b1d7d98a320b",
             "webRoot": "${workspaceFolder}"
         }
     ]
