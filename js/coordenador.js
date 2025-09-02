@@ -4,6 +4,8 @@ function coordCriarProfessor() {
     mat = val("c_p_mat"),
     senha = val("c_p_senha");
   if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
+  const cpfRegex = /^\d{11}$/;
+  if (!cpfRegex.test(cpf)) return alert("CPF inválido. Use 11 dígitos numéricos.");
   const users = LS.get("users");
   if (users.professores.some((p) => p.cpf === cpf))
     return alert("CPF já cadastrado.");
