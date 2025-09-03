@@ -26,10 +26,6 @@ function bindRoleTabs() {
     });
   });
 }
-function toggleMode() {
-  state.mode = state.mode === "login" ? "cadastro" : "login";
-  alert("Modo: " + state.mode.toUpperCase());
-}
 
 function register(role) {
   const users = LS.get("users");
