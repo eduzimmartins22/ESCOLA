@@ -188,4 +188,11 @@ function renderRanking() {
     tr.innerHTML = `<td>${i + 1}º</td><td>${x.nome}</td><td>${x.score}</td>`;
     tb.appendChild(tr);
   });
+  
+}
+function resetarRanking() {
+if (!confirm("Confirma resetar o ranking?")) return;
+  LS.set("ranking", []);
+  renderRanking();
+  alert("Ranking resetado.");
 }
