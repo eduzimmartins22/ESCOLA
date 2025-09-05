@@ -26,13 +26,11 @@ function bindRoleTabs() {
     });
   });
 }
-function toggleMode() {
-  state.mode = state.mode === "login" ? "cadastro" : "login";
-  alert("Modo: " + state.mode.toUpperCase());
-}
 
 function register(role) {
   const users = LS.get("users");
+  const cpfRegex = /^\d{11}$/;
+
   if (role === "aluno") {
     const nome = val("a_nome"),
       ra = val("a_ra"),
@@ -51,9 +49,13 @@ function register(role) {
       mat = val("p_mat"),
       senha = val("p_senha");
     if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
-    if (users.professores.some((p) => p.cpf === cpf))
+
+    const cpfLimpo = cpf.replace(/[^\d]/g, "");
+    if (!cpfRegex.test(cpfLimpo)) return alert("CPF inválido. Use 11 dígitos numéricos.");
+
+    if (users.professores.some((p) => p.cpf === cpfLimpo))
       return alert("CPF já cadastrado.");
-    users.professores.push({ id: uid(), nome, cpf, mat, senha });
+    users.professores.push({ id: uid(), nome, cpf: cpfLimpo, mat, senha });
     LS.set("users", users);
     alert("Professor cadastrado!");
   }
@@ -63,9 +65,13 @@ function register(role) {
       mat = val("c_mat"),
       senha = val("c_senha");
     if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
-    if (users.coordenadores.some((p) => p.cpf === cpf))
+
+    const cpfLimpo = cpf.replace(/[^\d]/g, "");
+    if (!cpfRegex.test(cpfLimpo)) return alert("CPF inválido. Use 11 dígitos numéricos.");
+
+    if (users.coordenadores.some((p) => p.cpf === cpfLimpo))
       return alert("CPF já cadastrado.");
-    users.coordenadores.push({ id: uid(), nome, cpf, mat, senha });
+    users.coordenadores.push({ id: uid(), nome, cpf: cpfLimpo, mat, senha });
     LS.set("users", users);
     alert("Coordenador cadastrado!");
   }
@@ -80,11 +86,11 @@ function login(role) {
       senha = val("a_senha");
     user = users.alunos.find((u) => u.ra == ra && u.senha === senha);
   } else if (role === "professor") {
-    const cpf = val("p_cpf"),
+    const cpf = val("p_cpf").replace(/[^\d]/g, ""),
       senha = val("p_senha");
     user = users.professores.find((u) => u.cpf == cpf && u.senha === senha);
   } else {
-    const cpf = val("c_cpf"),
+    const cpf = val("c_cpf").replace(/[^\d]/g, ""),
       senha = val("c_senha");
     user = users.coordenadores.find((u) => u.cpf == cpf && u.senha === senha);
   }
