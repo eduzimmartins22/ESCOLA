@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./css/auth.css">
   <link rel="stylesheet" href="./css/base.css">
 </head>
+
 <body>
   <header>
     <img src="" alt="Logo" onerror="this.style.display='none'" />
@@ -126,11 +127,13 @@
           <button data-tab="a_sala">Entrar em Sala</button>
           <button data-tab="a_ranking">Ranking</button>
         </div>
+
         <div class="menu" id="menu-professor" class="hidden">
           <h4>Professor</h4>
           <button data-tab="p_materias">Criar/Ver Matérias</button>
           <button data-tab="p_questoes">Perguntas e Distribuição</button>
           <button data-tab="p_conteudos">Conteúdos</button>
+          <button data-tab="p_ranking">Ranking Alunos</button>
         </div>
         <div class="menu" id="menu-coordenador" class="hidden">
           <h4>Coordenador</h4>
@@ -218,55 +221,58 @@
           </div>
         </section>
 
-          <section id="a_sala" class="hidden">
-            <h2 class="title">Sala — Alunos</h2>
-            <div class="grid2">
-              <div class="card">
-                <label>Minha sala</label>
-                <select id="a_salaView"></select>
-                <button
-                  class="btn outline"
-                  style="margin-top: 8px"
-                  onclick="renderAlunosSala()"
-                >
-                  Ver alunos
-                </button>
-              </div>
-              <div class="card">
-                <h3 style="margin-top: 0">Alunos cadastrados</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Nome</th>
-                      <th>RA</th>
-                    </tr>
-                  </thead>
-                  <tbody id="a_tbAlunos"></tbody>
-                </table>
+        <section id="a_sala" class="hidden">
+          <h2 class="title">Sala — Alunos</h2>
+          <div class="grid2">
+            <div class="card">
+              <label>Minha sala</label>
+              <select id="a_salaView"></select>
+              <button class="btn outline" style="margin-top: 8px" onclick="renderAlunosSala()">
+                Ver alunos
+              </button>
+            </div>
+            <div class="card">
+              <h3 style="margin-top: 0">Alunos cadastrados</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>RA</th>
+                  </tr>
+                </thead>
+                <tbody id="a_tbAlunos"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="a_ranking" class="hidden">
+          <h2 class="title">Ranking por Matéria</h2>
+          <div class="grid2">
+            <div class="card">
+              <label>Selecione a sala</label>
+              <select id="a_selRankSala"></select>
+            </div>
+            <div class="card">
+              <label>Selecione a matéria</label>
+              <select id="a_selRankMateria"></select>
+              <div class="actions" style="margin-top: 10px">
+                <button class="btn verde" onclick="abrirRankingAluno()">Ver Ranking</button>
               </div>
             </div>
-          </section>
-
-
-
-
-          <section id="a_ranking" class="hidden">
-            <h2 class="title">Ranking</h2>
-            <table class="ranktable">
-              <thead>
-                <tr>
-                  <th>Posição</th>
-                  <th>Nome</th>
-                  <th>Sequência Máx.</th>
-                </tr>
-              </thead>
-              <tbody id="a_tbRanking"></tbody>
-            </table>
-          </section>
-
-
-
-
+          </div>
+          <table class="ranktable">
+            <thead>
+              <tr>
+                <th>Posição</th>
+                <th>Nome</th>
+                <th>Sequência Máx.</th>
+                <th>Matéria</th>
+              </tr>
+            </thead>
+            <tbody id="a_tbRanking"></tbody>
+          </table>
+        </section>
         <!-- ====== PROFESSOR ====== -->
         <section id="p_materias" class="hidden">
           <h2 class="title">Criar / Ver Matérias</h2>
@@ -343,66 +349,95 @@
         </section>
 
         <section id="p_conteudos" class="hidden">
-          <h2 class="title">Conteúdos da Matéria</h2>
+          <h2 class="title">Conteúdos</h2>
           <div class="grid2">
             <div class="card">
               <label>Matéria</label>
               <select id="p_c_materia"></select>
-              <label style="margin-top: 8px">Adicionar arquivo</label>
+              <label style="margin-top: 8px">Arquivos</label>
               <input id="p_c_file" type="file" multiple />
               <button class="btn verde" style="margin-top: 10px" onclick="adicionarConteudo()">
-                Enviar
+                Adicionar Conteúdo
               </button>
             </div>
             <div class="card">
-              <h3 style="margin: 0 0 8px">Arquivos</h3>
-              <div id="p_c_lista"></div>
+              <h3 style="margin: 0 0 6px">Arquivos da Matéria</h3>
+              <div id="p_c_lista" class="cards"></div>
             </div>
           </div>
         </section>
 
-          <!-- ====== COORDENADOR ====== -->
-          <section id="c_dash" class="hidden">
-            <h2 class="title">Dashboard — Monitoramento</h2>
-            <div class="grid3">
-              <div class="card">
-                <strong>Total Logins</strong>
-                <div id="d1" style="font-size: 28px; margin-top: 6px">0</div>
-              </div>
-              <div class="card">
-                <strong>Questões Respondidas</strong>
-                <div id="d2" style="font-size: 28px; margin-top: 6px">0</div>
-              </div>
-              <div class="card">
-                <strong>Matérias</strong>
-                <div id="d3" style="font-size: 28px; margin-top: 6px">0</div>
+        <section id="p_ranking" class="hidden">
+          <h2 class="title">Ranking dos Alunos</h2>
+          <div class="grid2">
+            <div class="card">
+              <label>Selecione a sala</label>
+              <select id="p_selRankSala"></select>
+            </div>
+            <div class="card">
+              <label>Selecione a matéria</label>
+              <select id="p_selRankMateria"></select>
+              <div class="actions" style="margin-top: 10px">
+                <button class="btn verde" onclick="abrirRankingProfessor()">Ver Ranking</button>
               </div>
             </div>
-            <div class="grid2" style="margin-top: 12px">
-              <div class="card">
-                <h3 style="margin: 0 0 10px">Acessos</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Usuário</th>
-                      <th>Papel</th>
-                      <th>Entrou</th>
-                      <th>Saiu</th>
-                    </tr>
-                  </thead>
-                  <tbody id="c_tbLogs"></tbody>
-                </table>
-              </div>
-              <div class="card-dash">
-                <h3 style="margin: 0 0 6px">Logins </h3>
-                <canvas id="c_chart" class="chart"></canvas>
-              </div>
-              <div class="card-ranking">
-                <h3 style="margin: 0 0 6px">Resetar o Ranking</h3>
-                <button class="btn-ranking" onclick="resetarRanking()">Resetar Ranking</button>
-              </div>
+          </div>
+          <table class="ranktable">
+            <thead>
+              <tr>
+                <th>Posição</th>
+                <th>Nome</th>
+                <th>RA</th>
+                <th>Sequência Máx.</th>
+                <th>Matéria</th>
+              </tr>
+            </thead>
+            <tbody id="p_tbRanking"></tbody>
+          </table>
+        </section>
+
+        <!-- ====== COORDENADOR ====== -->
+        <section id="c_dash" class="hidden">
+          <h2 class="title">Dashboard — Monitoramento</h2>
+          <div class="grid3">
+            <div class="card">
+              <strong>Total Logins</strong>
+              <div id="d1" style="font-size: 28px; margin-top: 6px">0</div>
             </div>
-          </section>
+            <div class="card">
+              <strong>Questões Respondidas</strong>
+              <div id="d2" style="font-size: 28px; margin-top: 6px">0</div>
+            </div>
+            <div class="card">
+              <strong>Matérias</strong>
+              <div id="d3" style="font-size: 28px; margin-top: 6px">0</div>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top: 12px">
+            <div class="card">
+              <h3 style="margin: 0 0 10px">Acessos</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Papel</th>
+                    <th>Entrou</th>
+                    <th>Saiu</th>
+                  </tr>
+                </thead>
+                <tbody id="c_tbLogs"></tbody>
+              </table>
+            </div>
+            <div class="card-dash">
+              <h3 style="margin: 0 0 6px">Logins </h3>
+              <canvas id="c_chart" class="chart"></canvas>
+            </div>
+            <div class="card-ranking">
+              <h3 style="margin: 0 0 6px">Resetar o Ranking</h3>
+              <button class="btn-ranking" onclick="resetarRanking()">Resetar Ranking</button>
+            </div>
+          </div>
+        </section>
 
         <section id="c_prof" class="hidden">
           <h2 class="title">Criar Professor</h2>

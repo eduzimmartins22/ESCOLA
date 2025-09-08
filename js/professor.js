@@ -188,3 +188,83 @@ function renderPConteudos() {
     list.appendChild(d);
   });
 }
+
+
+// ========== RANKING DO PROFESSOR ==========
+function renderRankingProfessorSelects() {
+  // Preencher select de salas onde o professor tem matérias
+  const materiasProfessor = LS.get("materias").filter(m => m.ownerId === state.user.id);
+  const salasIds = [...new Set(materiasProfessor.map(m => m.salaId))];
+  const salasProfessor = LS.get("salas").filter(s => salasIds.includes(s.id));
+  
+  fillSelect("p_selRankSala", salasProfessor, "");
+  
+  // Preencher select de matérias baseado na sala selecionada
+  const salaId = sel("p_selRankSala").value;
+  const selMateria = byId("p_selRankMateria");
+  
+  if (salaId) {
+    const materiasSala = materiasProfessor.filter(m => m.salaId === salaId);
+    fillSelect("p_selRankMateria", materiasSala);
+  } else {
+    selMateria.innerHTML = '<option value="">Selecione uma sala primeiro</option>';
+  }
+}
+
+function abrirRankingProfessor() {
+  const salaId = sel("p_selRankSala").value;
+  const materiaId = sel("p_selRankMateria").value;
+  
+  if (!salaId || !materiaId) return alert("Selecione uma sala e uma matéria.");
+  
+  renderRankingProfessor(salaId, materiaId);
+}
+
+function renderRankingProfessor(salaId, materiaId) {
+  const allRankings = LS.get("ranking") || [];
+  
+  // Filtrar rankings pela matéria selecionada
+  const r = allRankings.filter(x => x.salaId === salaId && x.materiaId === materiaId);
+
+  const tb = byId("p_tbRanking");
+  tb.innerHTML = "";
+
+  if (!r.length) {
+    tb.innerHTML = '<tr><td colspan="5">Nenhum registro para esta matéria.</td></tr>';
+    return;
+  }
+
+  // Ordenar por score (maior primeiro)
+  r.sort((a, b) => b.score - a.score);
+  
+  r.slice(0, 20).forEach((x, i) => {
+    const tr = document.createElement("tr");
+    
+    // Obter RA do aluno
+    const aluno = LS.get("users").alunos.find(a => a.nome === x.nome);
+    const ra = aluno ? aluno.ra : "N/A";
+    
+    // Obter nome da matéria
+    const materia = LS.get("materias").find(m => m.id === x.materiaId);
+    const materiaNome = materia ? materia.nome : "Desconhecida";
+    
+    tr.innerHTML = `
+      <td>${i + 1}º</td>
+      <td>${x.nome}</td>
+      <td>${ra}</td>
+      <td>${x.score}</td>
+      <td>${materiaNome}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+
+
+// Configurar eventos quando o DOM carregar
+document.addEventListener('DOMContentLoaded', function() {
+  const selRankSala = byId("p_selRankSala");
+  if (selRankSala) {
+    selRankSala.addEventListener("change", renderRankingProfessorSelects);
+  }
+});

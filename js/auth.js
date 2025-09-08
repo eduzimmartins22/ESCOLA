@@ -195,7 +195,17 @@ function openTab(id, btn) {
     renderAlunosSala();
   }
   if (id === "a_ranking") {
-    renderRanking();
+    renderRankingSelects();
+    // Se o usuário já tem uma sala, mostrar ranking automaticamente
+    if (state.user.salaId) {
+      const materias = LS.get("materias").filter(m => m.salaId === state.user.salaId);
+      if (materias.length === 1) {
+        setTimeout(() => {
+          sel("a_selRankMateria").value = materias[0].id;
+          renderRanking(state.user.salaId, materias[0].id);
+        }, 100);
+      }
+    }
   }
   if (id === "p_materias") {
     renderProfMaterias();
@@ -206,6 +216,9 @@ function openTab(id, btn) {
   }
   if (id === "p_conteudos") {
     renderPConteudos();
+  }
+  if (id === "p_ranking") {
+    renderRankingProfessorSelects();  // adicionei aqui
   }
   if (id === "c_dash") {
     renderDashboard();
