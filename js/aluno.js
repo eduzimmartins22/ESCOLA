@@ -1,3 +1,17 @@
+
+// Executar migração uma vez ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+  migrarRankingAntigo();
+  
+  // Adicionar evento de change no select de sala para atualizar as matérias
+  const selRankSala = byId("a_selRankSala");
+  if (selRankSala) {
+    selRankSala.addEventListener("change", renderRankingSelects);
+  }
+});
+
+
+
 function renderAlunoMaterias() {
   fillSelect("a_selSala", LS.get("salas"), state.user.salaId || "");
   if (state.user.salaId)
@@ -173,26 +187,110 @@ function quizSair() {
   alert("Jogo encerrado. Sequência salva no ranking.");
 }
 
+
+// Modificar a função salvarRanking para incluir sala e matéria
 function salvarRanking(nome, score) {
-  const r = LS.get("ranking");
-  r.push({ nome, score });
-  r.sort((a, b) => b.score - a.score);
-  LS.set("ranking", r.slice(0, 50));
+  const r = LS.get("ranking") || [];
+  r.push({ 
+    nome, 
+    score, 
+    salaId: state.user.salaId, 
+    materiaId: Q.materiaId 
+  });
+  LS.set("ranking", r);
 }
-function renderRanking() {
-  const r = LS.get("ranking");
+function renderRanking(salaId, materiaId) {
+  const allRankings = LS.get("ranking") || [];
+  
+  // Filtrar rankings pelos critérios selecionados
+  const r = allRankings.filter(x => x.salaId === salaId && x.materiaId === materiaId);
+
   const tb = byId("a_tbRanking");
   tb.innerHTML = "";
+
+  if (!r.length) {
+    tb.innerHTML = '<tr><td colspan="4">Nenhum registro para esta matéria.</td></tr>';
+    return;
+  }
+
+  // Ordenar por score (maior primeiro)
+  r.sort((a, b) => b.score - a.score);
+  
   r.slice(0, 20).forEach((x, i) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${i + 1}º</td><td>${x.nome}</td><td>${x.score}</td>`;
+    
+    // Obter nome da matéria para exibição
+    let materiaNome = "Geral";
+    if (x.materiaId !== "geral") {
+      const materia = LS.get("materias").find(m => m.id === x.materiaId);
+      materiaNome = materia ? materia.nome : "Desconhecida";
+    }
+    
+    tr.innerHTML = `
+      <td>${i + 1}º</td>
+      <td>${x.nome}</td>
+      <td>${x.score}</td>
+      <td>${materiaNome}</td>
+    `;
     tb.appendChild(tr);
   });
-  
 }
+
+// ========== MIGRAÇÃO DO RANKING ==========
+function migrarRankingAntigo() {
+  const ranking = LS.get("ranking") || [];
+  let needsUpdate = false;
+  
+  const registrosAntigos = ranking.filter(x => !x.salaId);
+  
+  if (registrosAntigos.length > 0) {
+    registrosAntigos.forEach(registro => {
+      registro.salaId = "geral";
+      registro.materiaId = "geral";
+    });
+    needsUpdate = true;
+  }
+  
+  if (needsUpdate) {
+    LS.set("ranking", ranking);
+  }
+}
+
+
+// ========== FUNÇÕES DO RANKING ==========
+function renderRankingSelects() {
+  fillSelect("a_selRankSala", LS.get("salas"), state.user.salaId || "");
+  
+  const salaId = sel("a_selRankSala").value || state.user.salaId;
+  const selMateria = byId("a_selRankMateria");
+  
+  if (salaId) {
+    const materiasSala = LS.get("materias").filter(m => m.salaId === salaId);
+    
+    const hasGeneral = (LS.get("ranking") || []).some(x => x.salaId === "geral");
+    if (hasGeneral && materiasSala.length > 0) {
+      materiasSala.unshift({ id: "geral", nome: "Geral (Ranking Antigo)" });
+    }
+    
+    fillSelect("a_selRankMateria", materiasSala);
+  } else {
+    selMateria.innerHTML = '<option value="">Selecione uma sala primeiro</option>';
+  }
+}
+
+function abrirRankingAluno() {
+  const salaId = sel("a_selRankSala").value;
+  const materiaId = sel("a_selRankMateria").value;
+  
+  if (!salaId || !materiaId) return alert("Selecione uma sala e uma matéria.");
+  renderRanking(salaId, materiaId);
+}
+
 function resetarRanking() {
 if (!confirm("Confirma resetar o ranking?")) return;
   LS.set("ranking", []);
   renderRanking();
   alert("Ranking resetado.");
 }
+
+
