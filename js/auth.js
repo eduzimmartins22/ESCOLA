@@ -11,6 +11,9 @@ function initData() {
 }
 
 /* ========= Login / Cadastro ========= */
+
+const API_URL = "https://SEU-BACKEND.up.railway.app/api";
+const state = { mode: "login", user: null }; // mode: login | cadastro
 function bindRoleTabs() {
   document.querySelectorAll(".role-tabs button").forEach((btn) => {
     btn.addEventListener("click", () => {
