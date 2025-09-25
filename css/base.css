@@ -1,0 +1,36 @@
+:root {
+  --azul: #0a5baa; /* Azul principal suave */
+  --azul-2: #0f73d1;
+  --verde: #2ea36a; /* Verde secundário leve */
+  --cinza: #f5f7fa;
+  --borda: #e2e8f0;
+  --txt: #1f2937;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: Inter, Arial, system-ui;
+  background: var(--cinza);
+  color: var(--txt);
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--azul);
+  color: #fff;
+  padding: 14px 18px;
+}
+header img {
+  height: 36px;
+  border-radius: 6px;
+  background: #fff;
+}
+header h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}

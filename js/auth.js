@@ -1,428 +1,222 @@
-/* ========= Módulo de Autenticação ========= */
-
-// Estado de autenticação
-let authState = {
-  user: null,
-  mode: 'login'
-};
-
-// Inicialização do módulo de autenticação
-function initAuth() {
-  bindRoleTabs();
-  restoreSession();
+function initData() {
+  if (!LS.get("users")) {
+    LS.set("users", { alunos: [], professores: [], coordenadores: [] });
+  }
+  if (!LS.get("salas")) LS.set("salas", []);
+  if (!LS.get("materias")) LS.set("materias", []);
+  if (!LS.get("banners")) LS.set("banners", []);
+  if (!LS.get("logs")) LS.set("logs", []); // {user, role, in, out?}
+  if (!LS.get("ranking")) LS.set("ranking", []); // {nome, score}
+  if (!LS.get("stats")) LS.set("stats", { respostas: 0 });
 }
 
-// Gerenciamento das abas de papel (aluno, professor, coordenador)
+/* ========= Login / Cadastro ========= */
+
+const API_URL = "https://SEU-BACKEND.up.railway.app/api";
+const state = { mode: "login", user: null }; // mode: login | cadastro
 function bindRoleTabs() {
-  document.querySelectorAll('.role-tabs button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setActiveRoleTab(btn.dataset.role);
+  document.querySelectorAll(".role-tabs button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document
+        .querySelectorAll(".role-tabs button")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      ["aluno", "professor", "coordenador"].forEach((r) => {
+        document
+          .getElementById("form-" + r)
+          .classList.toggle("hidden", r !== btn.dataset.role);
+      });
     });
   });
 }
-
-function setActiveRoleTab(role) {
-  // Atualizar botões ativos
-  document.querySelectorAll('.role-tabs button').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-role="${role}"]`).classList.add('active');
-  
-  // Mostrar/ocultar formulários
-  ['aluno', 'professor', 'coordenador'].forEach(r => {
-    const form = document.getElementById('form-' + r);
-    if (form) {
-      form.classList.toggle('hidden', r !== role);
-    }
-  });
-}
-
-// Alternância entre modo login e cadastro
 function toggleMode() {
-  authState.mode = authState.mode === 'login' ? 'cadastro' : 'login';
-  showAlert('Modo: ' + authState.mode.toUpperCase());
+  state.mode = state.mode === "login" ? "cadastro" : "login";
+  alert("Modo: " + state.mode.toUpperCase());
 }
 
-// Cadastro de usuários
 function register(role) {
-  console.log('=== FUNÇÃO REGISTER ORIGINAL EXECUTADA ===');
-  console.log('Role recebido:', role);
-  
-  const userData = getFormData(role);
-  console.log('1. userData obtido:', userData);
-  
-  if (!validateUserData(userData, role)) {
-    console.log('2. Validação falhou - parando aqui');
-    return;
+  const users = LS.get("users");
+  if (role === "aluno") {
+    const nome = val("a_nome"),
+      ra = val("a_ra"),
+      senha = val("a_senha");
+    if (!nome || !ra || !senha) return alert("Preencha nome, RA e senha.");
+    if (users.alunos.some((a) => a.ra === ra))
+      return alert("RA já cadastrado.");
+    const salaId = sel("a_salaSelect").value || null;
+    users.alunos.push({ id: uid(), nome, ra, senha, salaId });
+    LS.set("users", users);
+    alert("Aluno cadastrado!");
   }
-  console.log('2. Validação passou');
-
-  const users = LS.get('users', { alunos: [], professores: [], coordenadores: [] });
-  console.log('3. Users carregados:', users);
-
-  // Verificar se usuário já existe
-  if (userExists(users, userData, role)) {
-    const identifier = role === 'aluno' ? 'RA' : 'CPF';
-    console.log('4. Usuário já existe - parando aqui');
-    showAlert(`${identifier} já cadastrado.`);
-    return;
+  if (role === "professor") {
+    const nome = val("p_nome"),
+      cpf = val("p_cpf"),
+      mat = val("p_mat"),
+      senha = val("p_senha");
+    if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
+    if (users.professores.some((p) => p.cpf === cpf))
+      return alert("CPF já cadastrado.");
+    users.professores.push({ id: uid(), nome, cpf, mat, senha });
+    LS.set("users", users);
+    alert("Professor cadastrado!");
   }
-  console.log('4. Usuário não existe, continuando');
-
-  // Criar novo usuário
-  const newUser = createUser(userData, role);
-  console.log('5. Novo usuário criado:', newUser);
-  
-  // Corrigir mapeamento de roles
-  const roleMap = {
-    'aluno': 'alunos',
-    'professor': 'professores', 
-    'coordenador': 'coordenadores'
-  };
-  
-  const userType = roleMap[role];
-  console.log('6a. Tipo de usuário mapeado:', userType);
-  console.log('6b. Array existe?', users[userType]);
-  
-  users[userType].push(newUser);
-  LS.set('users', users);
-  console.log('6. Usuário salvo');
-  
-  showAlert(`${cap(role)} cadastrado com sucesso!`);
-  console.log('7. Alert mostrado');
-  
-  clearForm(role);
-  console.log('8. Form limpo');
-  
-  // Fazer login automático após cadastro
-  console.log('9. Iniciando login automático...');
-  authState.user = { ...newUser, role };
-  SS.set('sessionUser', authState.user);
-  registrarLog('in');
-  
-  enterApp();
-  console.log('10. Login automático realizado');
-  
-  // Atualizar selects se necessário
-  if (role === 'aluno') {
-    populateLoginSalaSelects();
-    console.log('11. Selects atualizados');
+  if (role === "coordenador") {
+    const nome = val("c_nome"),
+      cpf = val("c_cpf"),
+      mat = val("c_mat"),
+      senha = val("c_senha");
+    if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
+    if (users.coordenadores.some((p) => p.cpf === cpf))
+      return alert("CPF já cadastrado.");
+    users.coordenadores.push({ id: uid(), nome, cpf, mat, senha });
+    LS.set("users", users);
+    alert("Coordenador cadastrado!");
   }
-  
-  console.log('12. Registro finalizado com sucesso');
+  populateLoginSalaSelects();
 }
 
-// Login de usuários
 function login(role) {
-  const credentials = getLoginCredentials(role);
-  
-  if (!validateCredentials(credentials, role)) {
-    return;
+  const users = LS.get("users");
+  let user = null;
+  if (role === "aluno") {
+    const ra = val("a_ra"),
+      senha = val("a_senha");
+    user = users.alunos.find((u) => u.ra == ra && u.senha === senha);
+  } else if (role === "professor") {
+    const cpf = val("p_cpf"),
+      senha = val("p_senha");
+    user = users.professores.find((u) => u.cpf == cpf && u.senha === senha);
+  } else {
+    const cpf = val("c_cpf"),
+      senha = val("c_senha");
+    user = users.coordenadores.find((u) => u.cpf == cpf && u.senha === senha);
   }
-
-  const users = LS.get('users', { alunos: [], professores: [], coordenadores: [] });
-  const user = findUser(users, credentials, role);
-  
-  if (!user) {
-    showAlert('Credenciais inválidas.');
-    return;
-  }
-
-  // Realizar login
-  authState.user = { ...user, role };
-  SS.set('sessionUser', authState.user);
-  registrarLog('in');
-  
-
+  if (!user) return alert("Credenciais inválidas.");
+  state.user = { ...user, role };
+  sessionStorage.setItem("sessionUser", JSON.stringify(state.user));
+  registrarLog("in");
   enterApp();
 }
 
-// Logout
 function logout() {
-  if (authState.user) {
-    registrarLog('out');
-  }
-  
-  authState.user = null;
-  SS.remove('sessionUser');
-  
-  // Voltar para tela de login
-  hide('app');
-  show('auth');
+  registrarLog("out");
+  state.user = null;
+  sessionStorage.removeItem("sessionUser");
+  document.getElementById("app").style.display = "none";
+  document.getElementById("auth").style.display = "block";
 }
 
-// Restaurar sessão
 function restoreSession() {
-  const savedUser = SS.get('sessionUser');
-  if (savedUser) {
-    authState.user = savedUser;
-    enterApp();
-  }
+  const u = sessionStorage.getItem("sessionUser");
+  if (!u) return;
+  state.user = JSON.parse(u);
+  enterApp();
 }
 
-// Obter dados do formulário
-function getFormData(role) {
-  switch (role) {
-    case 'aluno':
-      return {
-        nome: val('a_nome'),
-        ra: val('a_ra'),
-        senha: val('a_senha'),
-        salaId: sel('a_salaSelect').value || null
-      };
-    case 'professor':
-      return {
-        nome: val('p_nome'),
-        cpf: cleanCPF(val('p_cpf')),
-        mat: val('p_mat'),
-        senha: val('p_senha')
-      };
-    case 'coordenador':
-      return {
-        nome: val('c_nome'),
-        cpf: cleanCPF(val('c_cpf')),
-        mat: val('c_mat'),
-        senha: val('c_senha')
-      };
-    default:
-      return {};
-  }
-}
-
-// Obter credenciais de login
-function getLoginCredentials(role) {
-  switch (role) {
-    case 'aluno':
-      return {
-        ra: val('a_ra'),
-        senha: val('a_senha')
-      };
-    case 'professor':
-    case 'coordenador':
-      return {
-        cpf: cleanCPF(val(role[0] + '_cpf')),
-        senha: val(role[0] + '_senha')
-      };
-    default:
-      return {};
-  }
-}
-
-// Validar dados do usuário
-function validateUserData(data, role) {
-  if (!isValidName(data.nome)) {
-    showAlert('Nome deve ter pelo menos 2 caracteres.');
-    return false;
-  }
-  
-  if (!isValidPassword(data.senha)) {
-    showAlert('Senha deve ter pelo menos 4 caracteres.');
-    return false;
-  }
-  
-  if (role === 'aluno') {
-    if (!isValidRA(data.ra)) {
-      showAlert('RA deve ter pelo menos 3 caracteres.');
-      return false;
-    }
+function registrarLog(type) {
+  const logs = LS.get("logs");
+  if (type === "in") {
+    logs.push({
+      id: uid(),
+      user: state.user?.nome || val("a_nome") || val("p_nome") || val("c_nome"),
+      role:
+        state.user?.role ||
+        document.querySelector(".role-tabs .active")?.dataset.role,
+      in: new Date().toLocaleString(),
+      out: null,
+    });
   } else {
-    if (!isValidCPF(data.cpf)) {
-      showAlert('CPF deve conter 11 dígitos.');
-      return false;
-    }
+    const open = [...logs]
+      .reverse()
+      .find((l) => l.user === state.user.nome && !l.out);
+    if (open) open.out = new Date().toLocaleString();
   }
-  
-  return true;
+  LS.set("logs", logs);
 }
 
-// Validar credenciais de login
-function validateCredentials(credentials, role) {
-  if (role === 'aluno') {
-    if (!credentials.ra || !credentials.senha) {
-      showAlert('Preencha RA e senha.');
-      return false;
-    }
-  } else {
-    if (!credentials.cpf || !credentials.senha) {
-      showAlert('Preencha CPF e senha.');
-      return false;
-    }
-  }
-  
-  return true;
+/* ========= Entrar na aplicação ========= */
+function enterApp() {
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  byId("ub-nome").textContent = state.user.nome;
+  byId("ub-role").textContent = state.user.role.toUpperCase();
+
+  // menus
+  showMenuForRole(state.user.role);
+  // carregar selects
+  refreshAllSelects();
+  // abrir primeira aba do papel
+  openFirstTab(state.user.role);
+  // dashboard números
+  if (state.user.role === "coordenador") renderDashboard();
 }
 
-// Verificar se usuário já existe
-function userExists(users, userData, role) {
-  const roleMap = {
-    'aluno': 'alunos',
-    'professor': 'professores', 
-    'coordenador': 'coordenadores'
-  };
-  
-  const userList = users[roleMap[role]] || [];
-  
-  if (role === 'aluno') {
-    return userList.some(u => u.ra === userData.ra);
-  } else {
-    return userList.some(u => u.cpf === userData.cpf);
-  }
-}
-
-// Encontrar usuário para login
-function findUser(users, credentials, role) {
-  const roleMap = {
-    'aluno': 'alunos',
-    'professor': 'professores', 
-    'coordenador': 'coordenadores'
-  };
-  
-  const userList = users[roleMap[role]] || [];
-  
-  if (role === 'aluno') {
-    return userList.find(u => u.ra == credentials.ra && u.senha === credentials.senha);
-  } else {
-    return userList.find(u => u.cpf == credentials.cpf && u.senha === credentials.senha);
-  }
-}
-
-// Criar novo usuário
-function createUser(userData, role) {
-  return {
-    id: uid(),
-    ...userData,
-    createdAt: getCurrentDateTime()
-  };
-}
-
-// Limpar formulário
-function clearForm(role) {
-  const fields = {
-    aluno: ['a_nome', 'a_ra', 'a_senha'],
-    professor: ['p_nome', 'p_cpf', 'p_mat', 'p_senha'],
-    coordenador: ['c_nome', 'c_cpf', 'c_mat', 'c_senha']
-  };
-  
-  const fieldList = fields[role] || [];
-  fieldList.forEach(fieldId => {
-    const field = byId(fieldId);
-    if (field) field.value = '';
+function showMenuForRole(role) {
+  ["menu-aluno", "menu-professor", "menu-coordenador"].forEach((id) =>
+    byId(id).classList.add("hidden")
+  );
+  if (role === "aluno") byId("menu-aluno").classList.remove("hidden");
+  if (role === "professor") byId("menu-professor").classList.remove("hidden");
+  if (role === "coordenador")
+    byId("menu-coordenador").classList.remove("hidden");
+  // bind navegação
+  document.querySelectorAll(".menu button[data-tab]").forEach((btn) => {
+    btn.onclick = () => openTab(btn.dataset.tab, btn);
   });
 }
 
-// Registrar log de entrada/saída
-function registrarLog(type) {
-  const logs = LS.get('logs', []);
-  
-  if (type === 'in') {
-    const newLog = {
-      id: uid(),
-      user: authState.user?.nome || getUserNameFromForm(),
-      role: authState.user?.role || getActiveRole(),
-      in: getCurrentDateTime(),
-      out: null
-    };
-    logs.push(newLog);
-  } else if (type === 'out' && authState.user) {
-    // Encontrar log em aberto para este usuário
-    const openLog = [...logs].reverse().find(l => 
-      l.user === authState.user.nome && 
-      l.role === authState.user.role && 
-      !l.out
-    );
-    if (openLog) {
-      openLog.out = getCurrentDateTime();
-    }
+function openFirstTab(role) {
+  const first = {
+    aluno: "a_materias",
+    professor: "p_materias",
+    coordenador: "c_dash",
+  }[role];
+  openTab(first, document.querySelector(`.menu button[data-tab="${first}"]`));
+}
+function openTab(id, btn) {
+  document
+    .querySelectorAll("main section")
+    .forEach((s) => s.classList.add("hidden"));
+  byId(id).classList.remove("hidden");
+  document
+    .querySelectorAll(".menu button")
+    .forEach((b) => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  // renders por aba
+  if (id === "a_materias") {
+    renderAlunoMaterias();
+    renderBannersAluno();
   }
-  
-  // Manter apenas os últimos logs
-  LS.set('logs', logs.slice(-CONFIG.MAX_LOGS));
-}
-
-// Funções auxiliares
-function getUserNameFromForm() {
-  return val('a_nome') || val('p_nome') || val('c_nome') || 'Usuário';
-}
-
-function getActiveRole() {
-  return document.querySelector('.role-tabs .active')?.dataset.role || 'aluno';
-}
-
-function populateLoginSalaSelects() {
-  const salas = LS.get('salas', []);
-  const select = byId('a_salaSelect');
-  if (select) {
-    select.innerHTML = '<option value="">(opcional)</option>' + 
-      salas.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+  if (id === "a_sala") {
+    renderSalasAlunoSelects();
+    renderAlunosSala();
   }
-}
-
-// Obter usuário atual
-function getCurrentUser() {
-  return authState.user;
-}
-
-// Verificar se usuário está logado
-function isLoggedIn() {
-  return authState.user !== null;
-}
-
-// Verificar papel do usuário
-function hasRole(role) {
-  return authState.user?.role === role;
-}
-
-function enterApp() {
-  hide('auth');       // esconde a tela de login
-  show('app');        // mostra a tela principal
-
-  const currentUser = AuthModule.getCurrentUser();
-  if (currentUser) {
-    // Atualiza nome e role na sidebar
-    setText('ub-nome', currentUser.nome);
-    setText('ub-role', currentUser.role.toUpperCase());
-
-    // Mostra os menus da role certa
-    showMenuForRole(currentUser.role);
-
-    // Abre a primeira aba do menu
-    openFirstTab(currentUser.role);
-
-    // Atualiza selects do sistema
-    refreshAllSelects();
-
-    // Se for coordenador, carrega o dashboard
-    if (currentUser.role === 'coordenador') {
-      renderDashboard();
-    }
+  if (id === "a_ranking") {
+    renderRanking();
   }
-}
-
-
-// Atualizar dados do usuário na sessão
-function updateUserSession(updates) {
-  if (authState.user) {
-    authState.user = { ...authState.user, ...updates };
-    SS.set('sessionUser', authState.user);
+  if (id === "p_materias") {
+    renderProfMaterias();
   }
-}
-
-// Exportar módulo
-if (typeof window !== 'undefined') {
-  window.AuthModule = {
-    init: initAuth,
-    register,
-    login,
-    logout,
-    toggleMode,
-    getCurrentUser,
-    isLoggedIn,
-    hasRole,
-    updateUserSession,
-    populateLoginSalaSelects
-  };
-  
- 
-  window.register = register;
-  window.login = login;
-  window.logout = logout;
-  window.toggleMode = toggleMode;
+  if (id === "p_questoes") {
+    renderPQSelects();
+    renderResumoQuestoes();
+  }
+  if (id === "p_conteudos") {
+    renderPConteudos();
+  }
+  if (id === "c_dash") {
+    renderDashboard();
+  }
+  if (id === "c_salas") {
+    renderSalasCoord();
+  }
+  if (id === "c_materias") {
+    renderMateriasCoord();
+  }
+  if (id === "c_prof") {
+    renderProfsCoord();
+  }
+  if (id === "c_banners") {
+    renderBannersCoord();
+  }
 }
