@@ -11,6 +11,9 @@ function initData() {
 }
 
 /* ========= Login / Cadastro ========= */
+const COORD_MASTER_PASSWORD = "12345"; // senha mestra fixa
+const cpfRegex = /^\d{11}$/;
+
 function bindRoleTabs() {
   document.querySelectorAll(".role-tabs button").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -27,78 +30,54 @@ function bindRoleTabs() {
   });
 }
 
-function register(role) {
-  const users = LS.get("users");
-  const cpfRegex = /^\d{11}$/;
-
-  if (role === "aluno") {
-    const nome = val("a_nome"),
-      ra = val("a_ra"),
-      senha = val("a_senha");
-    if (!nome || !ra || !senha) return alert("Preencha nome, RA e senha.");
-    if (users.alunos.some((a) => a.ra === ra))
-      return alert("RA já cadastrado.");
-    const salaId = sel("a_salaSelect").value || null;
-    users.alunos.push({ id: uid(), nome, ra, senha, salaId });
-    LS.set("users", users);
-    alert("Aluno cadastrado!");
-  }
-  if (role === "professor") {
-    const nome = val("p_nome"),
-      cpf = val("p_cpf"),
-      mat = val("p_mat"),
-      senha = val("p_senha");
-    if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
-
-    const cpfLimpo = cpf.replace(/[^\d]/g, "");
-    if (!cpfRegex.test(cpfLimpo)) return alert("CPF inválido. Use 11 dígitos numéricos.");
-
-    if (users.professores.some((p) => p.cpf === cpfLimpo))
-      return alert("CPF já cadastrado.");
-    users.professores.push({ id: uid(), nome, cpf: cpfLimpo, mat, senha });
-    LS.set("users", users);
-    alert("Professor cadastrado!");
-  }
-  if (role === "coordenador") {
-    const nome = val("c_nome"),
-      cpf = val("c_cpf"),
-      mat = val("c_mat"),
-      senha = val("c_senha");
-    if (!nome || !cpf || !senha) return alert("Preencha nome, CPF e senha.");
-
-    const cpfLimpo = cpf.replace(/[^\d]/g, "");
-    if (!cpfRegex.test(cpfLimpo)) return alert("CPF inválido. Use 11 dígitos numéricos.");
-
-    if (users.coordenadores.some((p) => p.cpf === cpfLimpo))
-      return alert("CPF já cadastrado.");
-    users.coordenadores.push({ id: uid(), nome, cpf: cpfLimpo, mat, senha });
-    LS.set("users", users);
-    alert("Coordenador cadastrado!");
-  }
-  populateLoginSalaSelects();
-}
-
 function login(role) {
   const users = LS.get("users");
   let user = null;
+
   if (role === "aluno") {
-    const ra = val("a_ra"),
+    const cpf = val("a_cpf").replace(/[^\d]/g, ""),
       senha = val("a_senha");
-    user = users.alunos.find((u) => u.ra == ra && u.senha === senha);
+    if (!cpf || !senha) return alert("Preencha o CPF e a senha.");
+    if (!cpfRegex.test(cpf))
+      return alert("CPF inválido. Use 11 dígitos numéricos.");
+    user = users.alunos.find((u) => u.cpf === cpf && u.senha === senha);
   } else if (role === "professor") {
     const cpf = val("p_cpf").replace(/[^\d]/g, ""),
       senha = val("p_senha");
-    user = users.professores.find((u) => u.cpf == cpf && u.senha === senha);
+    if (!cpf || !senha) return alert("Preencha o CPF e a senha.");
+    if (!cpfRegex.test(cpf))
+      return alert("CPF inválido. Use 11 dígitos numéricos.");
+    user = users.professores.find((u) => u.cpf === cpf && u.senha === senha);
   } else {
     const cpf = val("c_cpf").replace(/[^\d]/g, ""),
       senha = val("c_senha");
-    user = users.coordenadores.find((u) => u.cpf == cpf && u.senha === senha);
+    if (!cpf || !senha) return alert("Preencha o CPF e a senha.");
+    if (!cpfRegex.test(cpf))
+      return alert("CPF inválido. Use 11 dígitos numéricos.");
+    user = users.coordenadores.find((u) => u.cpf === cpf && u.senha === senha);
   }
+
   if (!user) return alert("Credenciais inválidas.");
+
   state.user = { ...user, role };
   sessionStorage.setItem("sessionUser", JSON.stringify(state.user));
   registrarLog("in");
   enterApp();
+}
+
+function register(role) {
+  if (role !== "coordenador") return;
+
+  const senhaMestra = prompt(
+    "Digite a senha mestra para autorizar o cadastro:"
+  );
+  if (senhaMestra !== COORD_MASTER_PASSWORD) {
+    return alert("Senha mestra incorreta. Cadastro não permitido.");
+  }
+
+  // Esconde a tela de login e mostra a tela de cadastro
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("c_register_form").style.display = "block";
 }
 
 function logout() {
@@ -111,8 +90,12 @@ function logout() {
 
 function restoreSession() {
   const u = sessionStorage.getItem("sessionUser");
-  if (!u) return;
-  state.user = JSON.parse(u);
+  if (!u) {
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("app").style.display = "none";
+    return;
+  }
+  state.user = JSON.PEARSE(u);
   enterApp();
 }
 
@@ -121,10 +104,8 @@ function registrarLog(type) {
   if (type === "in") {
     logs.push({
       id: uid(),
-      user: state.user?.nome || val("a_nome") || val("p_nome") || val("c_nome"),
-      role:
-        state.user?.role ||
-        document.querySelector(".role-tabs .active")?.dataset.role,
+      user: state.user?.nome,
+      role: state.user?.role,
       in: new Date().toLocaleString(),
       out: null,
     });
@@ -188,7 +169,6 @@ function openTab(id, btn) {
   // renders por aba
   if (id === "a_materias") {
     renderAlunoMaterias();
-    renderBannersAluno();
   }
   if (id === "a_sala") {
     renderSalasAlunoSelects();
