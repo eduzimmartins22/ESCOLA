@@ -10,17 +10,6 @@ function criarSala() {
   renderSalasCoord();
   refreshAllSelects();
 }
-function renderSalasCoord() {
-  const salas = LS.get("salas");
-  const grid = byId("c_salasGrid");
-  grid.innerHTML = "";
-  salas.forEach((s) => {
-    const d = document.createElement("div");
-    d.className = "sala-card";
-    d.innerHTML = `<strong>${s.nome}</strong><span class="muted">Cap.: ${s.capacidade}</span>`;
-    grid.appendChild(d);
-  });
-}
 
 /* ========= Matérias ========= */
 function criarMateria(orig) {

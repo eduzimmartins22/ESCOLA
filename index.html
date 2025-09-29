@@ -60,7 +60,7 @@
 
         <div id="form-coordenador" class="hidden">
           <div class="row">
-            <div><label>CPF</label><input id="c_cpf" /></div>
+            <div><label>CPF</label><input id="c_cpf" type="number" placeholder="Somente números" /></div>
             <div><label>Senha</label><input id="c_senha" type="password" /></div>
           </div>
           <div class="actions">
@@ -113,7 +113,7 @@
           <button data-tab="c_dash">Dashboard</button>
           <button data-tab="c_prof">Gerenciar Professores</button>
           <button data-tab="c_alunos">Gerenciar Alunos</button>
-          <button data-tab="c_salas">Criar Sala</button>
+          <button data-tab="c_salas">Gerenciar Salas</button>
           <button data-tab="c_materias">Criar Matéria</button>
           <button data-tab="c_banners">Banners de Provas</button>
         </div>
@@ -131,18 +131,11 @@
           </div>
           <div class="grid2">
             <div class="card">
-              <label>Selecione sua sala</label>
+              <label>Minha sala</label>
               <select id="a_selSala"></select>
               <div class="muted">
                 Se a sala estiver vazia, peça ao professor/coordenador para criá-la.
               </div>
-              <button
-                class="btn outline"
-                style="margin-top: 8px"
-                onclick="alunoVincularSala()"
-              >
-                Vincular-me a esta sala
-              </button>
             </div>
             <div class="card">
               <label>Matérias da sala</label>
@@ -436,7 +429,7 @@
                 <h3 style="margin: 0 0 6px">Criar Aluno</h3>
                 <label>Nome</label><input id="c_a_nome" />
                 <label style="margin-top: 8px">CPF</label><input id="c_a_cpf" />
-                <label style="margin-top: 8px">RA</label><input id="c_a_ra" />
+                <label style="margin-top: 8px">Matrícula</label><input id="c_a_mat" />
                 <label style="margin-top: 8px">Senha</label><input id="c_a_senha" type="password" />
                 <button
                   class="btn verde"
@@ -453,20 +446,30 @@
                     <tr>
                       <th>Nome</th>
                       <th>CPF</th>
-                      <th>RA</th>
+                      <th>Matrícula</th>
+                      <th>Sala</th>
                       <th>Ações</th>
                     </tr>
                   </thead>
                   <tbody id="c_tbAlunos"></tbody>
                 </table>
               </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Vincular Aluno à Sala</h3>
+                <label>Alunos</label>
+                <select id="c_vincular_aluno"></select>
+                <label style="margin-top: 8px">Salas</label>
+                <select id="c_vincular_sala"></select>
+                <button class="btn verde" style="margin-top: 10px;" onclick="vincularAlunoASala()">Vincular Aluno</button>
+              </div>
             </div>
           </section>
 
           <section id="c_salas" class="hidden">
-            <h2 class="title">Criar Sala</h2>
+            <h2 class="title">Gerenciar Salas</h2>
             <div class="grid2">
               <div class="card">
+                <h3 style="margin: 0 0 6px">Criar Sala</h3>
                 <label>Nome da sala (ex.: 9º A)</label><input id="c_s_nome" />
                 <label style="margin-top: 8px">Capacidade</label
                 ><input id="c_s_cap" type="number" value="30" />
@@ -480,7 +483,16 @@
               </div>
               <div class="card">
                 <h3 style="margin: 0 0 6px">Salas</h3>
-                <div id="c_salasGrid" class="salas-grid"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Capacidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="c_tbSalas"></tbody>
+                </table>
               </div>
             </div>
           </section>
@@ -579,6 +591,37 @@
     </div>
 </section>
 
+<section id="c_edit_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Usuário</h3>
+            <p class="muted">Altere as informações do usuário selecionado.</p>
+            <input type="hidden" id="edit_id">
+            <input type="hidden" id="edit_role">
+            <div class="row">
+                <div><label>Nome</label><input id="edit_nome" /></div>
+                <div><label>CPF</label><input id="edit_cpf" type="number" /></div>
+            </div>
+            <div class="row">
+                <div><label>Matrícula</label><input id="edit_mat" /></div>
+                <div><label>Senha</label><input id="edit_senha" type="password" /></div>
+            </div>
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicao()">
+                    Salvar Edição
+                </button>
+                <button class="btn" onclick="cancelarEdicao()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Dados</h2>
+            <p>Altere as informações de um usuário existente de forma segura.</p>
+        </div>
+    </div>
+</section>
+
     <script src="./js/aluno.js"></script>
     <script src="./js/coordenador.js"></script>
     <script src="./js/professor.js"></script>
@@ -587,16 +630,15 @@
     <script src="./js/auth.js"></script>
 
     <script>
-      /* ========= Estado ========= */
       let state = {
         user: null,
         mode: "login",
       };
- 
+
       initData();
       bindRoleTabs();
       restoreSession();
- 
+
       function renderSalasCoordOnMaterias() {
         fillSelect("c_m_selSala", LS.get("salas"));
       }
