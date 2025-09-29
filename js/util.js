@@ -23,6 +23,10 @@ function refreshAllSelects() {
   fillSelectWithMaterias("p_c_materia", true);
   // coordenador
   fillSelect("c_m_selSala", LS.get("salas"));
+  // Adiciona a chamada para as funções de renderização que atualizam as tabelas
+  renderProfsCoord();
+  renderAlunosCoord();
+  renderSalasCoord();
 }
 function populateLoginSalaSelects() {
   fillSelect("a_salaSelect", LS.get("salas"));
