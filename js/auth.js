@@ -11,7 +11,6 @@ function initData() {
 }
 
 /* ========= Login / Cadastro ========= */
-const COORD_MASTER_PASSWORD = "12345"; // senha mestra fixa
 const cpfRegex = /^\d{11}$/;
 
 function bindRoleTabs() {
@@ -75,7 +74,6 @@ function register(role) {
     return alert("Senha mestra incorreta. Cadastro não permitido.");
   }
 
-  // Esconde a tela de login e mostra a tela de cadastro
   document.getElementById("auth").style.display = "none";
   document.getElementById("c_register_form").style.display = "block";
 }
@@ -95,7 +93,7 @@ function restoreSession() {
     document.getElementById("app").style.display = "none";
     return;
   }
-  state.user = JSON.PEARSE(u);
+  state.user = JSON.parse(u);
   enterApp();
 }
 
@@ -118,20 +116,15 @@ function registrarLog(type) {
   LS.set("logs", logs);
 }
 
-/* ========= Entrar na aplicação ========= */
 function enterApp() {
   document.getElementById("auth").style.display = "none";
   document.getElementById("app").style.display = "block";
   byId("ub-nome").textContent = state.user.nome;
   byId("ub-role").textContent = state.user.role.toUpperCase();
 
-  // menus
   showMenuForRole(state.user.role);
-  // carregar selects
   refreshAllSelects();
-  // abrir primeira aba do papel
   openFirstTab(state.user.role);
-  // dashboard números
   if (state.user.role === "coordenador") renderDashboard();
 }
 
@@ -143,7 +136,6 @@ function showMenuForRole(role) {
   if (role === "professor") byId("menu-professor").classList.remove("hidden");
   if (role === "coordenador")
     byId("menu-coordenador").classList.remove("hidden");
-  // bind navegação
   document.querySelectorAll(".menu button[data-tab]").forEach((btn) => {
     btn.onclick = () => openTab(btn.dataset.tab, btn);
   });
@@ -166,9 +158,12 @@ function openTab(id, btn) {
     .querySelectorAll(".menu button")
     .forEach((b) => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
-  // renders por aba
+
+  refreshAllSelects();
+
   if (id === "a_materias") {
     renderAlunoMaterias();
+    renderBannersAluno();
   }
   if (id === "a_sala") {
     renderSalasAlunoSelects();
@@ -198,6 +193,9 @@ function openTab(id, btn) {
   }
   if (id === "c_prof") {
     renderProfsCoord();
+  }
+  if (id === "c_alunos") {
+    renderAlunosCoord();
   }
   if (id === "c_banners") {
     renderBannersCoord();

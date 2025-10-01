@@ -35,18 +35,6 @@ function abrirMateriaAluno() {
   quizStart(materiaId);
   byId("a_materiaView").classList.remove("hidden");
 }
-function alunoVincularSala() {
-  const salaId = sel("a_selSala").value;
-  if (!salaId) return alert("Selecione uma sala.");
-  const users = LS.get("users");
-  const a = users.alunos.find((x) => x.id === state.user.id);
-  a.salaId = salaId;
-  LS.set("users", users);
-  state.user = { ...state.user, salaId };
-  sessionStorage.setItem("sessionUser", JSON.stringify(state.user));
-  alert("Vinculado à sala!");
-  renderAlunoMaterias();
-}
 
 function renderSalasAlunoSelects() {
   fillSelect("a_salaView", LS.get("salas"), state.user.salaId || "");
@@ -188,10 +176,9 @@ function renderRanking() {
     tr.innerHTML = `<td>${i + 1}º</td><td>${x.nome}</td><td>${x.score}</td>`;
     tb.appendChild(tr);
   });
-  
 }
 function resetarRanking() {
-if (!confirm("Confirma resetar o ranking?")) return;
+  if (!confirm("Confirma resetar o ranking?")) return;
   LS.set("ranking", []);
   renderRanking();
   alert("Ranking resetado.");
