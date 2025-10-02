@@ -1,0 +1,5 @@
+Flask==2.3.3
+Flask-Cors==3.1.1
+pymysql==1.1.0        # cliente MySQL puro (funciona com Aurora MySQL)
+python-dotenv==1.0.0
+gunicorn==21.2.0      # para deploy em produção

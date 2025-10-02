@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESTUDE — MVP</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsividade.css') }}">
+</head>
+<body>
+  <header>
+    <img src="" alt="Logo" onerror="this.style.display='none'" />
+    <h1>ESTUDE — Jogo Institucional</h1>
+  </header>
+
+  <section class="auth" id="auth">
+    <div class="top">
+      <div class="left">
+        <div class="role-tabs">
+          <button class="active" data-role="aluno">Aluno</button>
+          <button data-role="professor">Professor</button>
+          <button data-role="coordenador">Coordenador</button>
+        </div>
+        <div id="form-aluno">
+          <div class="row">
+            <div>
+              <label>CPF</label><input id="a_cpf" type="number" placeholder="Somente números" />
+            </div>
+            <div>
+              <label>Senha</label><input id="a_senha" type="password" />
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn azul" onclick="login('aluno')">Entrar</button>
+          </div>
+          <div class="muted">
+            Se for seu primeiro acesso, procure a coordenadora da sua escola para realizar o cadastro.
+          </div>
+        </div>
+
+        <div id="form-professor" class="hidden">
+          <div class="row">
+            <div><label>CPF</label><input id="p_cpf" type="number" placeholder="Somente números" /></div>
+            <div>
+              <label>Senha</label><input id="p_senha" type="password" />
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn azul" onclick="login('professor')">
+              Entrar
+            </button>
+          </div>
+          <div class="muted">
+            Se for seu primeiro acesso, procure a coordenadora da sua escola para realizar o cadastro.
+          </div>
+        </div>
+
+        <div id="form-coordenador" class="hidden">
+          <div class="row">
+            <div><label>CPF</label><input id="c_cpf" type="number" placeholder="Somente números" /></div>
+            <div><label>Senha</label><input id="c_senha" type="password" /></div>
+          </div>
+          <div class="actions">
+            <button class="btn verde" onclick="register('coordenador')">
+              Cadastrar
+            </button>
+            <button class="btn azul" onclick="login('coordenador')">
+              Entrar
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="right">
+        <h2 style="margin: 0 0 8px">Bem-vindo ao ESTUDE</h2>
+        <p>
+          Gamificação para apoiar professores e coordenadores, e engajar
+          alunos com quizzes de 5 alternativas e níveis adaptativos.
+        </p>
+        <ul>
+          <li>Crie salas e matérias</li>
+          <li>Envie conteúdos (PDF, imagens, vídeos)</li>
+          <li>Monte bancos de questões por nível</li>
+          <li>Monitore acessos e desempenho</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="app" id="app">
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="userbox">
+          <div id="ub-nome" style="font-weight: 600"></div>
+          <div id="ub-role" class="muted" style="color: #d1fae5"></div>
+        </div>
+        <div class="menu" id="menu-aluno" class="hidden">
+          <h4>Aluno</h4>
+          <button data-tab="a_materias">Escolher Matéria</button>
+          <button data-tab="a_sala">Entrar em Sala</button>
+          <button data-tab="a_ranking">Ranking</button>
+        </div>
+        <div class="menu" id="menu-professor" class="hidden">
+          <h4>Professor</h4>
+          <button data-tab="p_materias">Criar/Ver Matérias</button>
+          <button data-tab="p_questoes">Perguntas e Distribuição</button>
+          <button data-tab="p_conteudos">Conteúdos</button>
+        </div>
+        <div class="menu" id="menu-coordenador" class="hidden">
+          <h4>Coordenador</h4>
+          <button data-tab="c_dash">Dashboard</button>
+          <button data-tab="c_prof">Gerenciar Professores</button>
+          <button data-tab="c_alunos">Gerenciar Alunos</button>
+          <button data-tab="c_salas">Gerenciar Salas</button>
+          <button data-tab="c_materias">Criar Matéria</button>
+          <button data-tab="c_banners">Banners de Provas</button>
+        </div>
+        <div class="menu">
+          <h4>Sessão</h4>
+          <button onclick="logout()">Sair</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section id="a_materias" class="hidden">
+          <h2 class="title">Matérias</h2>
+          <div class="notice">
+            Escolha uma matéria para acessar <b>Conteúdos</b> e <b>Jogo</b>.
+          </div>
+          <div class="grid2">
+            <div class="card">
+              <label>Minha sala</label>
+              <select id="a_selSala"></select>
+              <div class="muted">
+                Se a sala estiver vazia, peça ao professor/coordenador para criá-la.
+              </div>
+            </div>
+            <div class="card">
+              <label>Matérias da sala</label>
+              <select id="a_selMateria"></select>
+              <div class="actions" style="margin-top: 10px">
+                <button class="btn verde" onclick="abrirMateriaAluno()">
+                  Abrir
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="a_materiaView" class="hidden" style="margin-top: 14px">
+            <div class="grid2">
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Conteúdos</h3>
+                <div id="a_conteudos"></div>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Jogo (Quiz)</h3>
+                <div class="progress">
+                  <div id="a_prog"></div>
+                </div>
+                <p id="a_nivel">Nível: Fácil</p>
+                <div class="quizbox">
+                  <div
+                    id="a_q"
+                    style="font-weight: 600; margin-bottom: 8px"
+                  ></div>
+                  <div id="a_ans" class="answers"></div>
+                  <div id="a_fb" class="muted" style="margin-top: 6px"></div>
+                  <div class="actions" style="margin-top: 8px">
+                    <button class="btn outline" onclick="quizTentarNovamente()">
+                      Tentar novamente
+                    </button>
+                    <button class="btn outline" onclick="quizSair()">
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <h3 style="margin-top: 18px">Banners de Provas</h3>
+            <div class="student-layout">
+              <div class="banner-col" id="a_bannersCol"></div>
+              <div class="card">
+                <h3 style="margin-top: 0">Informações</h3>
+                <p class="muted">
+                  Selecione um banner à esquerda para ver os detalhes.
+                </p>
+                <div id="a_bannerInfo"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="a_sala" class="hidden">
+            <h2 class="title">Sala — Alunos</h2>
+            <div class="grid2">
+              <div class="card">
+                <label>Minha sala</label>
+                <select id="a_salaView"></select>
+                <button
+                  class="btn outline"
+                  style="margin-top: 8px"
+                  onclick="renderAlunosSala()"
+                >
+                  Ver alunos
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin-top: 0">Alunos cadastrados</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>RA</th>
+                    </tr>
+                  </thead>
+                  <tbody id="a_tbAlunos"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="a_ranking" class="hidden">
+            <h2 class="title">Ranking</h2>
+            <table class="ranktable">
+              <thead>
+                <tr>
+                  <th>Posição</th>
+                  <th>Nome</th>
+                  <th>Sequência Máx.</th>
+                </tr>
+              </thead>
+              <tbody id="a_tbRanking"></tbody>
+            </table>
+          </section>
+
+          <section id="p_materias" class="hidden">
+            <h2 class="title">Criar / Ver Matérias</h2>
+            <div class="grid2">
+              <div class="card">
+                <label>Sala</label>
+                <select id="p_selSala"></select>
+                <label style="margin-top: 8px">Nome da matéria</label>
+                <input id="p_matNome" placeholder="Ex.: Matemática 9º A" />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="criarMateria('professor')"
+                >
+                  Criar Matéria
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Minhas matérias</h3>
+                <div id="p_listaMaterias" class="cards"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="p_questoes" class="hidden">
+            <h2 class="title">Perguntas e Distribuição</h2>
+            <div class="grid3">
+              <div class="card">
+                <label>Matéria</label>
+                <select id="p_q_materia"></select>
+                <label style="margin-top: 8px">Nível</label>
+                <select id="p_q_nivel">
+                  <option value="facil">Fácil</option>
+                  <option value="medio">Médio</option>
+                  <option value="dificil">Difícil</option>
+                </select>
+                <label style="margin-top: 8px">Enunciado</label>
+                <input id="p_q_enun" placeholder="Digite a pergunta" />
+                <label style="margin-top: 8px">Alternativas (5)</label>
+                <input id="p_q_a0" placeholder="A" />
+                <input id="p_q_a1" placeholder="B" />
+                <input id="p_q_a2" placeholder="C" />
+                <input id="p_q_a3" placeholder="D" />
+                <input id="p_q_a4" placeholder="E" />
+                <label style="margin-top: 8px">Índice da correta (0-4)</label>
+                <input id="p_q_cor" type="number" min="0" max="4" value="0" />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="adicionarPergunta()"
+                >
+                  Adicionar Pergunta
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 8px">Distribuição de Níveis</h3>
+                <div class="row">
+                  <div>
+                    <label>% Fácil</label
+                    ><input id="p_dist_facil" type="number" value="60" />
+                  </div>
+                  <div>
+                    <label>% Médio</label
+                    ><input id="p_dist_medio" type="number" value="30" />
+                  </div>
+                </div>
+                <div class="row" style="margin-top: 8px">
+                  <div>
+                    <label>% Difícil</label
+                    ><input id="p_dist_dificil" type="number" value="10" />
+                  </div>
+                  <div>
+                    <label>&nbsp;</label
+                    ><button class="btn outline" onclick="salvarDistribuicao()">
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+                <div class="muted">A soma deve dar 100%.</div>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Resumo</h3>
+                <div id="p_q_resumo" class="notice">Selecione a matéria.</div>
+              </div>
+            </div>
+          </section>
+
+          <section id="p_conteudos" class="hidden">
+            <h2 class="title">Conteúdos da Matéria</h2>
+            <div class="grid2">
+              <div class="card">
+                <label>Matéria</label>
+                <select id="p_c_materia"></select>
+                <label style="margin-top: 8px">Adicionar arquivo</label>
+                <input id="p_c_file" type="file" multiple />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="adicionarConteudo()"
+                >
+                  Enviar
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 8px">Arquivos</h3>
+                <div id="p_c_lista"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="c_dash" class="hidden">
+            <h2 class="title">Dashboard — Monitoramento</h2>
+            <div class="grid3">
+              <div class="card">
+                <strong>Total Logins</strong>
+                <div id="d1" style="font-size: 28px; margin-top: 6px">0</div>
+              </div>
+              <div class="card">
+                <strong>Questões Respondidas</strong>
+                <div id="d2" style="font-size: 28px; margin-top: 6px">0</div>
+              </div>
+              <div class="card">
+                <strong>Matérias</strong>
+                <div id="d3" style="font-size: 28px; margin-top: 6px">0</div>
+              </div>
+            </div>
+            <div class="grid2" style="margin-top: 12px">
+              <div class="card">
+                <h3 style="margin: 0 0 10px">Acessos</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Usuário</th>
+                      <th>Papel</th>
+                      <th>Entrou</th>
+                      <th>Saiu</th>
+                    </tr>
+                  </thead>
+                  <tbody id="c_tbLogs"></tbody>
+                </table>
+              </div>
+              <div class="card-dash">
+                <h3 style="margin: 0 0 6px">Logins</h3>
+                <canvas id="c_chart" class="chart"></canvas>
+              </div>
+              <div class="card-ranking">
+                <h3 style="margin: 0 0 6px">Resetar o Ranking</h3>
+                <button class="btn-ranking" onclick="resetarRanking()">
+                  Resetar Ranking
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section id="c_prof" class="hidden">
+            <h2 class="title">Gerenciar Professores</h2>
+            <div class="grid2">
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Criar Professor</h3>
+                <label>Nome</label><input id="c_p_nome" />
+                <label style="margin-top: 8px">CPF</label><input id="c_p_cpf" />
+                <label style="margin-top: 8px">Matrícula</label><input id="c_p_mat" />
+                <label style="margin-top: 8px">Senha</label><input id="c_p_senha" type="password" />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="coordCriarProfessor()"
+                >
+                  Cadastrar Professor
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Professores</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>CPF</th>
+                      <th>Matrícula</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="c_tbProfs"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="c_alunos" class="hidden">
+            <h2 class="title">Gerenciar Alunos</h2>
+            <div class="grid2">
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Criar Aluno</h3>
+                <label>Nome</label><input id="c_a_nome" />
+                <label style="margin-top: 8px">CPF</label><input id="c_a_cpf" />
+                <label style="margin-top: 8px">Matrícula</label><input id="c_a_mat" />
+                <label style="margin-top: 8px">Senha</label><input id="c_a_senha" type="password" />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="coordCriarAluno()"
+                >
+                  Cadastrar Aluno
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Alunos</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>CPF</th>
+                      <th>Matrícula</th>
+                      <th>Sala</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="c_tbAlunos"></tbody>
+                </table>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Vincular Aluno à Sala</h3>
+                <label>Alunos</label>
+                <select id="c_vincular_aluno"></select>
+                <label style="margin-top: 8px">Salas</label>
+                <select id="c_vincular_sala"></select>
+                <button class="btn verde" style="margin-top: 10px;" onclick="vincularAlunoASala()">Vincular Aluno</button>
+              </div>
+            </div>
+          </section>
+
+          <section id="c_salas" class="hidden">
+            <h2 class="title">Gerenciar Salas</h2>
+            <div class="grid2">
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Criar Sala</h3>
+                <label>Nome da sala (ex.: 9º A)</label><input id="c_s_nome" />
+                <label style="margin-top: 8px">Capacidade</label
+                ><input id="c_s_cap" type="number" value="30" />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="criarSala()"
+                >
+                  Criar Sala
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Salas</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Capacidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="c_tbSalas"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="c_materias" class="hidden">
+            <h2 class="title">Criar Matéria</h2>
+            <div class="grid2">
+              <div class="card">
+                <label>Sala</label><select id="c_m_selSala"></select>
+                <label style="margin-top: 8px">Nome da matéria</label
+                ><input id="c_m_nome" />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="criarMateria('coordenador')"
+                >
+                  Criar Matéria
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Matérias por sala</h3>
+                <div id="c_m_list" class="cards"></div>
+              </div>
+            </div>
+          </section>
+
+          <section id="c_banners" class="hidden">
+            <h2 class="title">Banners de Provas</h2>
+            <div class="grid2">
+              <div class="card">
+                <label>Imagem</label><input id="ban_img" type="file" accept="image/*" />
+                <label style="margin-top: 8px">Título</label
+                ><input id="ban_tit" placeholder="PAEBES" />
+                <div class="row">
+                  <div>
+                    <label>Data</label
+                    ><input id="ban_data" type="date" />
+                  </div>
+                  <div>
+                    <label>Hora</label
+                    ><input id="ban_hora" type="time" />
+                  </div>
+                </div>
+                <label style="margin-top: 8px">Local</label
+                ><input id="ban_local" placeholder="Auditório / Escola" />
+                <label style="margin-top: 8px">Matérias da prova</label
+                ><input id="ban_mats" placeholder="Matemática; Português; ..." />
+                <label style="margin-top: 8px">Dicas</label
+                ><input id="ban_dicas" placeholder="Revisar frações, leitura..." />
+                <button
+                  class="btn verde"
+                  style="margin-top: 10px"
+                  onclick="salvarBanner()"
+                >
+                  Salvar Banner
+                </button>
+              </div>
+              <div class="card">
+                <h3 style="margin: 0 0 6px">Pré-visualização (até 3)</h3>
+                <div id="c_bannersList" class="banner-col"></div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </section>
+
+    <section id="c_register_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Cadastro de Coordenador</h3>
+            <p class="muted">Preencha os dados para criar uma nova conta de coordenador.</p>
+            <div class="row">
+                <div><label>Nome</label><input id="reg_c_nome" /></div>
+                <div><label>CPF</label><input id="reg_c_cpf" type="number" /></div>
+            </div>
+            <div class="row">
+                <div><label>Matrícula</label><input id="reg_c_mat" /></div>
+                <div><label>Senha</label><input id="reg_c_senha" type="password" /></div>
+            </div>
+            <div class="actions">
+                <button class="btn verde" onclick="submitRegister('coordenador')">
+                    Concluir Cadastro
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Processo de Cadastro</h2>
+            <p>Este processo é exclusivo e protegido por senha mestra, garantindo a integridade dos dados de acesso à plataforma.</p>
+            <ul>
+                <li>Segurança reforçada</li>
+                <li>Controle de acesso exclusivo</li>
+                <li>Prevenção de cadastros não autorizados</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section id="c_edit_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Usuário</h3>
+            <p class="muted">Altere as informações do usuário selecionado.</p>
+            <input type="hidden" id="edit_id">
+            <input type="hidden" id="edit_role">
+            <div class="row">
+                <div><label>Nome</label><input id="edit_nome" /></div>
+                <div><label>CPF</label><input id="edit_cpf" type="number" /></div>
+            </div>
+            <div class="row">
+                <div><label>Matrícula</label><input id="edit_mat" /></div>
+                <div><label>Senha</label><input id="edit_senha" type="password" /></div>
+            </div>
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicao()">
+                    Salvar Edição
+                </button>
+                <button class="btn" onclick="cancelarEdicao()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Dados</h2>
+            <p>Altere as informações de um usuário existente de forma segura.</p>
+        </div>
+    </div>
+</section>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/util.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/aluno.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/professor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/coordenador.js') }}"></script>
+
+    <script>
+      let state = {
+        user: null,
+        mode: "login",
+      };
+
+      initData();
+      bindRoleTabs();
+      restoreSession();
+
+      function renderSalasCoordOnMaterias() {
+        fillSelect("c_m_selSala", LS.get("salas"));
+      }
+    </script>
+  </body>
+
+</html>

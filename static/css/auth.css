@@ -1,0 +1,93 @@
+.auth {
+  max-width: 980px;
+  margin: 40px auto;
+  background: #fff;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.05);
+}
+.auth .top {
+  display: flex;
+}
+.auth .left {
+  flex: 1;
+  padding: 24px;
+}
+.auth .right {
+  flex: 1;
+  min-height: 320px;
+  background: linear-gradient(135deg, var(--azul), var(--verde));
+  color: #fff;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+.role-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.role-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--borda);
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.role-tabs button.active {
+  background: var(--azul);
+  color: #fff;
+  border-color: var(--azul);
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.row > div {
+  display: flex;
+  flex-direction: column;
+}
+label {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+input,
+select {
+  padding: 10px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: #fff;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.btn {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.btn.azul {
+  background: var(--azul);
+  color: #fff;
+}
+.btn.verde {
+  background: var(--verde);
+  color: #fff;
+}
+.btn.outline {
+  background: #fff;
+  border: 1px solid var(--borda);
+}
+.muted {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}

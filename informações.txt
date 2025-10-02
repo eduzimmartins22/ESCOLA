@@ -1,0 +1,11 @@
+ip publico = 54.210.61.239
+
+scp -i "C:\Users\prcal\Downloads\quizz.pem" -r "C:\Users\prcal\OneDrive\Documentos\ESCOLA-flask" ec2-user@<54.210.61.239>:/home/ec2-user/
+
+
+
+scp -i "C:\Users\prcal\OneDrive\Documentos\SERVIDOR\quizz.pem" -r "C:\Users\prcal\OneDrive\Documentos\ESCOLA-flask" ec2-user@54.210.61.239:/home/ec2-user/
+
+C:\Users\prcal\OneDrive\Documentos\SERVIDOR\quizz.pem
+
+
