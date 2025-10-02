@@ -1,0 +1,271 @@
+// coordenador.js
+const COORD_MASTER_PASSWORD = '12345'; // ainda usado só client-side se desejar; validação deve ser server-side
+
+async function coordCriarProfessor() {
+  try {
+    const nome = val('c_p_nome'), cpf = (val('c_p_cpf')||'').replace(/[^\d]/g,''), mat = val('c_p_mat'), senha = val('c_p_senha');
+    if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
+    if (!cpfRegex.test(cpf)) return alert('CPF inválido. Use 11 dígitos numéricos.');
+    await API.createUser('professores', { nome, cpf, mat, senha });
+    ['c_p_nome','c_p_cpf','c_p_mat','c_p_senha'].forEach(id => byId(id).value='');
+    await renderProfsCoord();
+    await refreshAllSelectsAsync();
+    alert('Professor criado!');
+  } catch (err) {
+    console.error(err);
+    alert(err.body?.message || err.message || 'Erro ao criar professor');
+  }
+}
+
+async function renderProfsCoord() {
+  try {
+    const users = await API.listUsers('professores');
+    window.appState.users.professores = users || [];
+    const tb = byId('c_tbProfs');
+    tb.innerHTML = '';
+    if (!window.appState.users.professores.length) { tb.innerHTML = '<tr><td colspan="4">Nenhum professor cadastrado.</td></tr>'; return; }
+    window.appState.users.professores.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.nome}</td>
+        <td>${p.cpf}</td>
+        <td>${p.mat||'-'}</td>
+        <td>
+          <button class="btn" style="background:#dc2626; color:white; padding:4px 8px;" onclick="apagarUsuario('${p.id}','professor')">Excluir</button>
+          <button class="btn" style="background:#3b82f6; color:white; padding:4px 8px;" onclick="editarUsuario('${p.id}','professor')">Editar</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+/* ========= Alunos ========= */
+async function coordCriarAluno() {
+  try {
+    const nome = val('c_a_nome'), cpf = val('c_a_cpf'), mat = val('c_a_mat'), senha = val('c_a_senha');
+    if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
+    const cpfLimpo = cpf.replace(/[^\d]/g,'');
+    if (!cpfRegex.test(cpfLimpo)) return alert('CPF inválido.');
+    await API.createUser('alunos', { nome, cpf: cpfLimpo, mat, senha, salaId: null });
+    ['c_a_nome','c_a_cpf','c_a_mat','c_a_senha'].forEach(id => byId(id).value='');
+    await renderAlunosCoord();
+    await refreshAllSelectsAsync();
+    alert('Aluno criado!');
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao criar aluno');
+  }
+}
+
+async function vincularAlunoASala() {
+  try {
+    const alunoId = sel('c_vincular_aluno').value;
+    const salaId = sel('c_vincular_sala').value;
+    if (!alunoId || !salaId) return alert('Selecione um aluno e uma sala.');
+    await API.updateUser('alunos', alunoId, { salaId });
+    alert('Aluno vinculado à sala com sucesso!');
+    await renderAlunosCoord();
+    await refreshAllSelectsAsync();
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao vincular aluno');
+  }
+}
+
+async function renderAlunosCoord() {
+  try {
+    const users = await API.listUsers('alunos');
+    window.appState.users.alunos = users || [];
+    const salas = await API.listSalas();
+    window.appState.salas = salas || [];
+    fillSelectById('c_vincular_aluno', window.appState.users.alunos.map(a => ({ id: a.id, nome: a.nome })));
+    fillSelectById('c_vincular_sala', window.appState.salas.map(s => ({ id: s.id, nome: s.nome })));
+    const tb = byId('c_tbAlunos');
+    tb.innerHTML = '';
+    window.appState.users.alunos.forEach(a => {
+      const salaNome = (window.appState.salas.find(s => s.id === a.salaId) || {}).nome || '-';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${a.nome}</td>
+        <td>${a.cpf}</td>
+        <td>${a.mat||'-'}</td>
+        <td>${salaNome}</td>
+        <td>
+          <button class="btn" style="background:#dc2626; color:white; padding:4px 8px;" onclick="apagarUsuario('${a.id}','aluno')">Apagar</button>
+          <button class="btn" style="background:#3b82f6; color:white; padding:4px 8px;" onclick="editarUsuario('${a.id}','aluno')">Editar</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+async function apagarUsuario(id, role) {
+  try {
+    if (!confirm(`Tem certeza que deseja apagar este(a) ${role}?`)) return;
+    if (role === 'sala') {
+      if (!confirm('Ao apagar a sala, os alunos associados a ela serão desvinculados. Deseja continuar?')) return;
+      // desvincular alunos e deletar sala
+      const alunos = window.appState.users.alunos || [];
+      for (const a of alunos.filter(a=>a.salaId === id)) {
+        await API.updateUser('alunos', a.id, { salaId: null });
+      }
+      await API.deleteSala(id);
+    } else {
+      await API.deleteUser(role === 'professor' ? 'professores' : role === 'aluno' ? 'alunos' : role, id);
+    }
+    await refreshAllSelectsAsync();
+    if (role === 'aluno') renderAlunosCoord();
+    if (role === 'professor') renderProfsCoord();
+    if (role === 'sala') renderSalasCoord();
+    alert('Usuário excluído!');
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao apagar usuário');
+  }
+}
+
+function editarUsuario(id, role) {
+  // preenche form de edição (local) — ao salvar chama updateUser
+  let user;
+  if (role === 'aluno') {
+    user = (window.appState.users.alunos||[]).find(u=>u.id===id);
+  } else if (role === 'professor') {
+    user = (window.appState.users.professores||[]).find(u=>u.id===id);
+  }
+  if (!user) return alert('Usuário não encontrado para edição.');
+  byId('edit_id').value = user.id;
+  byId('edit_role').value = role;
+  byId('edit_nome').value = user.nome;
+  byId('edit_cpf').value = user.cpf;
+  byId('edit_senha').value = user.senha;
+  byId('edit_mat').value = user.mat || user.ra || '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('c_edit_form').style.display = 'block';
+}
+
+async function salvarEdicao() {
+  try {
+    const id = val('edit_id'), role = val('edit_role'), nome = val('edit_nome'), cpf = val('edit_cpf'), senha = val('edit_senha'), mat = val('edit_mat');
+    if (!nome || !cpf || !senha) return alert('Preencha todos os campos.');
+    const cpfLimpo = cpf.replace(/[^\d]/g,'');
+    if (cpfLimpo.length !== 11) return alert('CPF inválido.');
+    const payload = { nome, cpf: cpfLimpo, senha, mat };
+    await API.updateUser(role === 'aluno' ? 'alunos' : 'professores', id, payload);
+    alert('Dados atualizados com sucesso!');
+    cancelarEdicao();
+    if (role === 'aluno') renderAlunosCoord();
+    if (role === 'professor') renderProfsCoord();
+    await refreshAllSelectsAsync();
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao salvar edição');
+  }
+}
+
+function cancelarEdicao() {
+  document.getElementById('c_edit_form').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+/* Materias e banners do coordenador (simplificados) */
+async function criarMateria(orig) {
+  // reaproveita função do professor -> chama API.createMateria
+  await window.criarMateria ? window.criarMateria(orig) : null;
+}
+async function renderMateriasCoord() {
+  try {
+    const materias = await API.listMaterias();
+    window.appState.materias = materias || [];
+    const tb = byId('c_m_list');
+    tb.innerHTML = '';
+    if (!materias.length) { tb.innerHTML = '<span class="muted">Nenhuma matéria cadastrada.</span>'; return; }
+    materias.forEach(m => {
+      const d = document.createElement('div');
+      d.className = 'card';
+      const sala = (window.appState.salas || []).find(s => s.id === m.salaId) || {};
+      d.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${sala.nome || '-'}</div>`;
+      tb.appendChild(d);
+    });
+  } catch(err){ console.error(err); }
+}
+
+/* Banners */
+async function salvarBanner() {
+  try {
+    const img = byId('ban_img').files[0];
+    const tit = val('ban_tit'), data = val('ban_data'), hora = val('ban_hora'), local = val('ban_local'), mats = val('ban_mats'), dicas = val('ban_dicas');
+    if (!tit) return alert('Informe o título.');
+    const fd = new FormData();
+    if (img) fd.append('img', img);
+    fd.append('tit', tit);
+    fd.append('data', data);
+    fd.append('hora', hora);
+    fd.append('local', local);
+    fd.append('mats', mats);
+    fd.append('dicas', dicas);
+    await API.createBanner(fd);
+    alert('Banner salvo!');
+    await renderBannersCoord();
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao salvar banner');
+  }
+}
+async function renderBannersCoord() {
+  try {
+    const banners = await API.listBanners();
+    window.appState.banners = banners || [];
+    const col = byId('c_bannersList');
+    col.innerHTML = '';
+    if (!window.appState.banners.length) { col.innerHTML = '<span class="muted">Nenhum banner cadastrado.</span>'; return; }
+    window.appState.banners.slice(-3).forEach(b => {
+      const d = document.createElement('div');
+      d.className = 'banner-item';
+      d.innerHTML = `<div class="banner-head"><h4>${b.tit}</h4></div><div class="banner-body"><p>${b.dicas||''}</p><span class="muted"><b>Data:</b> ${b.data||''}</span></div>`;
+      col.appendChild(d);
+    });
+  } catch(err){ console.error(err); }
+}
+
+/* Dashboard */
+async function renderDashboard() {
+  try {
+    const logs = await API.listLogs();
+    window.appState.logs = logs || [];
+    const materias = await API.listMaterias();
+    window.appState.materias = materias || [];
+    const stats = await API.stats();
+    window.appState.stats = stats || { respostas:0 };
+    byId('d1').textContent = (window.appState.logs || []).filter(l=>l.in).length;
+    byId('d2').textContent = window.appState.stats.respostas || 0;
+    byId('d3').textContent = window.appState.materias.length;
+    const tb = byId('c_tbLogs'); tb.innerHTML='';
+    (window.appState.logs || []).slice(-15).reverse().forEach(l=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${l.user}</td><td>${l.role}</td><td>${l.in}</td><td>${l.out||'-'}</td>`;
+      tb.appendChild(tr);
+    });
+    // gráfico simples (canvas)
+    const ctx = byId('c_chart').getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const counts = { aluno:0, professor:0, coordenador:0 };
+    (window.appState.logs||[]).forEach(l => counts[l.role] = (counts[l.role]||0) + 1);
+    const labels = ['Aluno','Professor','Coordenador'];
+    const vals = [counts.aluno||0, counts.professor||0, counts.coordenador||0];
+    const W = ctx.canvas.width, H = ctx.canvas.height, pad=30, bw=40, gap=40;
+    const max = Math.max(...vals,1);
+    labels.forEach((lb,i)=>{
+      const x = pad + i*(bw+gap);
+      const h = (H - 2*pad)*(vals[i]/max);
+      ctx.fillStyle = i===0? '#8ecae6' : i===1? '#90be6d' : '#219ebc';
+      ctx.fillRect(x, H-pad-h, bw, h);
+      ctx.fillStyle = '#111'; ctx.fillText(lb, x, H-pad+14); ctx.fillText(vals[i], x+12, H-pad-h-6);
+    });
+  } catch(err){ console.error(err); }
+}
