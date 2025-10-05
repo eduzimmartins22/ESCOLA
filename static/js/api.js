@@ -41,12 +41,12 @@ async function apiPost(path, body) {
 
 // ---------------- API ----------------
 const API = {
+  listUsers: (role) => apiGet(`${API_BASE}/${role}`),
   // ---------- AUTH ----------
   login: (cpf, senha, role) =>
     apiPost(`${API_BASE}/login`, { cpf, senha, role }),
 
-  createUser: (payload) =>
-    apiPost(`${API_BASE}/users`, payload),
+  createUser: (payload) => apiPost(`${API_BASE}/users`, payload),
 
   // ---------- SALAS ----------
   listSalas: () => apiGet(`${API_BASE}/salas`),
@@ -76,6 +76,24 @@ const API = {
     formData.append("file", file);
     return apiPost(`${API_BASE}/conteudos`, formData);
   },
+
+  // ---------- BANNERS ----------
+  listBanners: () => apiGet(`${API_BASE}/banners`),
+  createBanner: (formData) => apiPost(`${API_BASE}/banners`, formData),
+
+  // ---------- LOGS, RANKING, STATS ----------
+  listLogs: () => apiGet(`${API_BASE}/logs`),
+  listRanking: () => apiGet(`${API_BASE}/ranking`),
+  pushRanking: (payload) => apiPost(`${API_BASE}/ranking`, payload),
+  stats: () => apiGet(`${API_BASE}/stats`),
+
+  // ---------- GENÉRICOS (podem ser necessários) ----------
+  deleteUser: (role, id) =>
+    apiFetch(`${API_BASE}/${role}/${id}`, { method: "DELETE" }),
+  updateUser: (role, id, payload) =>
+    apiFetch(`${API_BASE}/${role}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  deleteSala: (id) => apiFetch(`${API_BASE}/salas/${id}`, { method: "DELETE" }),
 };
-
-
