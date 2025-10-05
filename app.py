@@ -62,7 +62,7 @@ def log_event(user_id, action, details=""):
 # Serve frontend
 @app.route("/")
 def index():
-    return render_template("index.html")
+     return send_from_directory(".", "index.html")
 
 # ---------- AUTH / USERS ----------
 @app.route("/api/login", methods=["POST"])

@@ -1,33 +1,33 @@
 // api.js
 // Helper central para chamadas à API Flask
-const API_BASE = window.API_BASE || "/api";
+const API_BASE = 'https://quizescola.comm.seg.br/api';
+
 
 // Função genérica para chamadas
-async function apiFetch(url, opts = {}) {
-  const headers = opts.headers || {};
-  if (!headers["Content-Type"] && !(opts.body instanceof FormData)) {
-    headers["Content-Type"] = "application/json";
-  }
-  const finalOpts = {
-    ...opts,
-    headers,
-  };
-  try {
-    const res = await fetch(url, finalOpts);
-    const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
-    if (!res.ok) {
-      const err = new Error(data?.error || `HTTP ${res.status}`);
-      err.status = res.status;
-      err.body = data;
-      throw err;
+async function apiFetch(url, options = {}) {
+    try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            console.error(`API error: ${response.status} ${response.statusText}`);
+            return null; // evita quebrar o JS
+        }
+
+        const text = await response.text();
+
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error("API returned non-JSON response:", text.substring(0, 100));
+            return null;
+        }
+
+    } catch (error) {
+        console.error("API fetch failed:", error);
+        return null;
     }
-    return data;
-  } catch (err) {
-    console.error("API error:", err);
-    throw err;
-  }
 }
+
 
 async function apiGet(path) {
   return apiFetch(path, { method: "GET" });
