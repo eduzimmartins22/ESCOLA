@@ -2,36 +2,49 @@
 // Helper central para chamadas à API Flask
 const API_BASE = 'https://quizescola.comm.seg.br/api';
 
-
 // Função genérica para chamadas
 async function apiFetch(url, options = {}) {
-    try {
-        const response = await fetch(url, options);
+  try {
+    // Configurações padrão
+    const opts = {
+      headers: {},
+      ...options,
+    };
 
-        if (!response.ok) {
-            console.error(`API error: ${response.status} ${response.statusText}`);
-            return null; // evita quebrar o JS
-        }
-
-        const text = await response.text();
-
-        try {
-            return JSON.parse(text);
-        } catch (e) {
-            console.error("API returned non-JSON response:", text.substring(0, 100));
-            return null;
-        }
-
-    } catch (error) {
-        console.error("API fetch failed:", error);
-        return null;
+    // Define Content-Type automático se não for FormData
+    if (!(opts.body instanceof FormData)) {
+      opts.headers["Content-Type"] = "application/json";
     }
+
+    const response = await fetch(url, opts);
+
+    if (!response.ok) {
+      console.error(`❌ API error: ${response.status} ${response.statusText}`);
+      const text = await response.text();
+      console.error("Resposta do servidor:", text.substring(0, 150));
+      return null;
+    }
+
+    const text = await response.text();
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("⚠️ Resposta não é JSON válida:", text.substring(0, 100));
+      return null;
+    }
+
+  } catch (error) {
+    console.error("💥 Falha ao conectar com API:", error);
+    return null;
+  }
 }
 
-
+// Funções simplificadas GET / POST
 async function apiGet(path) {
   return apiFetch(path, { method: "GET" });
 }
+
 async function apiPost(path, body) {
   return apiFetch(path, {
     method: "POST",
@@ -41,11 +54,13 @@ async function apiPost(path, body) {
 
 // ---------------- API ----------------
 const API = {
-  listUsers: (role) => apiGet(`${API_BASE}/${role}`),
   // ---------- AUTH ----------
   login: (cpf, senha, role) =>
     apiPost(`${API_BASE}/login`, { cpf, senha, role }),
 
+  // ---------- USERS ----------
+  // Exemplo: API.listUsers("aluno")
+  listUsers: (role) => apiGet(`${API_BASE}/users/${role}`),
   createUser: (payload) => apiPost(`${API_BASE}/users`, payload),
 
   // ---------- SALAS ----------
@@ -81,19 +96,22 @@ const API = {
   listBanners: () => apiGet(`${API_BASE}/banners`),
   createBanner: (formData) => apiPost(`${API_BASE}/banners`, formData),
 
-  // ---------- LOGS, RANKING, STATS ----------
+  // ---------- LOGS / RANKING / STATS ----------
   listLogs: () => apiGet(`${API_BASE}/logs`),
   listRanking: () => apiGet(`${API_BASE}/ranking`),
   pushRanking: (payload) => apiPost(`${API_BASE}/ranking`, payload),
   stats: () => apiGet(`${API_BASE}/stats`),
 
-  // ---------- GENÉRICOS (podem ser necessários) ----------
+  // ---------- GENÉRICOS ----------
   deleteUser: (role, id) =>
-    apiFetch(`${API_BASE}/${role}/${id}`, { method: "DELETE" }),
+    apiFetch(`${API_BASE}/users/${role}/${id}`, { method: "DELETE" }),
   updateUser: (role, id, payload) =>
-    apiFetch(`${API_BASE}/${role}/${id}`, {
+    apiFetch(`${API_BASE}/users/${role}/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
     }),
   deleteSala: (id) => apiFetch(`${API_BASE}/salas/${id}`, { method: "DELETE" }),
 };
+
+

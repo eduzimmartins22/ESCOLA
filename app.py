@@ -303,6 +303,10 @@ def stats():
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "not found"}), 404
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=(os.getenv("FLASK_DEBUG") == "1"))
 
