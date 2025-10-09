@@ -60,18 +60,23 @@ async function login(role) {
 }
 
 async function submitRegister(role) {
-  // usado para cadastro de coordenador via form de registro (senha mestra valida no backend se necessário)
+  // usado para cadastro de coordenador via form de registro
   try {
     if (role !== "coordenador") return;
-    const nome = val("reg_c_nome"),
-      cpf = (val("reg_c_cpf") || "").replace(/[^\d]/g, ""),
-      mat = val("reg_c_mat"),
-      senha = val("reg_c_senha");
+    const nome = val("reg_c_nome");
+    const cpf = (val("reg_c_cpf") || "").replace(/[^\d]/g, "");
+    const mat = val("reg_c_mat");
+    const senha = val("reg_c_senha");
+
     if (!nome || !cpf || !senha) return alert("Preencha todos os campos.");
     if (!cpfRegex.test(cpf)) return alert("CPF inválido.");
 
-    const payload = { nome, cpf, mat, senha };
-    await API.registerCoordinator(payload);
+    // ### CORREÇÃO ABAIXO ###
+    // 1. Adicionamos o 'role' ao payload para o backend saber que é um coordenador.
+    // 2. Chamamos a função correta: API.createUser
+    const payload = { nome, cpf, mat, senha, role: role };
+    await API.createUser(payload);
+
     alert("Coordenador cadastrado!");
     document.getElementById("c_register_form").style.display = "none";
     document.getElementById("auth").style.display = "block";
