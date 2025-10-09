@@ -35,8 +35,7 @@ async function login(role) {
     if (!cpf || !senha) return alert('Preencha CPF e senha.');
     if (!cpfRegex.test(cpf)) return alert('CPF inválido. Use 11 dígitos.');
 
-    const payload = { cpf, senha };
-    const data = await API.login(role, payload);
+    const data = await API.login(cpf, senha, role);
     if (!data || !data.user) throw new Error('Resposta inválida do servidor');
 
     window.appState.user = { ...data.user, role };

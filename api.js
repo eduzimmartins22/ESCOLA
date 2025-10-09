@@ -1,6 +1,6 @@
 // api.js
 // Helper central para chamadas à API Flask
-const API_BASE = 'https://quizescola.comm.seg.br/api';
+const API_BASE = 'http://54.210.61.239:5000/api';
 
 // Função genérica para chamadas
 async function apiFetch(url, options = {}) {
