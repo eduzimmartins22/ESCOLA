@@ -68,7 +68,6 @@ def login():
             user = cursor.fetchone()
 
             if user and bcrypt.checkpw(senha.encode('utf-8'), user['senha_hash'].encode('utf-8')):
-                # Remove o hash da senha da resposta por segurança
                 del user['senha_hash']
                 return jsonify({"user": user})
             else:
@@ -82,11 +81,9 @@ def create_user():
     data = request.get_json()
     role = data.get('role')
     
-    # Validações básicas
     if not all(k in data for k in ['nome', 'cpf', 'senha', 'role']):
         return jsonify({"error": "Campos nome, cpf, senha e role são obrigatórios"}), 400
 
-    # Hash da senha
     senha_hash = bcrypt.hashpw(data['senha'].encode('utf-8'), bcrypt.gensalt())
 
     conn = get_db_connection()
@@ -105,7 +102,7 @@ def create_user():
                 role,
                 data['nome'],
                 data['cpf'],
-                data.get('mat'), # 'mat' é enviado pelo frontend
+                data.get('mat'),
                 senha_hash,
                 data.get('sala_id')
             ))
@@ -118,9 +115,14 @@ def create_user():
 @app.route('/api/users/<role>', methods=['GET'])
 def list_users(role):
     """Lista todos os usuários de um determinado perfil."""
-    if role not in ['aluno', 'professor', 'coordenador']:
+    # ### CORREÇÃO 1: Aceita os papéis no plural ###
+    valid_roles = ['aluno', 'professor', 'coordenador', 'alunos', 'professores', 'coordenadores']
+    if role not in valid_roles:
         return jsonify({"error": "Perfil inválido"}), 400
-        
+    
+    # Converte para o singular para a consulta no banco de dados
+    db_role = role.rstrip('es')
+
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "Falha na conexão com o servidor."}), 500
@@ -128,7 +130,7 @@ def list_users(role):
     try:
         with conn.cursor() as cursor:
             sql = "SELECT id, nome, cpf, matricula, sala_id FROM users WHERE role = %s"
-            cursor.execute(sql, (role,))
+            cursor.execute(sql, (db_role,))
             users = cursor.fetchall()
             return jsonify(users)
     finally:
@@ -138,23 +140,20 @@ def list_users(role):
 def update_user(role, user_id):
     """Atualiza os dados de um usuário específico."""
     data = request.get_json()
-    
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "Falha na conexão com o servidor."}), 500
         
     try:
         with conn.cursor() as cursor:
-            # Constrói a query dinamicamente para atualizar apenas os campos enviados
             fields = []
             params = []
             if 'nome' in data:
                 fields.append("nome = %s")
                 params.append(data['nome'])
-            if 'salaId' in data: # O frontend envia 'salaId'
+            if 'salaId' in data:
                 fields.append("sala_id = %s")
                 params.append(data['salaId'])
-            # Adicione outros campos que podem ser atualizados aqui
             
             if not fields:
                 return jsonify({"error": "Nenhum campo para atualizar"}), 400
@@ -184,10 +183,7 @@ def delete_user(role, user_id):
     finally:
         conn.close()
 
-# ===========================
-# 🔹 ROTAS DE API - SALAS E MATÉRIAS
-# ===========================
-
+# ... (O restante das suas rotas de salas e matérias continua igual) ...
 @app.route('/api/salas', methods=['GET'])
 def list_salas():
     """Lista todas as salas."""
@@ -242,14 +238,25 @@ def create_materia():
     finally:
         conn.close()
 
+
 # ===========================
 # 🔹 ROTAS DE API - BANNERS, STATS E OUTROS
 # ===========================
 
+# ### CORREÇÃO 2: Adiciona as rotas que estavam faltando ###
+@app.route('/api/logs', methods=['GET'])
+def list_logs():
+    """Retorna uma lista de logs (atualmente vazia)."""
+    return jsonify([])
+
+@app.route('/api/ranking', methods=['GET'])
+def list_ranking():
+    """Retorna o ranking (atualmente vazio)."""
+    return jsonify([])
+
 @app.route('/api/banners', methods=['GET'])
 def list_banners():
     """Lista todos os banners."""
-    # Esta rota é apenas um exemplo, você precisa implementar a lógica de upload e armazenamento de imagens
     banners = [
         {"id": 1, "titulo": "Bem-vindo!", "img_url": "banner1.jpg"},
         {"id": 2, "titulo": "Novo semestre!", "img_url": "banner2.jpg"},
@@ -259,7 +266,6 @@ def list_banners():
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """Retorna estatísticas básicas."""
-    # Esta rota pode ser expandida para fazer queries mais complexas no banco
     conn = get_db_connection()
     if not conn: return jsonify({}), 500
     try:
@@ -272,7 +278,7 @@ def get_stats():
             stats = {
                 "usuarios": users_count,
                 "materias": materias_count,
-                "banners": 0 # Implementar
+                "banners": 0
             }
             return jsonify(stats)
     finally:
@@ -283,5 +289,4 @@ def get_stats():
 # ===========================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    # O host '0.0.0.0' é essencial para que o servidor seja acessível externamente na EC2
     app.run(host='0.0.0.0', port=port, debug=True)
