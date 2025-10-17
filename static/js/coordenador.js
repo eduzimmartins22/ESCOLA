@@ -6,7 +6,7 @@ async function coordCriarProfessor() {
     const nome = val('c_p_nome'), cpf = (val('c_p_cpf')||'').replace(/[^\d]/g,''), mat = val('c_p_mat'), senha = val('c_p_senha');
     if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
     if (!cpfRegex.test(cpf)) return alert('CPF inválido. Use 11 dígitos numéricos.');
-    await API.createUser('professores', { nome, cpf, mat, senha });
+    await API.createUser({ nome, cpf, mat, senha, role: 'professor' });
     ['c_p_nome','c_p_cpf','c_p_mat','c_p_senha'].forEach(id => byId(id).value='');
     await renderProfsCoord();
     await refreshAllSelectsAsync();
@@ -49,7 +49,7 @@ async function coordCriarAluno() {
     if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
     const cpfLimpo = cpf.replace(/[^\d]/g,'');
     if (!cpfRegex.test(cpfLimpo)) return alert('CPF inválido.');
-    await API.createUser('alunos', { nome, cpf: cpfLimpo, mat, senha, salaId: null });
+    await API.createUser({ nome, cpf, mat, senha, role: 'aluno' });
     ['c_a_nome','c_a_cpf','c_a_mat','c_a_senha'].forEach(id => byId(id).value='');
     await renderAlunosCoord();
     await refreshAllSelectsAsync();
