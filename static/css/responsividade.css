@@ -221,23 +221,23 @@
     min-height: 100vh;
   }
 
-  /* ========== SIDEBAR ========== */
-  .sidebar {
-    background: linear-gradient(180deg, #1e293b, #334155);
-    color: white;
-    padding: 16px;
-    order: 2;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    max-height: 60vh;
-    overflow-y: auto;
-    border-top: 3px solid #3b82f6;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
-  }
+ /* ========== SIDEBAR ========== */
+.sidebar {
+  background: linear-gradient(180deg, #1e293b, #334155);
+  color: white;
+  padding: 16px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%; 
+  z-index: 50;
+  max-height: 60vh;
+  overflow-y: auto;
+  border-top: 3px solid #3b82f6;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+}
 
   .userbox {
     text-align: center;
