@@ -1,3 +1,4 @@
+console.log("--- PROFESSOR.JS CARREGADO ---");
 // professor.js
 // Funções de professor: criarSala, criarMateria, perguntas, conteúdos — todas via API
 
@@ -94,11 +95,18 @@ async function criarMateria(orig) {
     await refreshAllSelectsAsync();
     console.log(">> criarMateria: refreshAllSelectsAsync concluído."); // LOG DEPOIS REFRESH
 
-    console.log(">> criarMateria: Chamando renderProfMaterias..."); // LOG ANTES RENDER
-    renderProfMaterias(); // Não precisa de await se não for async
-    console.log(">> criarMateria: renderProfMaterias chamada."); // LOG DEPOIS RENDER
+    // Chama a função de renderização correta dependendo da origem
+    if (orig === 'coordenador') {
+        console.log(">> criarMateria: Chamando renderMateriasCoord..."); // LOG antes (Coordenador)
+        renderMateriasCoord(); // Chama a função do Coordenador para atualizar a lista na tab c_materias
+        console.log(">> criarMateria: renderMateriasCoord chamada."); // LOG depois (Coordenador)
+    } else { // Assume 'professor'
+        console.log(">> criarMateria: Chamando renderProfMaterias..."); // LOG antes (Professor)
+        renderProfMaterias(); // Chama a função do Professor para atualizar a lista na tab p_materias
+        console.log(">> criarMateria: renderProfMaterias chamada."); // LOG depois (Professor)
+    }
 
-    alert('Matéria criada!');
+    alert('Matéria criada!'); // Mostra o alerta após a renderização
   } catch (err) {
     console.error(">> ERRO em criarMateria:", err); // LOG ERRO
     alert(err.body?.message || err.message || 'Erro ao criar matéria');

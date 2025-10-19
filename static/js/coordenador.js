@@ -247,33 +247,46 @@ function cancelarEdicao() {
 }
 
 /* Materias e banners do coordenador (simplificados) */
-async function criarMateria(orig) {
-  // reaproveita função do professor -> chama API.createMateria
-  (await window.criarMateria) ? window.criarMateria(orig) : null;
-}
+
 async function renderMateriasCoord() {
+  console.log(">> renderMateriasCoord (coordenador.js) iniciada."); // LOG INÍCIO
   try {
-    const materias = await API.listMaterias();
-    window.appState.materias = materias || [];
-    const tb = byId("c_m_list");
-    tb.innerHTML = "";
-    if (!materias.length) {
-      tb.innerHTML = '<span class="muted">Nenhuma matéria cadastrada.</span>';
-      return;
+    // Usa as matérias já carregadas no estado global
+    const materias = window.appState.materias || []; 
+    console.log(">> renderMateriasCoord: Usando matérias do appState:", materias); // LOG MATÉRIAS
+
+    const tb = byId('c_m_list');
+    if (!tb) {
+         console.error(">> renderMateriasCoord: Elemento 'c_m_list' não encontrado!");
+         return;
     }
-    materias.forEach((m) => {
-      const d = document.createElement("div");
-      d.className = "card";
-      const sala =
-        (window.appState.salas || []).find((s) => s.id === m.salaId) || {};
-      d.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${
-        sala.nome || "-"
-      }</div>`;
+    tb.innerHTML = '';
+
+    if (!materias.length) { 
+        tb.innerHTML = '<span class="muted">Nenhuma matéria cadastrada.</span>'; 
+        console.log(">> renderMateriasCoord: Nenhuma matéria encontrada."); // LOG VAZIO
+        return; 
+    }
+
+    materias.forEach((m, index) => {
+      console.log(`>> renderMateriasCoord: Processando matéria ${index}:`, m); // LOG DENTRO DO LOOP
+      const d = document.createElement('div');
+      d.className = 'card';
+
+      // --- CORREÇÃO AQUI ---
+      // Usa m.sala_id (snake_case) para encontrar a sala
+      const sala = (window.appState.salas || []).find(s => s.id === m.sala_id) || {}; 
+      const nomeSala = sala.nome || '-';
+      console.log(`>> renderMateriasCoord: Matéria ${index} - Sala encontrada:`, sala); // LOG SALA
+
+      d.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${nomeSala}</div>`;
       tb.appendChild(d);
     });
-  } catch (err) {
-    console.error(err);
+  } catch(err){ 
+      console.error(">> ERRO em renderMateriasCoord:", err); // LOG ERRO
+      // Poderíamos adicionar um alerta aqui se quiséssemos
   }
+  console.log(">> renderMateriasCoord (coordenador.js) finalizada."); // LOG FIM
 }
 
 /* Banners */
