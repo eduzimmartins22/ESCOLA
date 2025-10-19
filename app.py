@@ -242,6 +242,61 @@ def create_sala():
     finally:
         conn.close()
 
+@app.route('/api/salas/<sala_id>', methods=['PUT'])
+def update_sala(sala_id):
+    """Atualiza os dados de uma sala específica."""
+    data = request.get_json()
+    
+    # Validações básicas
+    if not data or 'nome' not in data or 'capacidade' not in data:
+        return jsonify({"error": "Campos nome e capacidade são obrigatórios"}), 400
+        
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão com o servidor."}), 500
+        
+    try:
+        with conn.cursor() as cursor:
+            sql = "UPDATE salas SET nome = %s, capacidade = %s WHERE id = %s"
+            result = cursor.execute(sql, (data['nome'], data['capacidade'], sala_id))
+            
+            if result == 0:
+                return jsonify({"error": "Sala não encontrada"}), 404
+                
+        return jsonify({"message": "Sala atualizada com sucesso!"}), 200
+    except Exception as e:
+        print(f"Erro ao atualizar sala: {e}")
+        return jsonify({"error": "Erro interno ao atualizar sala"}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/salas/<sala_id>', methods=['DELETE'])
+def delete_sala(sala_id):
+    """Exclui uma sala após desvincular os alunos."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão com o servidor."}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Desvincular alunos da sala
+            sql_update_alunos = "UPDATE users SET sala_id = NULL WHERE sala_id = %s AND role = 'aluno'"
+            cursor.execute(sql_update_alunos, (sala_id,))
+
+            # 2. Deletar a sala
+            sql_delete_sala = "DELETE FROM salas WHERE id = %s"
+            result = cursor.execute(sql_delete_sala, (sala_id,))
+
+            if result == 0:
+                return jsonify({"error": "Sala não encontrada"}), 404
+
+        return jsonify({"message": "Sala excluída com sucesso!"}), 200
+    except Exception as e:
+        print(f"Erro ao excluir sala: {e}")
+        return jsonify({"error": "Erro interno ao excluir sala"}), 500
+    finally:
+        conn.close()
+
 @app.route('/api/materias', methods=['GET'])
 def list_materias():
     """Lista todas as matérias."""
@@ -257,17 +312,59 @@ def list_materias():
 @app.route('/api/materias', methods=['POST'])
 def create_materia():
     """Cria uma nova matéria."""
+    print("--- Iniciando create_materia ---") # LOG 1
     data = request.get_json()
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Falha na conexão"}), 500
+    print(f"Dados recebidos: {data}") # LOG 2
+
+    # Validação básica dos dados recebidos
+    if not data or not all(k in data for k in ['nome', 'sala_id']):
+         print("!!! Erro: Dados incompletos recebidos.") # LOG ERRO DADOS
+         return jsonify({"error": "Nome da matéria e sala são obrigatórios"}), 400
+
+    conn = None # Inicializa conn como None
     try:
+        print("Tentando obter conexão com DB...") # LOG 3
+        conn = get_db_connection()
+        if not conn:
+             print("!!! Erro: Falha ao conectar ao DB.") # LOG ERRO CONEXÃO
+             return jsonify({"error": "Falha na conexão com o servidor."}), 500
+        print("Conexão DB obtida.") # LOG 4
+
         with conn.cursor() as cursor:
             materia_id = str(uuid.uuid4())
             sql = "INSERT INTO materias (id, nome, sala_id, owner_id) VALUES (%s, %s, %s, %s)"
-            cursor.execute(sql, (materia_id, data['nome'], data['salaId'], data.get('ownerId')))
+            params = (
+                materia_id,
+                data['nome'],
+                data['sala_id'], # Deve ser snake_case aqui
+                data.get('owner_id') # Deve ser snake_case aqui
+            )
+            print(f"Executando SQL: {sql}") # LOG 5
+            print(f"Parâmetros SQL: {params}") # LOG 6
+
+            cursor.execute(sql, params)
+            print("SQL executado com sucesso.") # LOG 7
+
+        print("--- create_materia concluída com sucesso ---") # LOG 8 SUCESSO
         return jsonify({"message": "Matéria criada com sucesso!", "id": materia_id}), 201
+
+    except pymysql.IntegrityError as e:
+         print(f"!!! Erro de Integridade DB: {e}") # LOG ERRO INTEGRIDADE
+         # Adapte a mensagem se houver outras constraints unique
+         return jsonify({"error": "Erro ao inserir no banco (possível duplicata)"}), 409
+    except KeyError as e:
+         print(f"!!! Erro: Chave não encontrada nos dados recebidos - {e}") # LOG ERRO CHAVE
+         return jsonify({"error": f"Dado ausente na requisição: {e}"}), 400
+    except Exception as e:
+         print(f"!!! Erro inesperado em create_materia: {e}") # LOG ERRO GERAL
+         # Imprime o traceback completo para depuração mais detalhada
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao criar matéria"}), 500
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+            print("Conexão DB fechada.") # LOG 9 FECHAMENTO
 
 
 # ===========================

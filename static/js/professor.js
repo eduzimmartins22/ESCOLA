@@ -64,49 +64,91 @@ async function renderSalasCoord() {
 
 /* ========= Matérias ========= */
 async function criarMateria(orig) {
+  console.log(">> criarMateria iniciada. Origem:", orig); // LOG INÍCIO
   try {
     const salaId = orig === 'coordenador' ? sel('c_m_selSala').value : sel('p_selSala').value;
     const nome = orig === 'coordenador' ? val('c_m_nome') : val('p_matNome');
+    console.log(">> criarMateria: Sala ID:", salaId, "Nome:", nome); // LOG DADOS
     if (!salaId || !nome) return alert('Selecione sala e informe um nome.');
+
     const payload = {
       nome,
-      salaId,
-      ownerId: window.appState.user?.id || null,
+      // Corrigido para sala_id como no backend
+      sala_id: salaId, 
+      owner_id: window.appState.user?.id || null, // Usando owner_id
       quizConfig: { facil:60, medio:30, dificil:10 },
     };
+    console.log(">> criarMateria: Payload:", payload); // LOG PAYLOAD
+
+    console.log(">> criarMateria: Chamando API.createMateria..."); // LOG ANTES API
     await API.createMateria(payload);
+    console.log(">> criarMateria: API.createMateria concluída."); // LOG DEPOIS API
+
     if (orig === 'coordenador') {
       byId('c_m_nome').value = '';
     } else {
       byId('p_matNome').value = '';
     }
+
+    console.log(">> criarMateria: Chamando refreshAllSelectsAsync..."); // LOG ANTES REFRESH
     await refreshAllSelectsAsync();
-    renderProfMaterias();
+    console.log(">> criarMateria: refreshAllSelectsAsync concluído."); // LOG DEPOIS REFRESH
+
+    console.log(">> criarMateria: Chamando renderProfMaterias..."); // LOG ANTES RENDER
+    renderProfMaterias(); // Não precisa de await se não for async
+    console.log(">> criarMateria: renderProfMaterias chamada."); // LOG DEPOIS RENDER
+
     alert('Matéria criada!');
   } catch (err) {
-    console.error(err);
+    console.error(">> ERRO em criarMateria:", err); // LOG ERRO
     alert(err.body?.message || err.message || 'Erro ao criar matéria');
   }
+  console.log(">> criarMateria finalizada."); // LOG FIM
 }
 
 async function renderProfMaterias() {
+  console.log(">> renderProfMaterias iniciada."); // LOG INÍCIO
   try {
-    const materias = (await API.listMaterias()) || [];
-    window.appState.materias = materias;
+    const materias = window.appState.materias || []; // Usar dados já buscados
+    console.log(">> renderProfMaterias: Matérias recebidas:", materias); // LOG MATÉRIAS
+
     const container = byId('p_listaMaterias');
+    if (!container) { // Verifica se o container existe
+      console.error(">> renderProfMaterias: Container 'p_listaMaterias' não encontrado!");
+      return;
+    }
     container.innerHTML = '';
-    const mine = materias.filter(m => m.ownerId === window.appState.user?.id);
-    mine.forEach(m => {
+
+    const userId = window.appState.user?.id;
+    console.log(">> renderProfMaterias: Filtrando para user ID:", userId); // LOG USER ID
+    const mine = materias.filter(m => m.owner_id === userId); // Confirme se o backend retorna owner_id
+    console.log(">> renderProfMaterias: Matérias do professor:", mine); // LOG FILTRADAS
+
+    if (mine.length === 0) {
+        container.innerHTML = '<span class="muted">Nenhuma matéria cadastrada por você.</span>';
+        console.log(">> renderProfMaterias: Nenhuma matéria encontrada para este professor."); // LOG VAZIO
+        return;
+    }
+
+    mine.forEach((m, index) => { // Adiciona index para depuração
+      console.log(`>> renderProfMaterias: Processando matéria ${index}:`, m); // LOG DENTRO DO LOOP
       const c = document.createElement('div');
       c.className = 'card';
-      c.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${salaNome(m.salaId)}</div>
-        <div class="muted">Inscritos: ${m.inscritos?.length || 0}</div>`;
+
+      const sala = window.appState.salas.find(s => s.id === m.sala_id); 
+      const nomeSala = sala ? sala.nome : '-'; 
+      console.log(`>> renderProfMaterias: Matéria ${index} - Sala encontrada:`, sala); // LOG SALA ENCONTRADA
+
+      c.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${nomeSala}</div>
+          <div class="muted">Inscritos: ${m.inscritos?.length || 0}</div>`; 
+
       container.appendChild(c);
     });
   } catch (err) {
-    console.error(err);
+    console.error(">> ERRO em renderProfMaterias:", err); // LOG ERRO
     alert('Erro ao listar matérias');
   }
+  console.log(">> renderProfMaterias finalizada."); // LOG FIM
 }
 
 async function renderPQSelects() {
@@ -212,3 +254,59 @@ async function renderPConteudos() {
   });
 }
 
+function editarSala(id) {
+  // Encontra a sala na lista global do appState
+  const sala = (window.appState.salas || []).find(s => s.id === id);
+  if (!sala) return alert('Sala não encontrada para edição.');
+
+  // ### LOGS ADICIONADOS ###
+  console.log("Tentando editar sala:", sala);
+  const inputId = byId('edit_sala_id');
+  const inputNome = byId('edit_sala_nome');
+  const inputCap = byId('edit_sala_cap');
+  console.log("Elemento edit_sala_id:", inputId);
+  console.log("Elemento edit_sala_nome:", inputNome);
+  console.log("Elemento edit_sala_cap:", inputCap);
+  // ### FIM DOS LOGS ###
+
+  // Preenche os campos de um formulário de edição (que precisaremos criar no HTML)
+  // Usaremos IDs como 'edit_sala_id', 'edit_sala_nome', 'edit_sala_cap'
+  inputId.value = sala.id; // Linha 221 ou próxima pode ser esta
+  inputNome.value = sala.nome;
+  inputCap.value = sala.capacidade;
+
+  // Esconde a aplicação principal e mostra o formulário de edição da sala
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('c_edit_sala_form').style.display = 'block'; 
+}
+
+// Função para cancelar a edição da sala (precisaremos criar o botão no HTML)
+function cancelarEdicaoSala() {
+  document.getElementById('c_edit_sala_form').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// Função para salvar a edição da sala (precisaremos criar no HTML e implementar a chamada API)
+async function salvarEdicaoSala() {
+  try {
+    const id = val('edit_sala_id');
+    const nome = val('edit_sala_nome');
+    const capacidade = parseInt(val('edit_sala_cap') || '0', 10);
+
+    if (!nome || !capacidade) return alert('Preencha nome e capacidade.');
+
+    const payload = { nome, capacidade };
+
+    // !!! ATENÇÃO: Precisamos criar a função API.updateSala no api.js e a rota no app.py !!!
+    await API.updateSala(id, payload); 
+
+    //alert('Dados da sala atualizados com sucesso! (Função ainda não implementada no backend)'); // Alerta temporário
+
+    cancelarEdicaoSala(); // Volta para a tela principal
+    await refreshAllSelectsAsync(); // Atualiza os dados
+    renderSalasCoord(); // Redesenha a tabela de salas
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao salvar edição da sala');
+  }
+}

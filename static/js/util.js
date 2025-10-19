@@ -70,21 +70,22 @@ async function refreshAllSelectsAsync() {
     window.appState.salas = salas || [];
     window.appState.materias = (materias || []).map(m => ({...m, salaNome: (salas || []).find(s=>s.id===m.salaId)?.nome || '-'}));
     window.appState.users = { alunos: alunos||[], professores: profs||[], coordenadores: coords||[] };
+    console.log(">> refreshAllSelectsAsync: Alunos recebidos:", window.appState.users.alunos); // LOG ADICIONADO
     window.appState.banners = banners || [];
     window.appState.logs = logs || [];
     window.appState.ranking = ranking || [];
     window.appState.stats = stats || { respostas: 0 };
     // atualiza selects nas telas abertas
     try {
-      fillSelect('a_selSala', window.appState.salas, window.appState.user?.salaId || '');
-      fillSelectWithMaterias('a_selMateria', window.appState.materias, false, window.appState.user?.salaId);
-      fillSelect('p_selSala', window.appState.salas);
-      fillSelectWithMaterias('p_q_materia', window.appState.materias, true);
-      fillSelectWithMaterias('p_c_materia', window.appState.materias, true);
-      fillSelect('c_m_selSala', window.appState.salas);
+      fillSelectById('a_selSala', window.appState.salas, window.appState.user?.salaId || '');
+      fillSelectWithMateriasId('a_selMateria', window.appState.materias, false, window.appState.user?.salaId);
+      fillSelectById('p_selSala', window.appState.salas);
+      fillSelectWithMateriasId('p_q_materia', window.appState.materias, true);
+      fillSelectWithMateriasId('p_c_materia', window.appState.materias, true);
+      fillSelectById('c_m_selSala', window.appState.salas);
       fillSelectById('c_vincular_aluno', (window.appState.users.alunos||[]).map(a=>({id:a.id,nome:a.nome})));
       fillSelectById('c_vincular_sala', (window.appState.salas||[]).map(s=>({id:s.id,nome:s.nome})));
-    } catch(e){}
+    } catch(e){console.error("Erro ao preencher selects:", e);}
   } catch(err) {
     console.error('Erro no refreshAllSelectsAsync', err);
   }

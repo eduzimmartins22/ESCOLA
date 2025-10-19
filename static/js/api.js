@@ -112,6 +112,13 @@ const API = {
       headers: { "Content-Type": "application/json" },
     }),
   deleteSala: (id) => apiFetch(`${API_BASE}/salas/${id}`, { method: "DELETE" }),
+
+  updateSala: (id, payload) => 
+    apiFetch(`${API_BASE}/salas/${id}`, { 
+      method: "PUT", 
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" } // Garante o cabeçalho correto
+    }),
 };
 
 

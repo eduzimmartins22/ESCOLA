@@ -622,6 +622,32 @@
     </div>
 </section>
 
+<section id="c_edit_sala_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Sala</h3>
+            <p class="muted">Altere as informações da sala selecionada.</p>
+            <input type="hidden" id="edit_sala_id">
+            <div class="row">
+                <div><label>Nome da Sala</label><input id="edit_sala_nome" /></div>
+                <div><label>Capacidade</label><input id="edit_sala_cap" type="number" /></div>
+            </div>
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicaoSala()">
+                    Salvar Edição
+                </button>
+                <button class="btn outline" onclick="cancelarEdicaoSala()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Salas</h2>
+            <p>Altere o nome e a capacidade de uma sala existente.</p>
+        </div>
+    </div>
+</section>
+
   <script src="static/js/api.js"></script>    
   <script src="static/js/storage.js"></script>
   <script src="static/js/util.js"></script>

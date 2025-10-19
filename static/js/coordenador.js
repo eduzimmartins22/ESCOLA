@@ -123,8 +123,14 @@ async function renderAlunosCoord() {
     }
 
     alunosParaRenderizar.forEach(a => {
+      console.log(`>> renderAlunosCoord: Renderizando aluno ${a.nome}, Sala ID: ${a.sala_id}`); // LOG ADICIONADO
+
       // Busca o nome da sala na lista JÁ ATUALIZADA em window.appState.salas
-      const salaNome = (window.appState.salas.find(s => s.id === a.salaId) || {}).nome || '-';
+      const sala = window.appState.salas.find(s => s.id === a.sala_id); // Guardamos a sala encontrada
+      const salaNome = sala ? sala.nome : '-'; // Usamos a sala encontrada para pegar o nome
+
+      console.log(`>> renderAlunosCoord: Sala encontrada para ${a.nome}:`, sala); // LOG ADICIONAL
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${a.nome}</td>
