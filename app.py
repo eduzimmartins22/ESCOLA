@@ -135,7 +135,7 @@ def list_users(role):
     try:
         with conn.cursor() as cursor:
             # Seleciona explicitamente as colunas com snake_case
-            sql = "SELECT id, nome, cpf, matricula, sala_id FROM users WHERE role = %s"
+            sql = "SELECT id, nome, cpf, matricula, sala_id, role FROM users WHERE role = %s"
             cursor.execute(sql, (db_role,))
             users = cursor.fetchall()
             return jsonify(users)
@@ -386,28 +386,32 @@ def create_materia():
 
 @app.route('/api/logs', methods=['GET'])
 def list_logs():
-    """Retorna os últimos logs de acesso."""
+    """Retorna os últimos utilizadores que fizeram login (nome e papel)."""
     conn = get_db_connection()
     if not conn: return jsonify([]), 500
     try:
         with conn.cursor() as cursor:
-            # Inclui logout_time na query
+            # Busca apenas nome e papel, ordenado pelo login mais recente
+            # DISTINCT pode ser útil se não quiser o mesmo user várias vezes seguidas
             sql = """
-                SELECT id, user_name as user, user_role as role,
-                       login_time as `in`, logout_time as `out` 
+                SELECT DISTINCT user_name as user, user_role as role
                 FROM access_logs
                 ORDER BY login_time DESC
-                LIMIT 15
+                LIMIT 15 
             """
+            # Ou se quiser os últimos 15 logins individuais (pode ter repetidos):
+            # sql = """
+            #    SELECT user_name as user, user_role as role
+            #    FROM access_logs
+            #    ORDER BY login_time DESC
+            #    LIMIT 15
+            # """
             cursor.execute(sql)
             logs = cursor.fetchall()
-            # Formata ambos os timestamps
-            for log in logs:
-                log['in'] = log['in'].isoformat() if log.get('in') else None
-                log['out'] = log['out'].isoformat() if log.get('out') else None # Reativa formatação do logout
+            # Não precisamos mais de formatar datas
             return jsonify(logs)
     except Exception as e:
-        print(f"Erro ao buscar logs: {e}")
+        print(f"Erro ao buscar logs simplificados: {e}")
         return jsonify([]), 500
     finally:
         if conn: conn.close()

@@ -419,69 +419,106 @@ async function renderDashboard() {
     byId("d3").textContent = window.appState.materias.length || 0; // Usa o comprimento do array de matérias
 
     // --- Atualiza a Tabela de Acessos ---
-    const tb = byId("c_tbLogs");
-    if (!tb) {
-      console.error(">> renderDashboard: Tabela 'c_tbLogs' não encontrada!");
-      return;
-    }
-    tb.innerHTML = ""; // Limpa a tabela
-    const logsParaRenderizar = window.appState.logs || [];
+    const tbodyEl = byId('c_tbLogs'); // Obtém o elemento tbody
+        if (!tbodyEl) {
+            console.error(">> renderDashboard: Tabela tbody 'c_tbLogs' não encontrada!");
+        } else {
+            const tableEl = tbodyEl.closest('table'); // Encontra o elemento <table> pai
+            if (!tableEl) {
+                 console.error(">> renderDashboard: Elemento <table> pai para 'c_tbLogs' não encontrado!");
+                 // Considerar retornar aqui ou lidar com o erro de outra forma
+            } else {
+                // Remove o cabeçalho antigo, se existir
+                tableEl.tHead?.remove(); 
+                // Limpa o conteúdo atual do tbody
+                tbodyEl.innerHTML = ''; 
 
-    if (logsParaRenderizar.length === 0) {
-      tb.innerHTML =
-        '<tr><td colspan="4">Nenhum registo de acesso encontrado.</td></tr>';
-    } else {
-      logsParaRenderizar.forEach((l) => {
-        const tr = document.createElement("tr");
-        const dataEntrada = l.in ? new Date(l.in).toLocaleString("pt-BR") : "-";
-        // Formata a data de saída (se existir)
-        const dataSaida = l.out ? new Date(l.out).toLocaleString("pt-BR") : "-";
-        tr.innerHTML = `<td>${l.user || "-"}</td><td>${
-          l.role || "-"
-        }</td><td>${dataEntrada}</td><td>${dataSaida}</td>`; // Exibe dataSaida
-        tb.appendChild(tr);
-      });
-    }
-    console.log(">> renderDashboard: Tabela de logs preenchida.");
+                const logsParaRenderizar = window.appState.logs || [];
 
-    // --- Atualiza o Gráfico (Lógica existente) ---
-    const ctx = byId("c_chart").getContext("2d");
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    // Reconta os papéis a partir da lista de utilizadores atual
-    const counts = { aluno: 0, professor: 0, coordenador: 0 };
-    (users || []).forEach((u) => (counts[u.role] = (counts[u.role] || 0) + 1));
+                if (logsParaRenderizar.length === 0) {
+                     tbodyEl.innerHTML = '<tr><td colspan="2">Nenhum registo de acesso encontrado.</td></tr>'; // colspan="2"
+                } else {
+                    // Cria o novo cabeçalho (<thead>) na tabela pai (tableEl)
+                    const thead = tableEl.createTHead(); 
+                    const headerRow = thead.insertRow();
+                    headerRow.innerHTML = '<th>Usuário</th><th>Papel</th>'; // Cabeçalho com 2 colunas
 
-    const labels = ["Aluno", "Professor", "Coordenador"];
-    const vals = [
-      counts.aluno || 0,
-      counts.professor || 0,
-      counts.coordenador || 0,
-    ];
-    const W = ctx.canvas.width,
-      H = ctx.canvas.height,
-      pad = 30,
-      bw = 40,
-      gap = 40;
-    const maxVal = Math.max(...vals, 1); // Garante que maxVal é pelo menos 1
+                    // Adiciona as linhas de dados ao tbody existente (tbodyEl)
+                    logsParaRenderizar.forEach(l=>{
+                      const tr = tbodyEl.insertRow(); // Insere linha no tbody correto
+                      const dataEntrada = l.in ? new Date(l.in).toLocaleString('pt-BR') : '-'; // Formata a data se existir
+                      // Cria células apenas para user e role (removemos 'Entrou' e 'Saiu')
+                      tr.innerHTML = `<td>${l.user || '-'}</td><td>${l.role || '-'}</td>`; 
+                    });
+                }
+                console.log(">> renderDashboard: Tabela de logs simplificada preenchida.");
+            }
+        }
+        // --- Fim da Atualização da Tabela ---
 
-    labels.forEach((lb, i) => {
-      const x = pad + i * (bw + gap);
-      // Calcula a altura da barra (evita divisão por zero se maxVal for 0)
-      const h = (H - 2 * pad) * (vals[i] / maxVal);
-      // Define a cor da barra
-      ctx.fillStyle = i === 0 ? "#8ecae6" : i === 1 ? "#90be6d" : "#219ebc";
-      // Desenha a barra
-      ctx.fillRect(x, H - pad - h, bw, h);
-      // Desenha os rótulos
-      ctx.fillStyle = "#111";
-      ctx.fillText(lb, x, H - pad + 14); // Rótulo abaixo da barra
-      ctx.fillText(
-        vals[i],
-        x + bw / 2 - ctx.measureText(vals[i]).width / 2,
-        H - pad - h - 6
-      ); // Valor acima da barra, centralizado
-    });
-    console.log(">> renderDashboard: Gráfico desenhado.");
+    // --- Atualiza o Gráfico ---
+        const canvasEl = byId('c_chart'); // Pega o elemento canvas
+        if (!canvasEl) {
+             console.error(">> renderDashboard: Elemento canvas 'c_chart' não encontrado!");
+             // Considerar retornar aqui se o gráfico for essencial
+        } else {
+            const ctx = canvasEl.getContext('2d');
+            ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height); // Limpa o canvas
+
+            // Reconta os papéis a partir da lista 'users' obtida no Promise.all
+            const counts = { aluno: 0, professor: 0, coordenador: 0 };
+            const usersArray = users || []; // Garante que é um array
+            console.log(">> renderDashboard: Array 'usersArray' para contagem:", usersArray); // LOG: Verifica o array final
+
+            usersArray.forEach((u, index) => {
+                console.log(`>> renderDashboard: Verificando utilizador ${index}:`, u); // LOG: Mostra cada utilizador
+                // Verifica se 'u' é um objeto válido e se tem a propriedade 'role'
+                if (typeof u === 'object' && u !== null && u.hasOwnProperty('role') && counts.hasOwnProperty(u.role)) {
+                   counts[u.role] = counts[u.role] + 1;
+                   console.log(`>> renderDashboard: Utilizador ${index} contado como ${u.role}. Contagens atuais:`, counts); // LOG: Sucesso na contagem
+                } else {
+                   console.warn(`>> renderDashboard: Utilizador ${index} inválido ou sem 'role' válida encontrado:`, u); // LOG: Falha na contagem (mostra o objeto problemático)
+                }
+            });
+
+            console.log(">> renderDashboard: Contagens FINAIS para gráfico:", counts); // LOG contagens finais
+
+            const labels = ['Aluno','Professor','Coordenador'];
+            const vals = [counts.aluno||0, counts.professor||0, counts.coordenador||0];
+            console.log(">> renderDashboard: Valores para gráfico:", vals); // LOG valores
+
+            const W = ctx.canvas.width, H = ctx.canvas.height;
+            // Ajusta padding e largura/gap das barras se necessário
+            const pad=30, numBars=3;
+            const totalGapWidth = W - 2*pad;
+            const barWidth = Math.max(10, Math.floor(totalGapWidth / (numBars * 1.5))); // Calcula largura da barra
+            const gap = Math.floor((totalGapWidth - (numBars * barWidth)) / (numBars + 1)); // Calcula gap entre barras
+
+            console.log(">> renderDashboard: Dimensões Canvas (W, H):", W, H, "BarWidth:", barWidth, "Gap:", gap); // LOG dimensões
+
+            const maxVal = Math.max(...vals, 1); // Garante que maxVal é pelo menos 1
+            console.log(">> renderDashboard: Valor máximo:", maxVal); // LOG maxVal
+
+            labels.forEach((lb,i)=>{
+              // Calcula posição X da barra (considerando gaps)
+              const x = pad + gap + i*(barWidth + gap);
+              // Calcula altura da barra
+              const h = Math.max(0, (H - 2*pad) * (vals[i] / maxVal)); // Garante que h >= 0
+              console.log(`>> renderDashboard: Barra ${i} (${lb}): x=${x.toFixed(1)}, h=${h.toFixed(1)}, val=${vals[i]}`); // LOG barra individual
+
+              // Define a cor da barra
+              ctx.fillStyle = i===0? '#8ecae6' : i===1? '#90be6d' : '#219ebc';
+              // Desenha a barra (a partir da base y=H-pad, subindo por h)
+              ctx.fillRect(x, H-pad-h, barWidth, h);
+
+              // Desenha os rótulos e valores
+              ctx.fillStyle = '#111'; // Cor do texto
+              ctx.textAlign = 'center'; // Centraliza texto horizontalmente
+              ctx.fillText(lb, x + barWidth/2, H-pad+14); // Rótulo abaixo da barra, centralizado
+              ctx.fillText(vals[i], x + barWidth/2, H-pad-h-6); // Valor acima da barra, centralizado
+            });
+             console.log(">> renderDashboard: Gráfico desenhado."); // LOG final
+        } // Fecha o else para canvasEl
   } catch (err) {
     console.error(">> ERRO em renderDashboard:", err);
   }
