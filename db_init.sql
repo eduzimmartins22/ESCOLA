@@ -62,4 +62,18 @@ CREATE TABLE banners (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE access_logs (
+  id VARCHAR(36) PRIMARY KEY,
+  user_name VARCHAR(255),
+  user_role ENUM('aluno','professor','coordenador'),
+  login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  logout_time TIMESTAMP NULL DEFAULT NULL,
+  user_id VARCHAR(36)
+);
+
+CREATE TABLE app_stats ( 
+stat_key VARCHAR(100) PRIMARY KEY, 
+stat_value BIGINT DEFAULT 0);
+
+
 -- Índices/constraints adicionais podem ser adicionados conforme necessário

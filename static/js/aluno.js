@@ -143,6 +143,10 @@ function responder(i) {
   }
   stats.respostas = (stats.respostas||0) + 1;
   window.appState.stats = stats;
+  // Envia o incremento para o servidor (não precisa esperar 'await' aqui)
+  API.incrementStat({ stat_key: 'questions_answered' }).catch(err => {
+      console.error("Erro ao incrementar 'questions_answered':", err);
+  });
   novaPergunta();
 }
 function quizTentarNovamente() { Q.streak=0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0); novaPergunta(); }

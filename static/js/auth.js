@@ -88,12 +88,21 @@ async function submitRegister(role) {
 
 function logout() {
   try {
-    API.logout().catch(() => {}); // não bloquear se falhar
-  } catch (e) {}
-  registrarLog("out");
-  window.appState.user = null;
-  clearSession();
-  showAuth();
+    // Envia o log ANTES de limpar a sessão
+    registrarLog("out"); 
+
+    // Limpa a sessão e mostra a tela de login imediatamente
+    window.appState.user = null;
+    clearSession();
+    showAuth();
+
+  } catch (e) {
+     console.error("Erro durante o logout:", e);
+     // Garante que mesmo com erro, a sessão seja limpa e a tela de auth mostrada
+     window.appState.user = null;
+     clearSession();
+     showAuth();
+  }
 }
 
 // session restore on page load
@@ -115,6 +124,7 @@ function enterApp() {
   console.log(">> enterApp: Chamando showMenuForRole..."); // LOG
   showMenuForRole(window.appState.user.role);
   // refreshAllSelectsAsync já é chamado no script inline do HTML, não precisa chamar aqui de novo
+  refreshAllSelectsAsync();
   console.log(">> enterApp: Finalizada."); // LOG
 }
 
@@ -204,27 +214,21 @@ function openTab(id, btn) {
 
 /* logs locais + enviar ao servidor */
 async function registrarLog(type) {
-  // local (appState.logs) + remote
-  const logs = window.appState.logs || [];
-  if (type === "in") {
-    const entry = {
-      id: uid(),
-      user: window.appState.user?.nome,
-      role: window.appState.user?.role,
-      in: new Date().toLocaleString(),
-      out: null,
-    };
-    logs.push(entry);
-    try {
-      await API.listLogs(); /* just to ensure server is reachable; you might want a /logs endpoint to POST */
-    } catch (e) {}
-  } else {
-    const open = [...logs]
-      .reverse()
-      .find((l) => l.user === window.appState.user?.nome && !l.out);
-    if (open) open.out = new Date().toLocaleString();
+  const user = window.appState.user;
+  if (!user) return; 
+
+  // Determina o tipo ('login' ou 'logout')
+  const logType = (type === 'in') ? 'login' : (type === 'out') ? 'logout' : null; 
+  if (!logType) return; // Ignora tipos inválidos (embora só usemos 'in' e 'out')
+
+  try {
+    console.log(`>> registrarLog: Enviando log tipo '${logType}' para o servidor...`);
+    // Envia o log para a API
+    await API.createLog({ type: logType, user: user }); 
+    console.log(`>> registrarLog: Log '${logType}' enviado com sucesso.`);
+  } catch (err) {
+    console.error(`>> ERRO ao enviar log '${logType}' para o servidor:`, err);
   }
-  window.appState.logs = logs;
 }
 
 async function loginBackend(role, cpf, senha) {

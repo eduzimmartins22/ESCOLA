@@ -125,9 +125,11 @@ const API = {
 
   // ---------- LOGS / RANKING / STATS ----------
   listLogs: () => apiGet(`/logs`), // CORRIGIDO
+  createLog: (payload) => apiPost(`/logs`, payload),
   listRanking: () => apiGet(`/ranking`), // CORRIGIDO
   pushRanking: (payload) => apiPost(`/ranking`, payload), // CORRIGIDO
   stats: () => apiGet(`/stats`), // CORRIGIDO
+  incrementStat: (payload) => apiPost(`/stats/increment`, payload),
 
   // ---------- GENÉRICOS (DELETE, PUT usam apiFetch diretamente com o path) ----------
   deleteUser: (role, id) =>
