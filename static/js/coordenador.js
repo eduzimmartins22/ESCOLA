@@ -355,28 +355,72 @@ async function salvarBanner() {
   }
 }
 async function renderBannersCoord() {
+  console.log(">> renderBannersCoord: Iniciando renderização..."); // Log
   try {
     const banners = await API.listBanners();
     window.appState.banners = banners || [];
-    const col = byId("c_bannersList");
-    col.innerHTML = "";
-    if (!window.appState.banners.length) {
-      col.innerHTML = '<span class="muted">Nenhum banner cadastrado.</span>';
-      return;
+    console.log(">> renderBannersCoord: Banners recebidos:", banners); // Log
+
+    const col = byId('c_bannersList');
+    if (!col) {
+        console.error(">> renderBannersCoord: Elemento 'c_bannersList' não encontrado!");
+        return;
     }
-    window.appState.banners.slice(-3).forEach((b) => {
-      const d = document.createElement("div");
-      d.className = "banner-item";
-      d.innerHTML = `<div class="banner-head"><h4>${
-        b.tit
-      }</h4></div><div class="banner-body"><p>${
-        b.dicas || ""
-      }</p><span class="muted"><b>Data:</b> ${b.data || ""}</span></div>`;
+    col.innerHTML = ''; // Limpa a lista
+
+    const bannersParaRenderizar = window.appState.banners || [];
+
+    if (bannersParaRenderizar.length === 0) { 
+        col.innerHTML = '<span class="muted">Nenhum banner cadastrado.</span>'; 
+        console.log(">> renderBannersCoord: Nenhum banner encontrado."); // Log
+        return; 
+    }
+
+    // Mostra apenas os últimos 3 (ou menos, se houver menos)
+    bannersParaRenderizar.slice(-3).forEach((b, index) => { 
+      console.log(`>> renderBannersCoord: Renderizando banner ${index}:`, b); // Log
+      const d = document.createElement('div');
+      // Usamos a classe 'banner' que já tem estilos definidos
+      d.className = 'banner'; 
+
+      // Formata a data (se existir) para dd/mm/aaaa
+      let dataFormatada = '-';
+      if (b.data_evento) {
+          try {
+              const dataObj = new Date(b.data_evento + 'T00:00:00'); // Adiciona T00:00:00 para evitar problemas de fuso horário
+              dataFormatada = dataObj.toLocaleDateString('pt-BR');
+          } catch (e) { console.error("Erro ao formatar data do banner:", e); }
+      }
+
+      // Formata a hora (se existir) para hh:mm
+      let horaFormatada = '';
+      if (b.hora) {
+          // Assume que a hora vem como HH:MM:SS ou HH:MM
+          horaFormatada = b.hora.substring(0, 5); 
+      }
+
+      // --- CORREÇÃO DO HTML ---
+      // Adiciona a tag <img> usando b.img_url
+      // Adiciona a data formatada e a hora formatada
+      d.innerHTML = `
+        <img src="${b.img_url || ''}" alt="${b.tit || 'Banner'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none';"> 
+        <div>
+          <h4>${b.tit || 'Sem Título'}</h4>
+          <p class="muted" style="font-size: 11px; margin-bottom: 4px;">${b.dicas || ''}</p>
+          <span class="muted">
+             <b>Data:</b> ${dataFormatada} ${horaFormatada ? ` ${horaFormatada}` : ''} 
+          </span>
+          <br> <span class="muted" style="font-size: 11px;"><b>Local:</b> ${b.local || '-'} | <b>Matérias:</b> ${b.materias || '-'}</span>
+        </div>
+      `;
+      // --- FIM DA CORREÇÃO ---
+
       col.appendChild(d);
     });
-  } catch (err) {
-    console.error(err);
+  } catch(err){ 
+      console.error(">> ERRO em renderBannersCoord:", err); 
   }
+  console.log(">> renderBannersCoord: Renderização finalizada."); // Log
 }
 
 /* Dashboard */

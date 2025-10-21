@@ -161,8 +161,8 @@ async function renderProfMaterias() {
 
 async function renderPQSelects() {
   await refreshAllSelectsAsync();
-  fillSelectWithMaterias('p_q_materia', window.appState.materias, true);
-  fillSelectWithMaterias('p_c_materia', window.appState.materias, true);
+  fillSelectWithMateriasId('p_q_materia', window.appState.materias, true); // Nome CORRIGIDO
+  fillSelectWithMateriasId('p_c_materia', window.appState.materias, true); // Nome CORRIGIDO
 }
 
 async function adicionarPergunta() {

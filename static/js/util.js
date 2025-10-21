@@ -26,15 +26,49 @@ function fillSelectById(id, arr, selectedId) {
     ? arr.map(o => `<option value="${o.id}" ${o.id === selectedId ? 'selected' : ''}>${o.nome}</option>`).join('')
     : '<option value="">(sem itens)</option>';
 }
-function fillSelectWithMateriasId(id, materias, onlyOwned=false, salaFilter=null, selected=null) {
+function fillSelectWithMateriasId(id, materias, onlyOwned = false, salaFilter = null, selected = null) {
+  console.log(`>> fillSelectWithMateriasId: Chamada para ID='${id}', onlyOwned=${onlyOwned}`); // LOG: Início da função
   const el = sel(id);
-  if (!el) return;
+  if (!el) {
+      console.error(`>> fillSelectWithMateriasId: Elemento com ID='${id}' não encontrado!`); // LOG: Erro elemento
+      return;
+  }
+
   let mats = materias || [];
-  if (onlyOwned && window.appState?.user) mats = mats.filter(m => m.ownerId === window.appState.user.id);
-  if (salaFilter) mats = mats.filter(m => m.salaId === salaFilter);
-  el.innerHTML = mats.length
-    ? mats.map(m => `<option value="${m.id}" ${m.id === selected ? 'selected' : ''}>${m.nome} — ${m.salaNome || m.salaId}</option>`).join('')
-    : '<option value="">(sem matérias)</option>';
+  console.log(`>> fillSelectWithMateriasId ('${id}'): Matérias recebidas (antes de filtrar):`, JSON.parse(JSON.stringify(mats))); // LOG: Matérias iniciais (copia para evitar modificar original no log)
+
+  if (onlyOwned && window.appState?.user) {
+      const userId = window.appState.user.id;
+      console.log(`>> fillSelectWithMateriasId ('${id}'): Aplicando filtro onlyOwned para user ID: ${userId}`); // LOG: ID do Utilizador
+      // Certifique-se que está a comparar com 'owner_id' (snake_case)
+      mats = mats.filter(m => {
+          console.log(`>> fillSelectWithMateriasId ('${id}'): Comparando m.owner_id (${m.owner_id}) === userId (${userId}) para matéria "${m.nome}"`); // LOG: Comparação
+          return m.owner_id === userId; 
+      });
+      console.log(`>> fillSelectWithMateriasId ('${id}'): Matérias após filtro onlyOwned:`, JSON.parse(JSON.stringify(mats))); // LOG: Matérias após filtro
+  }
+
+  // Filtro de sala (se aplicável)
+  if (salaFilter) {
+      console.log(`>> fillSelectWithMateriasId ('${id}'): Aplicando filtro sala ID: ${salaFilter}`); // LOG: Filtro Sala
+      // Certifique-se que está a comparar com 'sala_id' (snake_case)
+      mats = mats.filter(m => m.sala_id === salaFilter);
+      console.log(`>> fillSelectWithMateriasId ('${id}'): Matérias após filtro sala:`, JSON.parse(JSON.stringify(mats))); // LOG: Após filtro sala
+  }
+
+  // Preenche o select HTML
+  if (mats.length > 0) {
+      // Ajusta para usar sala_id para encontrar nomeSala
+      el.innerHTML = mats.map(m => {
+          const sala = window.appState.salas.find(s => s.id === m.sala_id);
+          const nomeSala = sala ? sala.nome : (m.sala_id || 'ID desconhecido'); // Mostra ID se não encontrar nome
+          // Monta a string da opção
+          return `<option value="${m.id}" ${m.id === selected ? 'selected' : ''}>${m.nome} — ${nomeSala}</option>`;
+      }).join('');
+  } else {
+      el.innerHTML = '<option value="">(sem matérias)</option>';
+  }
+  console.log(`>> fillSelectWithMateriasId ('${id}'): Preenchimento concluído. ${mats.length} matérias exibidas.`); // LOG: Fim
 }
 
 // small UI helpers

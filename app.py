@@ -531,15 +531,107 @@ def increment_stat():
     finally:
         if conn: conn.close()
 
-# Rota de exemplo para Banners (precisa de implementação real)
 @app.route('/api/banners', methods=['GET'])
 def list_banners():
-    """Lista todos os banners (exemplo)."""
-    banners = [
-        {"id": "banner1", "titulo": "Bem-vindo!", "img_url": "banner1.jpg"},
-        {"id": "banner2", "titulo": "Novo semestre!", "img_url": "banner2.jpg"},
-    ]
-    return jsonify(banners)
+    """Lista os últimos banners da base de dados."""
+    conn = get_db_connection()
+    if not conn: return jsonify([]), 500
+    try:
+        with conn.cursor() as cursor:
+            # Busca os últimos banners (ex: os 10 mais recentes)
+            # Seleciona as colunas necessárias para a pré-visualização
+            sql = """
+                SELECT id, tit, data_evento, hora, local, materias, dicas, img_url 
+                FROM banners 
+                ORDER BY created_at DESC 
+                LIMIT 10 
+            """
+            cursor.execute(sql)
+            banners = cursor.fetchall()
+            # Formata datas/horas se necessário para o frontend
+            for banner in banners:
+                if banner.get('data_evento'):
+                    banner['data_evento'] = banner['data_evento'].isoformat()
+                if banner.get('hora'):
+                    # Converte timedelta (que pymysql pode retornar para TIME) para string
+                    if isinstance(banner['hora'], datetime.timedelta):
+                       total_seconds = int(banner['hora'].total_seconds())
+                       hours, remainder = divmod(total_seconds, 3600)
+                       minutes, seconds = divmod(remainder, 60)
+                       banner['hora'] = f"{hours:02}:{minutes:02}:{seconds:02}"
+                    # Se já for string (menos comum), mantém
+                    elif isinstance(banner['hora'], str):
+                         pass # Mantém a string como está
+                    else: # Outros tipos podem precisar de formatação específica
+                         banner['hora'] = str(banner['hora'])
+
+            return jsonify(banners)
+    except Exception as e:
+        print(f"Erro ao buscar banners: {e}")
+        return jsonify([]), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/banners', methods=['POST'])
+def create_banner():
+    """Cria um novo banner."""
+    # Os dados vêm como FormData, por isso usamos request.form para os campos de texto
+    # e request.files para o ficheiro de imagem.
+    titulo = request.form.get('tit')
+    data_evento = request.form.get('data') # O nome no form é 'data'
+    hora = request.form.get('hora')
+    local = request.form.get('local')
+    materias = request.form.get('mats') # O nome no form é 'mats'
+    dicas = request.form.get('dicas')
+
+    # Lógica básica de validação (pode expandir)
+    if not titulo:
+        return jsonify({"error": "Título é obrigatório"}), 400
+
+    # --- Lógica de Upload de Imagem (Exemplo Simples - precisa de adaptação) ---
+    img_file = request.files.get('img') # O nome no form é 'img'
+    img_url = None # URL final da imagem (pode ser S3, ou um caminho local)
+    if img_file:
+        # Aqui entraria a lógica para guardar o ficheiro num local seguro
+        # (ex: pasta 'static/uploads' ou bucket S3) e obter a URL
+        # Por agora, apenas guardamos o nome do ficheiro (NÃO RECOMENDADO PARA PRODUÇÃO)
+        # Certifique-se que a pasta static/uploads existe se usar este exemplo!
+        # upload_folder = os.path.join(app.static_folder, 'uploads')
+        # os.makedirs(upload_folder, exist_ok=True)
+        # filename = str(uuid.uuid4()) + "_" + img_file.filename
+        # save_path = os.path.join(upload_folder, filename)
+        # img_file.save(save_path)
+        # img_url = url_for('static', filename=f'uploads/{filename}') # Gera a URL relativa
+        print(f"Recebido ficheiro de imagem: {img_file.filename}") # Log temporário
+        img_url = f"placeholder_{img_file.filename}" # Placeholder
+    # --- Fim da Lógica de Upload ---
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Falha na conexão"}), 500
+
+    banner_id = str(uuid.uuid4())
+
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                INSERT INTO banners (id, tit, data_evento, hora, local, materias, dicas, img_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            # Converte data/hora para formato correto ou NULL se vazio
+            data_evento_db = data_evento if data_evento else None
+            hora_db = hora if hora else None
+
+            cursor.execute(sql, (
+                banner_id, titulo, data_evento_db, hora_db, local, materias, dicas, img_url
+            ))
+        return jsonify({"message": "Banner criado com sucesso!", "id": banner_id}), 201
+    except Exception as e:
+        print(f"Erro ao criar banner: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno ao criar banner"}), 500
+    finally:
+        if conn: conn.close()
 
 # Rota de exemplo para Ranking (precisa de implementação real)
 @app.route('/api/ranking', methods=['GET'])
