@@ -1,30 +1,90 @@
 // aluno.js
 async function renderAlunoMaterias() {
-  await refreshAllSelectsAsync();
-  fillSelect('a_selSala', window.appState.salas, window.appState.user?.salaId || '');
-  if (window.appState.user?.salaId) {
-    const materias = (window.appState.materias || []).filter(m => m.salaId === window.appState.user.salaId);
-    fillSelectWithMaterias('a_selMateria', materias, false);
-  } else {
-    byId('a_selMateria').innerHTML = '<option value="">Selecione uma sala</option>';
+  console.log(">> renderAlunoMaterias: Iniciando..."); // Log
+  try {
+    // Garante que os dados mais recentes (salas, matérias, utilizador) estão disponíveis
+    await refreshAllSelectsAsync(); 
+
+    const salaDisplayEl = byId('a_nomeSala');
+    const materiaSelectEl = byId('a_selMateria');
+    const salaMutedTextEl = byId('a_salaMutedText');
+    const materiaViewEl = byId('a_materiaView');
+
+    // Garante que os elementos existem antes de continuar
+    if (!salaDisplayEl || !materiaSelectEl || !salaMutedTextEl || !materiaViewEl) {
+        console.error(">> renderAlunoMaterias: Elementos essenciais do DOM não encontrados!");
+        return;
+    }
+
+    // Esconde a vista detalhada da matéria por defeito
+    materiaViewEl.classList.add('hidden'); 
+
+    const userSalaId = window.appState.user?.sala_id; // Usa snake_case
+    console.log(">> renderAlunoMaterias: ID da sala do utilizador:", userSalaId); // Log
+
+    if (userSalaId) {
+        // Encontra o nome da sala
+        const sala = window.appState.salas.find(s => s.id === userSalaId);
+        const nomeSala = sala ? sala.nome : `Sala ID: ${userSalaId} (não encontrada)`;
+        console.log(">> renderAlunoMaterias: Nome da sala encontrado:", nomeSala); // Log
+
+        // Exibe o nome da sala
+        salaDisplayEl.textContent = nomeSala;
+        salaMutedTextEl.textContent = ''; // Limpa a mensagem muted padrão
+
+        // Filtra as matérias APENAS para a sala do utilizador
+        const materiasDaSala = (window.appState.materias || []).filter(m => m.sala_id === userSalaId); // Usa snake_case
+        console.log(">> renderAlunoMaterias: Matérias filtradas para a sala:", materiasDaSala); // Log
+
+        // Preenche o select de matérias (usa a função correta)
+        fillSelectById('a_selMateria', materiasDaSala.map(m => ({ id: m.id, nome: m.nome })), null); // Passa um array de {id, nome}
+
+        if (materiasDaSala.length === 0) {
+             materiaSelectEl.innerHTML = '<option value="">(Sem matérias nesta sala)</option>';
+             salaMutedTextEl.textContent = 'A sua sala ainda não tem matérias cadastradas.';
+        }
+
+    } else {
+        // Caso o utilizador não esteja vinculado a nenhuma sala
+        console.log(">> renderAlunoMaterias: Utilizador não vinculado a uma sala."); // Log
+        salaDisplayEl.textContent = 'Nenhuma sala vinculada';
+        materiaSelectEl.innerHTML = '<option value="">Vincule-se a uma sala primeiro</option>';
+        salaMutedTextEl.textContent = 'Contacte o coordenador para ser vinculado a uma sala.';
+    }
+
+  } catch (err) {
+      console.error(">> ERRO em renderAlunoMaterias:", err);
+      // Opcional: Mostrar uma mensagem de erro na UI
   }
-  byId('a_materiaView').classList.add('hidden');
+  console.log(">> renderAlunoMaterias: Finalizada."); // Log
 }
 
 async function abrirMateriaAluno() {
-  const salaId = sel('a_selSala').value;
-  const materiaId = sel('a_selMateria').value;
-  if (!salaId || !materiaId) return alert('Selecione sala e matéria.');
+  const materiaId = sel('a_selMateria').value; // Obtém apenas o ID da matéria
+  // Usa o sala_id do utilizador logado (se necessário internamente, mas não para a lógica atual)
+  const userSalaId = window.appState.user?.sala_id; 
+
+  if (!materiaId) return alert('Selecione uma matéria.');
+  if (!userSalaId) return alert('Utilizador não vinculado a uma sala.'); // Verificação adicional
+
   const m = (window.appState.materias || []).find(x => x.id === materiaId);
-  const cont = byId('a_conteudos');
+
+  // ... (Resto da função que exibe conteúdos e inicia o quiz continua igual) ...
+   const cont = byId('a_conteudos');
   cont.innerHTML = '';
-  if (!m || !m.conteudos || m.conteudos.length === 0) cont.innerHTML = '<span class="muted">Sem conteúdos cadastrados.</span>';
-  (m.conteudos || []).forEach(c => {
-    const d = document.createElement('div');
-    d.className = 'banner';
-    d.innerHTML = `<img src="${c.url}" onerror="this.style.background='#eef2ff'"><div><strong>${c.nome}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
-    cont.appendChild(d);
-  });
+  if (!m || !m.conteudos || m.conteudos.length === 0) {
+       cont.innerHTML = '<span class="muted">Sem conteúdos cadastrados.</span>';
+  } else {
+      (m.conteudos || []).forEach(c => {
+        const d = document.createElement('div');
+        // Ajusta a classe para 'banner' para usar estilos existentes
+        d.className = 'banner'; 
+        // Usa b.img_url se existir, ou placeholder/esconde
+        const imgHtml = c.url ? `<img src="${c.url}" alt="${c.nome || 'Conteúdo'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none';">` : '';
+        d.innerHTML = `${imgHtml}<div><strong>${c.nome || 'Sem Nome'}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
+        cont.appendChild(d);
+      });
+  }
   quizStart(materiaId);
   byId('a_materiaView').classList.remove('hidden');
 }
@@ -179,7 +239,10 @@ function renderRanking() {
 }
 function resetarRanking() {
   if (!confirm('Confirma resetar o ranking?')) return;
-  API.delete(`${ENDPOINTS.ranking}/all`).catch(()=>{}); // opcional, depende do backend
+  API.deleteRanking().catch(err => {
+    console.error("Erro ao tentar resetar ranking via API:", err);
+    // Poderia mostrar um alerta de erro aqui
+});
   window.appState.ranking = [];
   renderRanking();
   alert('Ranking resetado.');

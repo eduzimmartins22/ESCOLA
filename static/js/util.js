@@ -112,7 +112,6 @@ async function refreshAllSelectsAsync() {
     // atualiza selects nas telas abertas
     try {
       fillSelectById('a_selSala', window.appState.salas, window.appState.user?.salaId || '');
-      fillSelectWithMateriasId('a_selMateria', window.appState.materias, false, window.appState.user?.salaId);
       fillSelectById('p_selSala', window.appState.salas);
       fillSelectWithMateriasId('p_q_materia', window.appState.materias, true);
       fillSelectWithMateriasId('p_c_materia', window.appState.materias, true);

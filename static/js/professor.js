@@ -166,26 +166,57 @@ async function renderPQSelects() {
 }
 
 async function adicionarPergunta() {
+  console.log(">> adicionarPergunta: Iniciando..."); // Log
   try {
     const materiaId = sel('p_q_materia').value;
     if (!materiaId) return alert('Selecione a matéria.');
+
     const nivel = sel('p_q_nivel').value;
     const enun = val('p_q_enun');
     const alts = [0,1,2,3,4].map(i => val('p_q_a'+i));
     const cor = parseInt(val('p_q_cor')||'0',10);
-    if (!enun || alts.some(a => !a) || cor<0 || cor>4) return alert('Preencha a pergunta corretamente.');
-    const payload = { nivel, q: enun, a: alts, correta: cor };
-    await API.addPergunta(materiaId, payload);
+
+    if (!enun || alts.some(a => !a) || isNaN(cor) || cor < 0 || cor > 4) { // Validação melhorada
+        console.error(">> adicionarPergunta: Erro de validação dos campos."); // Log
+        return alert('Preencha todos os campos da pergunta corretamente (Enunciado, 5 Alternativas, Índice 0-4).');
+    }
+
+    // --- CORREÇÃO AQUI ---
+    // 1. Adiciona materia_id (snake_case) ao payload
+    // 2. Renomeia 'enun' para 'enunciado' e 'alts' para 'alternativas' (opcional, mas mais claro)
+    // 3. Renomeia 'cor' para 'correta'
+    const payload = { 
+        materia_id: materiaId, // Adicionado
+        nivel: nivel, 
+        enunciado: enun, // Renomeado (opcional)
+        // Cria os campos alt0, alt1... como esperado pelo DB schema
+        alt0: alts[0],
+        alt1: alts[1],
+        alt2: alts[2],
+        alt3: alts[3],
+        alt4: alts[4],
+        correta: cor // Renomeado
+    };
+    console.log(">> adicionarPergunta: Payload a enviar:", payload); // Log
+
+    // 4. Chama a função correta API.createPergunta com UM argumento (payload)
+    await API.createPergunta(payload); 
+    console.log(">> adicionarPergunta: Pergunta criada via API."); // Log
+
+    // Limpa os campos do formulário
     byId('p_q_enun').value='';
     [0,1,2,3,4].forEach(i=>byId('p_q_a'+i).value='');
     byId('p_q_cor').value = 0;
-    await refreshAllSelectsAsync();
-    renderResumoQuestoes();
-    alert('Pergunta adicionada!');
+
+    alert('Conteúdo enviado!'); // Mostra o alerta primeiro
+    await refreshAllSelectsAsync(); // Espera a busca dos dados atualizados (incluindo o novo conteúdo)
+    renderPConteudos(); // AGORA redesenha a lista com os dados novos
+    
   } catch (err) {
-    console.error(err);
+    console.error(">> ERRO em adicionarPergunta:", err); // Log
     alert(err.body?.message || err.message || 'Erro ao adicionar pergunta');
   }
+  console.log(">> adicionarPergunta: Finalizada."); // Log
 }
 
 async function salvarDistribuicao() {

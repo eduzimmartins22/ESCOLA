@@ -1,12 +1,13 @@
 import os
 import pymysql.cursors
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
 import re
 import uuid
 import bcrypt
 import datetime # Import necessário para formatar datas
+from werkzeug.utils import secure_filename
 
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -308,14 +309,66 @@ def delete_sala(sala_id):
 
 @app.route('/api/materias', methods=['GET'])
 def list_materias():
-    """Lista todas as matérias."""
+    """Lista todas as matérias e seus conteúdos E perguntas associadas."""
     conn = get_db_connection()
     if not conn: return jsonify([]), 500
     try:
+        materias_dict = {} # Dicionário para facilitar a junção
         with conn.cursor() as cursor:
-            # Seleciona explicitamente as colunas com snake_case
-            cursor.execute("SELECT id, nome, sala_id, owner_id, quiz_facil, quiz_medio, quiz_dificil FROM materias")
-            return jsonify(cursor.fetchall())
+            # 1. Busca todas as matérias
+            sql_materias = "SELECT id, nome, sala_id, owner_id, quiz_facil, quiz_medio, quiz_dificil FROM materias"
+            cursor.execute(sql_materias)
+            materias = cursor.fetchall()
+            # Organiza as matérias num dicionário
+            for m in materias:
+                m['conteudos'] = [] # Inicializa lista de conteúdos
+                m['perguntas'] = [] # Inicializa lista de perguntas <<-- NOVO
+                materias_dict[m['id']] = m
+
+            # 2. Busca todos os conteúdos
+            sql_conteudos = "SELECT id, materia_id, nome, tipo, url FROM conteudos ORDER BY created_at ASC"
+            cursor.execute(sql_conteudos)
+            conteudos = cursor.fetchall()
+            # Associa conteúdos às matérias
+            for c in conteudos:
+                materia_id = c.get('materia_id')
+                if materia_id in materias_dict:
+                    materias_dict[materia_id]['conteudos'].append(c)
+
+            # 3. Busca todas as perguntas <<-- NOVO BLOCO
+            sql_perguntas = """
+                SELECT id, materia_id, nivel, enunciado, 
+                       alt0, alt1, alt2, alt3, alt4, correta 
+                FROM perguntas 
+                ORDER BY created_at ASC 
+            """
+            cursor.execute(sql_perguntas)
+            perguntas = cursor.fetchall()
+            # Associa perguntas às matérias
+            for p in perguntas:
+                materia_id = p.get('materia_id')
+                if materia_id in materias_dict:
+                     # Ajusta o formato da pergunta para o esperado pelo aluno.js
+                     # (converte alt0-4 para um array 'a')
+                     pergunta_formatada = {
+                         "id": p['id'],
+                         "nivel": p['nivel'],
+                         "q": p['enunciado'], # Renomeia 'enunciado' para 'q'
+                         "a": [p['alt0'], p['alt1'], p['alt2'], p['alt3'], p['alt4']], # Cria array 'a'
+                         "correta": p['correta']
+                     }
+                     materias_dict[materia_id]['perguntas'].append(pergunta_formatada)
+            # --- FIM DO NOVO BLOCO ---
+
+        # Converte o dicionário de volta para uma lista
+        lista_materias_final = list(materias_dict.values())
+        return jsonify(lista_materias_final)
+
+    except Exception as e:
+        print(f"Erro ao listar matérias com conteúdos e perguntas: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify([]), 500
     finally:
         if conn: conn.close()
 
@@ -636,12 +689,214 @@ def create_banner():
 # Rota de exemplo para Ranking (precisa de implementação real)
 @app.route('/api/ranking', methods=['GET'])
 def list_ranking():
-    """Retorna o ranking (exemplo)."""
-    ranking = [
-        {"nome": "Exemplo Aluno 1", "score": 15},
-        {"nome": "Exemplo Aluno 2", "score": 10},
-    ]
-    return jsonify(ranking)
+    """Retorna o ranking ordenado da base de dados."""
+    conn = get_db_connection()
+    if not conn: return jsonify([]), 500
+    try:
+        with conn.cursor() as cursor:
+            # Busca nome e score, ordena pelo score (maior primeiro) e limita (ex: top 50)
+            sql = """
+                SELECT nome, score 
+                FROM ranking 
+                ORDER BY score DESC, created_at ASC 
+                LIMIT 50 
+            """
+            cursor.execute(sql)
+            ranking = cursor.fetchall()
+            return jsonify(ranking)
+    except Exception as e:
+        print(f"Erro ao buscar ranking: {e}")
+        return jsonify([]), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/ranking', methods=['POST'])
+def add_ranking_score():
+    """Adiciona uma nova pontuação ao ranking."""
+    data = request.get_json()
+
+    # Validação básica
+    nome = data.get('nome')
+    score = data.get('score')
+    if not nome or score is None: # Verifica se score é None (pode ser 0)
+        return jsonify({"error": "Nome e score são obrigatórios"}), 400
+
+    try:
+        # Garante que score é um inteiro
+        score_int = int(score)
+    except (ValueError, TypeError):
+         return jsonify({"error": "Score deve ser um número inteiro"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Falha na conexão"}), 500
+
+    ranking_id = str(uuid.uuid4())
+
+    try:
+        with conn.cursor() as cursor:
+            # Simplesmente insere a nova pontuação
+            # (Pode adicionar lógica para atualizar a maior pontuação de um utilizador se preferir)
+            sql = "INSERT INTO ranking (id, nome, score) VALUES (%s, %s, %s)"
+            cursor.execute(sql, (ranking_id, nome, score_int))
+        return jsonify({"message": "Pontuação adicionada ao ranking", "id": ranking_id}), 201
+    except Exception as e:
+        print(f"Erro ao adicionar ao ranking: {e}")
+        return jsonify({"error": "Erro interno ao adicionar ao ranking"}), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/ranking/all', methods=['DELETE'])
+def reset_ranking():
+    """Apaga todos os registos da tabela ranking."""
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Falha na conexão"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # Apaga TUDO da tabela ranking
+            sql = "DELETE FROM ranking"
+            cursor.execute(sql)
+        return jsonify({"message": "Ranking resetado com sucesso!"}), 200
+    except Exception as e:
+        print(f"Erro ao resetar ranking: {e}")
+        return jsonify({"error": "Erro interno ao resetar ranking"}), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/perguntas', methods=['POST'])
+def create_pergunta():
+    """Cria uma nova pergunta para uma matéria."""
+    data = request.get_json()
+
+    # Validação básica (adapte conforme necessário)
+    required_fields = ['materia_id', 'nivel', 'enunciado', 'alt0', 'alt1', 'alt2', 'alt3', 'alt4', 'correta']
+    if not data or not all(k in data for k in required_fields):
+        return jsonify({"error": "Todos os campos da pergunta são obrigatórios"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Falha na conexão"}), 500
+
+    pergunta_id = str(uuid.uuid4())
+
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                INSERT INTO perguntas (id, materia_id, nivel, enunciado, alt0, alt1, alt2, alt3, alt4, correta)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (
+                pergunta_id,
+                data['materia_id'],
+                data['nivel'],
+                data['enunciado'],
+                data['alt0'],
+                data['alt1'],
+                data['alt2'],
+                data['alt3'],
+                data['alt4'],
+                data['correta']
+            ))
+        # Pode ser necessário atualizar a lista de perguntas na matéria em memória ou refazer a busca
+        return jsonify({"message": "Pergunta criada com sucesso!", "id": pergunta_id}), 201
+    except Exception as e:
+        print(f"Erro ao criar pergunta: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno ao criar pergunta"}), 500
+    finally:
+        if conn: conn.close()
+
+# ===========================
+# 🔹 ROTAS DE API - CONTEÚDOS
+# ===========================
+
+@app.route('/api/conteudos', methods=['POST'])
+def upload_conteudo():
+    """Recebe uploads de ficheiros de conteúdo para uma matéria."""
+    print("--- Iniciando upload_conteudo ---") # Log
+
+    # Verifica se a matéria_id foi enviada no formulário
+    materia_id = request.form.get('materia_id')
+    if not materia_id:
+        print("!!! Erro upload_conteudo: materia_id não fornecida.") # Log
+        return jsonify({"error": "materia_id é obrigatório"}), 400
+
+    # Verifica se foram enviados ficheiros
+    if 'files' not in request.files:
+        print("!!! Erro upload_conteudo: Nenhum ficheiro enviado com a chave 'files'.") # Log
+        return jsonify({"error": "Nenhum ficheiro enviado"}), 400
+
+    uploaded_files_info = []
+    files = request.files.getlist('files') # Recebe a lista de ficheiros
+    print(f"Recebidos {len(files)} ficheiros para matéria {materia_id}.") # Log
+
+    conn = None
+    try:
+        print("Tentando obter conexão com DB...") # Log
+        conn = get_db_connection()
+        if not conn:
+             print("!!! Erro upload_conteudo: Falha ao conectar ao DB.") # Log
+             # Ainda assim, tentamos guardar os ficheiros se a conexão falhar? Ou retornamos erro?
+             # Por agora, retornamos erro.
+             return jsonify({"error": "Falha na conexão com o servidor."}), 500
+        print("Conexão DB obtida.") # Log
+
+        with conn.cursor() as cursor:
+            for file in files:
+                if file and file.filename != '':
+                    try:
+                        # --- Lógica de Guardar Ficheiro ---
+                        upload_folder = os.path.join(app.static_folder, 'uploads', 'conteudos') # Pasta específica
+                        os.makedirs(upload_folder, exist_ok=True)
+
+                        filename = secure_filename(file.filename)
+                        unique_filename = str(uuid.uuid4()) + "_" + filename
+                        save_path = os.path.join(upload_folder, unique_filename)
+
+                        print(f"Guardando ficheiro '{filename}' em '{save_path}'...") # Log
+                        file.save(save_path)
+                        print("Ficheiro guardado.") # Log
+
+                        # Gera a URL pública relativa
+                        file_url = url_for('static', filename=f'uploads/conteudos/{unique_filename}', _external=False)
+                        print(f"URL gerada: {file_url}") # Log
+
+                        # Extrai o tipo de ficheiro (MIME type)
+                        file_type = file.mimetype
+                        print(f"Tipo de ficheiro: {file_type}") # Log
+
+                        # --- Lógica de Inserir no DB ---
+                        conteudo_id = str(uuid.uuid4())
+                        sql = """
+                            INSERT INTO conteudos (id, materia_id, nome, tipo, url)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """
+                        params = (conteudo_id, materia_id, filename, file_type, file_url)
+                        print(f"Executando SQL para conteúdo: {sql}") # Log
+                        print(f"Parâmetros SQL: {params}") # Log
+                        cursor.execute(sql, params)
+                        print("Registo de conteúdo inserido no DB.") # Log
+
+                        uploaded_files_info.append({"id": conteudo_id, "nome": filename, "url": file_url})
+
+                    except Exception as e_file:
+                        print(f"!!! Erro ao processar o ficheiro '{file.filename}': {e_file}") # Log erro ficheiro
+                        # Decide se quer parar ou continuar com os outros ficheiros
+                        # return jsonify({"error": f"Erro ao processar ficheiro {file.filename}: {e_file}"}), 500 # Para imediatamente
+                        continue # Continua para o próximo ficheiro
+
+        print(f"--- upload_conteudo: {len(uploaded_files_info)} ficheiros processados com sucesso. ---") # Log sucesso
+        return jsonify({"message": f"{len(uploaded_files_info)} ficheiro(s) enviado(s) com sucesso!", "files": uploaded_files_info}), 201
+
+    except Exception as e:
+         print(f"!!! Erro inesperado em upload_conteudo: {e}") # Log erro geral
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao fazer upload"}), 500
+    finally:
+        if conn:
+            conn.close()
+            print("Conexão DB fechada.") # Log
 
 # ===========================
 # 🔹 EXECUÇÃO

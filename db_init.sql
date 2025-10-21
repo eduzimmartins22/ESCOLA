@@ -75,5 +75,12 @@ CREATE TABLE app_stats (
 stat_key VARCHAR(100) PRIMARY KEY, 
 stat_value BIGINT DEFAULT 0);
 
+CREATE TABLE ranking (
+  id VARCHAR(36) PRIMARY KEY,
+  nome VARCHAR(255) NOT NULL,
+  score INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- Índices/constraints adicionais podem ser adicionados conforme necessário

@@ -110,13 +110,15 @@ const API = {
 
   // ---------- CONTEÚDOS ----------
   listConteudos: (materiaId) =>
-    apiGet(`/conteudos?materia_id=${materiaId}`), // CORRIGIDO
+    apiGet(`/conteudos?materia_id=${materiaId}`), 
 
-  uploadConteudo: (materiaId, file) => {
-    const formData = new FormData();
-    formData.append("materia_id", materiaId);
-    formData.append("file", file);
-    return apiPost(`/conteudos`, formData); // CORRIGIDO
+  // --- CORREÇÃO ABAIXO ---
+  // Agora aceita materiaId e o objeto FormData já criado
+  uploadConteudo: (materiaId, formData) => { 
+    // Adiciona o materia_id ao FormData existente
+    formData.append("materia_id", materiaId); 
+    // Envia o FormData diretamente para a rota /api/conteudos
+    return apiPost(`/conteudos`, formData); 
   },
 
   // ---------- BANNERS ----------
@@ -130,6 +132,7 @@ const API = {
   pushRanking: (payload) => apiPost(`/ranking`, payload), // CORRIGIDO
   stats: () => apiGet(`/stats`), // CORRIGIDO
   incrementStat: (payload) => apiPost(`/stats/increment`, payload),
+  deleteRanking: () => apiFetch(`/ranking/all`, { method: "DELETE" }),
 
   // ---------- GENÉRICOS (DELETE, PUT usam apiFetch diretamente com o path) ----------
   deleteUser: (role, id) =>
