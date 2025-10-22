@@ -371,66 +371,115 @@ def list_materias():
         return jsonify([]), 500
     finally:
         if conn: conn.close()
+        
 
 @app.route('/api/materias', methods=['POST'])
 def create_materia():
-    """Cria uma nova matéria."""
-    print("--- Iniciando create_materia ---") # LOG 1
+    """Cria uma nova matéria com tratamento robusto de quizConfig."""
+    print("=" * 60)
+    print("--- Iniciando create_materia ---")
+    print("=" * 60)
+
     data = request.get_json()
-    print(f"Dados recebidos: {data}") # LOG 2
+    print(f"📥 Dados recebidos: {data}")
 
     # Validação básica
     if not data or not all(k in data for k in ['nome', 'sala_id']):
-         print("!!! Erro: Dados incompletos recebidos.") # LOG ERRO DADOS
-         return jsonify({"error": "Nome da matéria e sala são obrigatórios"}), 400
+        print("❌ Erro: Dados incompletos recebidos.")
+        return jsonify({"error": "Nome da matéria e sala são obrigatórios"}), 400
 
     conn = None
     try:
-        print("Tentando obter conexão com DB...") # LOG 3
+        print("🔌 Tentando obter conexão com DB...")
         conn = get_db_connection()
         if not conn:
-             print("!!! Erro: Falha ao conectar ao DB.") # LOG ERRO CONEXÃO
-             return jsonify({"error": "Falha na conexão com o servidor."}), 500
-        print("Conexão DB obtida.") # LOG 4
+            print("❌ Erro: Falha ao conectar ao DB.")
+            return jsonify({"error": "Falha na conexão com o servidor."}), 500
+        print("✅ Conexão DB obtida.")
 
         with conn.cursor() as cursor:
             materia_id = str(uuid.uuid4())
-            # SQL usa snake_case
+
+            # 🔧 CORREÇÃO CIRÚRGICA: Extração segura de quizConfig
+            quiz_config = data.get('quizConfig')
+            print(
+                f"🎮 quizConfig RAW: {quiz_config} (tipo: {type(quiz_config)})")
+
+            # Proteção dupla: garante que é dict e não None
+            if not isinstance(quiz_config, dict) or quiz_config is None:
+                print(f"⚠️  quizConfig inválido, usando padrões")
+                quiz_config = {}
+
+            # Extração segura dos valores
+            quiz_facil = quiz_config.get('facil', 60)
+            quiz_medio = quiz_config.get('medio', 30)
+            quiz_dificil = quiz_config.get('dificil', 10)
+
+            print(
+                f"✅ Quiz extraído: facil={quiz_facil}, medio={quiz_medio}, dificil={quiz_dificil}")
+
+            # SQL com snake_case
             sql = "INSERT INTO materias (id, nome, sala_id, owner_id, quiz_facil, quiz_medio, quiz_dificil) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            # Parâmetros usam snake_case vindo do frontend/payload
+
+            # Parâmetros com valores seguros
             params = (
                 materia_id,
                 data['nome'],
                 data['sala_id'],
-                data.get('owner_id'), # Recebe snake_case
-                data.get('quizConfig', {}).get('facil', 60), # Extrai de quizConfig se existir
-                data.get('quizConfig', {}).get('medio', 30),
-                data.get('quizConfig', {}).get('dificil', 10)
+                data.get('owner_id'),
+                quiz_facil,    # ✅ Valor já extraído com segurança
+                quiz_medio,    # ✅ Valor já extraído com segurança
+                quiz_dificil   # ✅ Valor já extraído com segurança
             )
-            print(f"Executando SQL: {sql}") # LOG 5
-            print(f"Parâmetros SQL: {params}") # LOG 6
+
+            print(f"📝 Executando SQL: {sql}")
+            print(f"📦 Parâmetros: {params}")
 
             cursor.execute(sql, params)
-            print("SQL executado com sucesso.") # LOG 7
+            print("✅ SQL executado com sucesso.")
 
-        print("--- create_materia concluída com sucesso ---") # LOG 8 SUCESSO
+        print("=" * 60)
+        print("✅ create_materia CONCLUÍDA COM SUCESSO")
+        print("=" * 60)
         return jsonify({"message": "Matéria criada com sucesso!", "id": materia_id}), 201
 
     except pymysql.IntegrityError as e:
-         print(f"!!! Erro de Integridade DB: {e}") # LOG ERRO INTEGRIDADE
-         return jsonify({"error": "Erro ao inserir no banco (possível duplicata)"}), 409
+        print("=" * 60)
+        print("❌ ERRO DE INTEGRIDADE DB")
+        print("=" * 60)
+        print(f"Erro: {e}")
+        return jsonify({"error": f"Erro de integridade: {str(e)}"}), 409
+
     except KeyError as e:
-         print(f"!!! Erro: Chave não encontrada nos dados recebidos - {e}") # LOG ERRO CHAVE
-         return jsonify({"error": f"Dado ausente na requisição: {e}"}), 400
+        print("=" * 60)
+        print("❌ ERRO: CHAVE AUSENTE")
+        print("=" * 60)
+        print(f"Chave faltando: {e}")
+        return jsonify({"error": f"Dado ausente: {e}"}), 400
+
+    except AttributeError as e:
+        print("=" * 60)
+        print("❌ ERRO: ATRIBUTO INVÁLIDO")
+        print("=" * 60)
+        print(f"Erro de atributo (provável None.get()): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro ao processar quizConfig"}), 500
+
     except Exception as e:
-         print(f"!!! Erro inesperado em create_materia: {e}") # LOG ERRO GERAL
-         import traceback
-         traceback.print_exc()
-         return jsonify({"error": "Erro interno no servidor ao criar matéria"}), 500
+        print("=" * 60)
+        print("❌ ERRO INESPERADO")
+        print("=" * 60)
+        print(f"Tipo: {type(e).__name__}")
+        print(f"Mensagem: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno no servidor"}), 500
+
     finally:
         if conn:
             conn.close()
-            print("Conexão DB fechada.") # LOG 9 FECHAMENTO
+            print("🔌 Conexão DB fechada.")
 
 
 # ===========================
