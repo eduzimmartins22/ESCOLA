@@ -2,7 +2,7 @@
 // Assumimos endpoints: POST /api/auth/login  { role, cpf, senha } -> { user }
 //                  POST /api/auth/logout
 //                  POST /api/users/coordenadores  -> criar coordenador (usado por register)
-
+const COORD_MASTER_KEY_FRONTEND = "12345";
 const cpfRegex = /^\d{11}$/;
 
 function bindRoleTabs() {
@@ -60,30 +60,49 @@ async function login(role) {
 }
 
 async function submitRegister(role) {
-  // usado para cadastro de coordenador via form de registro
   try {
-    if (role !== "coordenador") return;
-    const nome = val("reg_c_nome");
-    const cpf = (val("reg_c_cpf") || "").replace(/[^\d]/g, "");
-    const mat = val("reg_c_mat");
-    const senha = val("reg_c_senha");
+    if (role !== 'coordenador') return;
+    const nome = val('reg_c_nome');
+    const cpf = (val('reg_c_cpf') || '').replace(/[^\d]/g, '');
+    const mat = val('reg_c_mat');
+    const senha = val('reg_c_senha');
+    // ### LEITURA DA CHAVE MESTRE ###
+    const masterKey = val('reg_c_masterkey'); 
 
-    if (!nome || !cpf || !senha) return alert("Preencha todos os campos.");
-    if (!cpfRegex.test(cpf)) return alert("CPF inválido.");
+    // ### VALIDAÇÃO DA CHAVE MESTRE (INSEGURA - APENAS FRONTEND) ###
+    if (!masterKey || masterKey !== COORD_MASTER_KEY_FRONTEND) {
+        return alert('Chave Mestra inválida!');
+    }
+    // ### FIM DA VALIDAÇÃO ###
 
-    // ### CORREÇÃO ABAIXO ###
-    // 1. Adicionamos o 'role' ao payload para o backend saber que é um coordenador.
-    // 2. Chamamos a função correta: API.createUser
+    if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
+    if (!cpfRegex.test(cpf)) return alert('CPF inválido.');
+
     const payload = { nome, cpf, mat, senha, role: role };
-    await API.createUser(payload);
+    // Não enviamos a masterKey para o backend nesta versão simples
+    await API.createUser(payload); 
 
-    alert("Coordenador cadastrado!");
-    document.getElementById("c_register_form").style.display = "none";
-    document.getElementById("auth").style.display = "block";
+    alert('Coordenador cadastrado!');
+    document.getElementById('c_register_form').style.display = 'none';
+    document.getElementById('auth').style.display = 'block'; // Volta para a tela de login
   } catch (err) {
     console.error(err);
-    alert(err.body?.message || err.message || "Erro ao cadastrar coordenador");
+    alert(err.body?.message || err.message || 'Erro ao cadastrar coordenador');
   }
+}
+
+function cancelarCadastro() {
+  // Limpa os campos do formulário (opcional)
+  byId('reg_c_nome').value = '';
+  byId('reg_c_cpf').value = '';
+  byId('reg_c_mat').value = '';
+  byId('reg_c_senha').value = '';
+  byId('reg_c_masterkey').value = ''; 
+
+  // Esconde o formulário de cadastro
+  document.getElementById('c_register_form').style.display = 'none';
+  // Mostra o formulário de login novamente
+  document.getElementById('auth').style.display = 'block'; 
 }
 
 function logout() {
@@ -209,7 +228,13 @@ function openTab(id, btn) {
     console.log(">> openTab: Chamando renderBannersCoord..."); // LOG
     renderBannersCoord();
   }
+  if (id === 'p_ver_sala') {
+    console.log(">> openTab: Chamando renderSalasProfessorSelect..."); // Log
+    renderSalasProfessorSelect(); // Precisamos criar esta função
+    // Não renderiza a tabela de alunos automaticamente, espera o clique no botão
+  }
   console.log(">> openTab: Finalizada para tab:", id); // LOG
+  
 }
 
 /* logs locais + enviar ao servidor */

@@ -74,8 +74,7 @@
         <!-- Menu Aluno -->
         <nav class="menu" id="menu-aluno">
           <h4>Aluno</h4>
-          <button data-tab="a_materias">Matérias</button>
-          <button data-tab="a_sala">Minha Sala</button>
+          <button data-tab="a_materias">Matérias</button>          
           <button data-tab="a_ranking">Ranking</button>
           <button onclick="logout()">Sair</button>
         </nav>
@@ -85,6 +84,7 @@
           <h4>Professor</h4>
           <button data-tab="p_materias">Matérias</button>
           <button data-tab="p_questoes">Perguntas</button>
+          <button data-tab="a_sala">Minha Sala</button>
           <button data-tab="p_conteudos">Conteúdos</button>
           <button onclick="logout()">Sair</button>
         </nav>
@@ -172,13 +172,13 @@
           </div>
         </section>
 
-        <section id="a_sala" class="hidden">
+        <section id="p_ver_sala" class="hidden">
           <h2 class="title">Sala — Alunos</h2>
           <div class="grid2">
             <div class="card">
               <label>Minha sala</label>
-              <select id="a_salaView"></select>
-              <button class="btn outline" style="margin-top: 8px" onclick="renderAlunosSala()">
+              <select id="p_salaView"></select>
+              <button class="btn outline" style="margin-top: 8px" onclick="renderAlunosSalaProfessor()">
                 Ver alunos
               </button>
             </div>
@@ -191,7 +191,7 @@
                     <th>RA</th>
                   </tr>
                 </thead>
-                <tbody id="a_tbAlunos"></tbody>
+                <tbody id="p_tbAlunos"></tbody>
               </table>
             </div>
           </div>
@@ -501,14 +501,17 @@
       <label>CPF</label><input id="reg_c_cpf" type="text" />
       <label>Matrícula</label><input id="reg_c_mat" />
       <label>Senha</label><input id="reg_c_senha" type="password" />
+      <div class="row" style="margin-top: 12px;"> <div> 
+                <label>Chave Mestre</label>
+                <input id="reg_c_masterkey" type="password" placeholder="Chave de segurança" />
+            </div>
+            <div></div> </div>
       <div class="actions">
-        <button class="btn verde" onclick="submitRegister('coordenador')">
-          Concluir Cadastro
-        </button>
-        <button class="btn outline" onclick="cancelarEdicao()">
-          Cancelar
-        </button>
-      </div>
+            <button class="btn verde" onclick="submitRegister('coordenador')">...</button>
+            <button class="btn outline" onclick="cancelarCadastro()"> 
+                Cancelar
+            </button>
+        </div>
     </div>
   </section>
 

@@ -349,3 +349,57 @@ async function salvarEdicaoSala() {
     alert('Erro ao salvar edição da sala');
   }
 }
+// Adicione estas funções ao final de professor.js
+
+async function renderSalasProfessorSelect() {
+  console.log(">> renderSalasProfessorSelect: Iniciando...");
+  try {
+    await refreshAllSelectsAsync(); // Garante que temos a lista de salas
+    // Usa fillSelectById para preencher o select com o novo ID
+    fillSelectById('p_salaView', (window.appState.salas || []).map(s => ({ id: s.id, nome: s.nome })), null); 
+    // Limpa a tabela de alunos ao selecionar a tab
+    const tb = byId('p_tbAlunos');
+    if (tb) tb.innerHTML = '<tr><td colspan="2">Selecione uma sala e clique em "Ver alunos".</td></tr>';
+  } catch (err) {
+      console.error(">> ERRO em renderSalasProfessorSelect:", err);
+  }
+  console.log(">> renderSalasProfessorSelect: Finalizada.");
+}
+
+async function renderAlunosSalaProfessor() {
+  console.log(">> renderAlunosSalaProfessor: Iniciando...");
+  try {
+    const salaId = sel('p_salaView').value; // Lê do select do professor
+    const tb = byId('p_tbAlunos'); // Usa o tbody do professor
+
+    if (!tb) return console.error(">> renderAlunosSalaProfessor: Tabela 'p_tbAlunos' não encontrada.");
+    tb.innerHTML = ''; // Limpa a tabela
+
+    if (!salaId) {
+        tb.innerHTML = '<tr><td colspan="2">Selecione uma sala para ver os alunos.</td></tr>';
+        return;
+    }
+
+    // Usa a lista de alunos já carregada em appState
+    const todosAlunos = window.appState.users?.alunos || []; 
+    // Filtra os alunos pela sala selecionada
+    const alunosDaSala = todosAlunos.filter(a => a.sala_id === salaId); // Usa snake_case
+    console.log(`>> renderAlunosSalaProfessor: Encontrados ${alunosDaSala.length} alunos para a sala ${salaId}`);
+
+    if (alunosDaSala.length === 0) {
+         tb.innerHTML = '<tr><td colspan="2">Nenhum aluno encontrado nesta sala.</td></tr>';
+         return;
+    }
+
+    alunosDaSala.forEach(a => {
+        const tr = tb.insertRow();
+        // Mostra Nome e Matrícula (usando 'matricula')
+        tr.innerHTML = `<td>${a.nome || '-'}</td><td>${a.matricula || '-'}</td>`; 
+    });
+  } catch(err) {
+      console.error(">> ERRO em renderAlunosSalaProfessor:", err);
+      const tb = byId('p_tbAlunos');
+      if (tb) tb.innerHTML = '<tr><td colspan="2">Erro ao carregar alunos.</td></tr>';
+  }
+   console.log(">> renderAlunosSalaProfessor: Finalizada.");
+}
