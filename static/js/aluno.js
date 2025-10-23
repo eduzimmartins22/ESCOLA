@@ -131,26 +131,80 @@ async function renderAlunosSala() {
 
 /* Banners */
 async function renderBannersAluno() {
+  console.log(">> renderBannersAluno: Iniciando...");
   const col = byId('a_bannersCol');
-  col.innerHTML = '';
-  await refreshAllSelectsAsync();
+  if (!col) return console.error(">> renderBannersAluno: Elemento 'a_bannersCol' não encontrado.");
+
+  col.innerHTML = ''; 
+
+  // Usa os banners já existentes em appState (atualizados pelo refreshAllSelectsAsync chamado em enterApp ou openTab)
   const banners = window.appState.banners || [];
-  banners.forEach(b => {
+  console.log(">> renderBannersAluno: Banners a renderizar:", banners);
+
+  if (banners.length === 0) {
+      col.innerHTML = '<span class="muted">Nenhum banner disponível.</span>';
+      return;
+  }
+
+  banners.forEach((b, index) => {
+    console.log(`>> renderBannersAluno: Renderizando banner ${index}:`, b);
     const d = document.createElement('div');
-    d.className = 'banner';
+    d.className = 'banner'; // Usa a classe 'banner'
     d.style.cursor = 'pointer';
-    d.onclick = () => showBannerInfo(b);
-    d.innerHTML = `<img src="${b.img}" onerror="this.style.background='#eef2ff'"><div><strong>${b.tit}</strong><div class="muted">${b.data || ''} ${b.hora || ''}</div></div>`;
+    d.onclick = () => showBannerInfo(b); 
+
+    // --- CORREÇÃO: Verifica se b.img_url existe ---
+    const imgUrl = b.img_url || ''; // Usa a URL ou string vazia
+    console.log(`>> renderBannersAluno: Banner ${index} - img_url:`, imgUrl); // LOG URL
+
+    const imgHtml = imgUrl ? 
+        `<img src="${imgUrl}" alt="${b.tit || 'Banner'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none'; console.error('Erro ao carregar imagem (renderBannersAluno):', '${imgUrl}');">` // Adiciona log no onerror
+        : 
+        '<div style="width:120px; height: 90px; background-color:#eef2ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6b7280; text-align: center;">Sem Imagem</div>';
+
+    // Formata data e hora
+    let dataFormatada = '-';
+    if (b.data_evento) { try { dataFormatada = new Date(b.data_evento + 'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' }); } catch (e) {} }
+    let horaFormatada = b.hora ? b.hora.substring(0,5) : '';
+
+    // Monta o HTML interno
+    d.innerHTML = `
+        ${imgHtml}
+        <div>
+            <strong>${b.tit || 'Sem Título'}</strong>
+            <div class="muted" style="font-size: 11px;">${dataFormatada} ${horaFormatada}</div>
+        </div>
+    `;
     col.appendChild(d);
   });
+  console.log(">> renderBannersAluno: Finalizado.");
 }
+
+// Garante que showBannerInfo também usa img_url corretamente
 function showBannerInfo(b) {
-  byId('a_bannerInfo').innerHTML = `
+  console.log(">> showBannerInfo: Mostrando detalhes para:", b);
+  const infoEl = byId('a_bannerInfo');
+  if (!infoEl) return console.error(">> showBannerInfo: Elemento 'a_bannerInfo' não encontrado.");
+
+  let dataFormatada = '-';
+  if (b.data_evento) { try { dataFormatada = new Date(b.data_evento + 'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' }); } catch(e){} }
+  let horaFormatada = b.hora ? b.hora.substring(0,5) : '';
+
+  // --- CORREÇÃO: Verifica se b.img_url existe ---
+  const imgUrl = b.img_url || ''; 
+  console.log(`>> showBannerInfo: img_url:`, imgUrl); // LOG URL
+
+  const imgHtml = imgUrl ? 
+      `<img src="${imgUrl}" alt="${b.tit || 'Banner'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none'; console.error('Erro ao carregar imagem (showBannerInfo):', '${imgUrl}');">` // Adiciona log no onerror
+      : 
+      '<div style="width:120px; height: 90px; background-color:#eef2ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6b7280; text-align: center;">Sem Imagem</div>';
+
+  infoEl.innerHTML = `
     <div class="banner">
-      <img src="${b.img}" onerror="this.style.background='#eef2ff'">
+      ${imgHtml}
       <div>
-        <strong>${b.tit}</strong>
-        <div class="muted">${b.data || ''} ${b.hora || ''} • ${b.local || ''}</div>
+        <strong>${b.tit || 'Sem Título'}</strong>
+        <div class="muted">${dataFormatada} ${horaFormatada} • ${b.local || '-'}</div>
         <div class="muted">Matérias: ${b.materias || '-'}</div>
         <div class="muted">Dicas: ${b.dicas || '-'}</div>
       </div>

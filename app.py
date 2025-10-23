@@ -676,64 +676,150 @@ def list_banners():
 
 @app.route('/api/banners', methods=['POST'])
 def create_banner():
-    """Cria um novo banner."""
-    # Os dados vêm como FormData, por isso usamos request.form para os campos de texto
-    # e request.files para o ficheiro de imagem.
+    """Cria um novo banner e guarda a imagem."""
+    print("--- Iniciando create_banner ---")
+    # Lê os dados do formulário
     titulo = request.form.get('tit')
-    data_evento = request.form.get('data') # O nome no form é 'data'
+    data_evento = request.form.get('data')
     hora = request.form.get('hora')
     local = request.form.get('local')
-    materias = request.form.get('mats') # O nome no form é 'mats'
+    materias = request.form.get('mats')
     dicas = request.form.get('dicas')
 
-    # Lógica básica de validação (pode expandir)
     if not titulo:
+        print("!!! Erro create_banner: Título ausente.")
         return jsonify({"error": "Título é obrigatório"}), 400
 
-    # --- Lógica de Upload de Imagem (Exemplo Simples - precisa de adaptação) ---
-    img_file = request.files.get('img') # O nome no form é 'img'
-    img_url = None # URL final da imagem (pode ser S3, ou um caminho local)
-    if img_file:
-        # Aqui entraria a lógica para guardar o ficheiro num local seguro
-        # (ex: pasta 'static/uploads' ou bucket S3) e obter a URL
-        # Por agora, apenas guardamos o nome do ficheiro (NÃO RECOMENDADO PARA PRODUÇÃO)
-        # Certifique-se que a pasta static/uploads existe se usar este exemplo!
-        # upload_folder = os.path.join(app.static_folder, 'uploads')
-        # os.makedirs(upload_folder, exist_ok=True)
-        # filename = str(uuid.uuid4()) + "_" + img_file.filename
-        # save_path = os.path.join(upload_folder, filename)
-        # img_file.save(save_path)
-        # img_url = url_for('static', filename=f'uploads/{filename}') # Gera a URL relativa
-        print(f"Recebido ficheiro de imagem: {img_file.filename}") # Log temporário
-        img_url = f"placeholder_{img_file.filename}" # Placeholder
+    img_file = request.files.get('img') # Obtém o ficheiro da requisição
+    img_url_to_save = None # Variável para guardar a URL final
+
+    # --- Lógica de Upload de Imagem ---
+    if img_file and img_file.filename != '':
+        print(f"Processando ficheiro: {img_file.filename}")
+        try:
+            # Caminho absoluto para a pasta de uploads dentro de 'static'
+            # app.root_path é o diretório onde app.py está
+            # app.static_folder é o nome da pasta estática ('static')
+            upload_folder = os.path.join(app.root_path, app.static_folder, 'uploads')
+            print(f"Pasta de upload definida como: {upload_folder}") 
+            os.makedirs(upload_folder, exist_ok=True) # Cria a pasta se não existir
+
+            # Limpa o nome do ficheiro para segurança
+            filename = secure_filename(img_file.filename) 
+            # Cria um nome único para evitar ficheiros com o mesmo nome
+            unique_filename = str(uuid.uuid4()) + "_" + filename 
+            # Caminho completo onde o ficheiro será guardado
+            save_path = os.path.join(upload_folder, unique_filename)
+
+            print(f"Tentando guardar em: {save_path}")
+            img_file.save(save_path) # Guarda o ficheiro no disco do servidor
+            print("Ficheiro guardado com sucesso.")
+
+            # Gera a URL relativa que o navegador pode aceder através do Nginx/Flask
+            # O Flask serve automaticamente ficheiros dentro da pasta 'static'
+            img_url_to_save = f"/static/uploads/{unique_filename}" 
+            print(f"URL relativa gerada: {img_url_to_save}")
+
+        except Exception as e_upload:
+            print(f"!!! ERRO CRÍTICO AO GUARDAR IMAGEM: {e_upload}")
+            import traceback
+            traceback.print_exc()
+            # Decide se quer continuar sem imagem ou retornar um erro
+            img_url_to_save = None # Continua sem imagem se o upload falhar
+    else:
+        print("Nenhum ficheiro de imagem enviado ou nome de ficheiro vazio.")
     # --- Fim da Lógica de Upload ---
 
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Falha na conexão"}), 500
-
-    banner_id = str(uuid.uuid4())
-
+    conn = None
     try:
+        conn = get_db_connection()
+        if not conn: return jsonify({"error": "Falha na conexão DB"}), 500
+
+        banner_id = str(uuid.uuid4())
         with conn.cursor() as cursor:
             sql = """
                 INSERT INTO banners (id, tit, data_evento, hora, local, materias, dicas, img_url)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
-            # Converte data/hora para formato correto ou NULL se vazio
             data_evento_db = data_evento if data_evento else None
             hora_db = hora if hora else None
 
+            print(f"Guardando no DB: titulo={titulo}, ..., img_url={img_url_to_save}")
             cursor.execute(sql, (
-                banner_id, titulo, data_evento_db, hora_db, local, materias, dicas, img_url
+                banner_id, titulo, data_evento_db, hora_db, local, materias, dicas, img_url_to_save
             ))
+        print("Banner guardado no DB com sucesso.")
         return jsonify({"message": "Banner criado com sucesso!", "id": banner_id}), 201
-    except Exception as e:
-        print(f"Erro ao criar banner: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Erro interno ao criar banner"}), 500
+
+    except Exception as e_db:
+         print(f"!!! Erro ao guardar banner no DB: {e_db}")
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno ao guardar banner"}), 500
     finally:
         if conn: conn.close()
+
+@app.route('/api/banners/<banner_id>', methods=['DELETE'])
+def delete_banner(banner_id):
+    """Exclui um banner específico."""
+    print(f"--- Iniciando delete_banner para ID: {banner_id} ---") # Log
+
+    conn = None
+    banner_img_url = None # Para guardar a URL da imagem a ser apagada
+
+    try:
+        conn = get_db_connection()
+        if not conn: 
+            print("!!! Erro delete_banner: Falha na conexão DB.") # Log
+            return jsonify({"error": "Falha na conexão com o servidor."}), 500
+
+        with conn.cursor() as cursor:
+            # Opcional: Buscar a URL da imagem ANTES de apagar o registo
+            sql_find = "SELECT img_url FROM banners WHERE id = %s"
+            cursor.execute(sql_find, (banner_id,))
+            result_find = cursor.fetchone()
+            if result_find:
+                banner_img_url = result_find.get('img_url')
+                print(f"URL da imagem encontrada para apagar: {banner_img_url}") # Log
+
+            # Apagar o registo do banner na base de dados
+            sql_delete = "DELETE FROM banners WHERE id = %s"
+            result = cursor.execute(sql_delete, (banner_id,))
+
+            if result == 0:
+                print(f"!!! Erro delete_banner: Banner ID {banner_id} não encontrado no DB.") # Log
+                return jsonify({"error": "Banner não encontrado"}), 404
+
+        print("Banner apagado do DB com sucesso.") # Log
+
+        # --- Opcional: Apagar o ficheiro da imagem do servidor ---
+        if banner_img_url and banner_img_url.startswith('/static/uploads/'):
+            try:
+                # Constrói o caminho absoluto para o ficheiro
+                filename = os.path.basename(banner_img_url) # Extrai o nome do ficheiro da URL
+                file_path = os.path.join(app.root_path, app.static_folder, 'uploads', filename) 
+
+                if os.path.exists(file_path):
+                    print(f"Tentando apagar ficheiro de imagem: {file_path}") # Log
+                    os.remove(file_path)
+                    print("Ficheiro de imagem apagado com sucesso.") # Log
+                else:
+                     print(f"Ficheiro de imagem não encontrado em {file_path}, não foi apagado.") # Log
+            except Exception as e_file:
+                print(f"!!! ATENÇÃO: Erro ao tentar apagar ficheiro {banner_img_url}: {e_file}") # Log erro ficheiro
+        # --- Fim da Lógica Opcional de Apagar Ficheiro ---
+
+        return jsonify({"message": "Banner excluído com sucesso!"}), 200 # HTTP 200 OK para delete bem-sucedido
+
+    except Exception as e_db:
+         print(f"!!! Erro inesperado em delete_banner: {e_db}") # Log erro geral
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao excluir banner"}), 500
+    finally:
+        if conn: 
+            conn.close()
+            print("Conexão DB fechada.") # Log
 
 # Rota de exemplo para Ranking (precisa de implementação real)
 @app.route('/api/ranking', methods=['GET'])

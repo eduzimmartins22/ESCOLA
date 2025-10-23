@@ -110,14 +110,21 @@ function logout() {
     // Envia o log ANTES de limpar a sessão
     registrarLog("out"); 
 
+    // ### ADICIONE ESTA LINHA ###
+    // Garante que todas as secções da app são escondidas ANTES de mostrar o login
+    document.querySelectorAll('main section').forEach(s => s.classList.add('hidden')); 
+
     // Limpa a sessão e mostra a tela de login imediatamente
     window.appState.user = null;
     clearSession();
-    showAuth();
+    showAuth(); // Esconde #app e mostra #auth
+
+    // (Linha API.logout() removida ou comentada)
 
   } catch (e) {
      console.error("Erro durante o logout:", e);
-     // Garante que mesmo com erro, a sessão seja limpa e a tela de auth mostrada
+     // Garante que mesmo com erro, as secções são escondidas, a sessão limpa e a tela de auth mostrada
+     document.querySelectorAll('main section').forEach(s => s.classList.add('hidden')); 
      window.appState.user = null;
      clearSession();
      showAuth();
@@ -136,15 +143,40 @@ async function restoreSession() {
 }
 
 function enterApp() {
-  console.log(">> enterApp: Iniciando exibição do app..."); // LOG
-  showApp();
+  console.log(">> enterApp: Iniciando exibição do app..."); 
+  showApp(); // Mostra o container principal da app
   byId('ub-nome').textContent = window.appState.user.nome;
   byId('ub-role').textContent = window.appState.user.role.toUpperCase();
-  console.log(">> enterApp: Chamando showMenuForRole..."); // LOG
-  showMenuForRole(window.appState.user.role);
-  // refreshAllSelectsAsync já é chamado no script inline do HTML, não precisa chamar aqui de novo
-  refreshAllSelectsAsync();
-  console.log(">> enterApp: Finalizada."); // LOG
+  console.log(">> enterApp: Chamando showMenuForRole..."); 
+  showMenuForRole(window.appState.user.role); // Configura o menu correto
+
+  // ### ADIÇÃO PARA ABRIR TAB PADRÃO ###
+  // Define os IDs das tabs padrão para cada papel
+  const defaultTabs = {
+      aluno: 'a_materias',
+      professor: 'p_materias',
+      coordenador: 'c_dash'
+  };
+  const userRole = window.appState.user.role;
+  const defaultTabId = defaultTabs[userRole]; // Obtém o ID da tab padrão
+
+  if (defaultTabId) {
+      // Encontra o botão correspondente no menu para poder destacá-lo
+      const defaultButton = document.querySelector(`#menu-${userRole} button[data-tab='${defaultTabId}']`);
+      console.log(`>> enterApp: Abrindo tab padrão '${defaultTabId}' para ${userRole}...`, defaultButton);
+      // Chama openTab para mostrar a secção correta e destacar o botão
+      openTab(defaultTabId, defaultButton); 
+  } else {
+       console.warn(">> enterApp: Não foi possível determinar a tab padrão para o papel:", userRole);
+       // Opcional: Esconder todas as tabs se nenhuma padrão for encontrada
+       document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+  }
+  // ### FIM DA ADIÇÃO ###
+
+  // A linha refreshAllSelectsAsync() foi movida para o script inline do HTML após restoreSession
+  // refreshAllSelectsAsync(); // Não chamar aqui novamente se já chamado no HTML
+
+  console.log(">> enterApp: Finalizada."); 
 }
 
 function showMenuForRole(role) {

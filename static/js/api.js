@@ -124,6 +124,7 @@ const API = {
   // ---------- BANNERS ----------
   listBanners: () => apiGet(`/banners`), // CORRIGIDO
   createBanner: (formData) => apiPost(`/banners`, formData), // CORRIGIDO
+  deleteBanner: (id) => apiFetch(`/banners/${id}`, { method: "DELETE" }),
 
   // ---------- LOGS / RANKING / STATS ----------
   listLogs: () => apiGet(`/logs`), // CORRIGIDO

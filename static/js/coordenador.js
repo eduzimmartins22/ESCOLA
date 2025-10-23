@@ -568,3 +568,75 @@ async function renderDashboard() {
   }
   console.log(">> renderDashboard: Renderização finalizada.");
 }
+// Função auxiliar para renderizar UM banner
+function renderSingleBannerPreview(b, containerElement) {
+     if (!b || !containerElement) return;
+
+     console.log(`>> renderSingleBannerPreview: Renderizando banner:`, b); 
+     const d = document.createElement('div');
+     // Adiciona um ID único ao div do banner para fácil remoção (opcional)
+     d.id = `banner-item-${b.id}`; 
+     d.className = 'banner' + ' banner-item-coord'; // Adiciona uma classe específica
+
+     // ... (código existente para formatar data/hora e gerar imgHtml) ...
+     let dataFormatada = '-';
+     if (b.data_evento) { try { dataFormatada = new Date(b.data_evento + 'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' }); } catch (e) {} }
+     let horaFormatada = b.hora ? b.hora.substring(0,5) : '';
+     const imgUrl = b.img_url || ''; 
+     const imgHtml = imgUrl ? 
+         `<img src="${imgUrl}" alt="${b.tit || 'Banner'}" ... onerror="...">` // Mantém o código da imagem
+         : 
+         '<div style="width:120px; ...">Sem Imagem</div>'; // Mantém o placeholder
+
+     // --- ADICIONA BOTÃO DE APAGAR AO innerHTML ---
+     d.innerHTML = `
+       ${imgHtml} 
+       <div style="flex-grow: 1;"> <h4>${b.tit || 'Sem Título'}</h4>
+         <p class="muted" style="font-size: 11px; margin-bottom: 4px;">${b.dicas || ''}</p>
+         <span class="muted">
+            <b>Data:</b> ${dataFormatada} ${horaFormatada ? ` ${horaFormatada}` : ''} 
+         </span>
+         <br> 
+         <span class="muted" style="font-size: 11px;"><b>Local:</b> ${b.local || '-'} | <b>Matérias:</b> ${b.materias || '-'}</span>
+       </div>
+       <button 
+            class="btn" 
+            style="background:#dc2626; color:white; padding: 4px 8px; font-size:11px; margin-left: 10px; align-self: center;" 
+            onclick="apagarBanner('${b.id}')"> 
+            Apagar
+       </button>
+       `;
+     // --- FIM DA ADIÇÃO DO BOTÃO ---
+
+     containerElement.appendChild(d);
+}
+async function apagarBanner(bannerId) {
+    console.log(">> apagarBanner: Tentando apagar banner com ID:", bannerId);
+    if (!bannerId) return alert("ID do banner inválido.");
+
+    // Pede confirmação ao utilizador
+    if (!confirm("Tem a certeza que deseja apagar este banner?")) {
+        console.log(">> apagarBanner: Exclusão cancelada pelo utilizador.");
+        return; 
+    }
+
+    try {
+        console.log(">> apagarBanner: Chamando API.deleteBanner...");
+        // Chama a nova função da API (que adicionaremos ao api.js)
+        await API.deleteBanner(bannerId); 
+        console.log(">> apagarBanner: Banner apagado com sucesso via API.");
+
+        alert("Banner apagado com sucesso!");
+
+        // Atualiza a lista de banners na interface
+        // Busca os dados atualizados do servidor
+        await refreshAllSelectsAsync(); 
+        // Redesenha a lista de banners
+        renderBannersCoord(); 
+
+    } catch (err) {
+        console.error(">> ERRO em apagarBanner:", err);
+        const errorMsg = err.body?.message || err.message || 'Erro desconhecido ao apagar banner.';
+        alert(`Erro ao apagar banner: ${errorMsg}`);
+    }
+}
