@@ -113,12 +113,5 @@ const API = {
     }),
   deleteSala: (id) => apiFetch(`${API_BASE}/salas/${id}`, { method: "DELETE" }),
 };
-createUser: (roleOrPayload, payloadMaybe) => {
-  const payload = typeof roleOrPayload === "string"
-    ? { ...payloadMaybe, role: roleOrPayload.replace(/s$/, '') }
-    : roleOrPayload;
-  return apiPost(`${API_BASE}/users`, payload);
-}
-
 
 
