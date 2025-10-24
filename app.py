@@ -140,29 +140,60 @@ def list_users(role):
 def update_user(role, user_id):
     """Atualiza os dados de um usuário específico."""
     data = request.get_json()
+
+    # ### LOG ADICIONADO 1: Ver o que o backend recebeu ###
+    print("--- Dados recebidos para atualização ---")
+    print(data) 
+
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "Falha na conexão com o servidor."}), 500
-        
+
     try:
         with conn.cursor() as cursor:
             fields = []
             params = []
+
             if 'nome' in data:
                 fields.append("nome = %s")
                 params.append(data['nome'])
+
+            if 'mat' in data:
+                fields.append("matricula = %s")
+                params.append(data['mat'])
+
+            if 'cpf' in data:
+                fields.append("cpf = %s")
+                params.append(data['cpf'])
+
+            if 'senha' in data and data['senha']:
+                senha_hash = bcrypt.hashpw(data['senha'].encode('utf-8'), bcrypt.gensalt())
+                fields.append("senha_hash = %s")
+                params.append(senha_hash)
+
             if 'salaId' in data:
                 fields.append("sala_id = %s")
                 params.append(data['salaId'])
-            
+
             if not fields:
+                print("Nenhum campo válido encontrado para atualizar.") # LOG ADICIONAL
                 return jsonify({"error": "Nenhum campo para atualizar"}), 400
 
             params.append(user_id)
             sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s"
+
+            # ### LOG ADICIONADO 2: Ver o SQL e os parâmetros ###
+            print("--- Executando SQL ---")
+            print(sql)
+            print("Parâmetros:", tuple(params))
+
             cursor.execute(sql, tuple(params))
-            
+
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
+    except Exception as e: # LOG ADICIONAL: Captura qualquer erro SQL
+        print("!!! Erro durante a execução do SQL !!!")
+        print(e)
+        return jsonify({"error": "Erro ao atualizar no banco de dados"}), 500
     finally:
         conn.close()
 
