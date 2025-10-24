@@ -147,8 +147,13 @@ def list_users(role):
 def update_user(role, user_id):
     """Atualiza os dados de um usuário específico."""
     data = request.get_json()
-    print(f"--- Dados recebidos para atualização ({role}/{user_id}) ---")
-    print(data)
+    print(f"\n{'='*60}")
+    print(f"UPDATE USER - Role: {role}, ID: {user_id}")
+    print(f"Dados recebidos: {data}")
+    print(f"{'='*60}\n")
+
+    if not data:
+        return jsonify({"error": "Nenhum dado fornecido"}), 400
 
     conn = get_db_connection()
     if not conn:
@@ -159,46 +164,65 @@ def update_user(role, user_id):
             fields = []
             params = []
 
-            if 'nome' in data:
+            if 'nome' in data and data['nome']:
                 fields.append("nome = %s")
                 params.append(data['nome'])
-            if 'mat' in data: # Frontend envia 'mat'
+            
+            if 'mat' in data:
                 fields.append("matricula = %s")
-                params.append(data['mat'])
-            if 'cpf' in data:
+                params.append(data['mat'] if data['mat'] else None)
+            
+            if 'cpf' in data and data['cpf']:
+                cpf_limpo = data['cpf'].replace('-', '').replace('.', '').strip()
                 fields.append("cpf = %s")
-                params.append(data['cpf'])
-            if 'senha' in data and data['senha']:
-                senha_hash = bcrypt.hashpw(data['senha'].encode('utf-8'), bcrypt.gensalt())
-                fields.append("senha_hash = %s")
-                params.append(senha_hash)
-            if 'salaId' in data: # Frontend envia 'salaId'
+                params.append(cpf_limpo)
+            
+            if 'senha' in data and data['senha'] and len(str(data['senha']).strip()) > 0:
+                try:
+                    senha_hash = bcrypt.hashpw(data['senha'].encode('utf-8'), bcrypt.gensalt())
+                    fields.append("senha_hash = %s")
+                    params.append(senha_hash)
+                    print(f"✓ Senha será atualizada")
+                except Exception as e:
+                    print(f"✗ Erro ao gerar hash: {e}")
+                    return jsonify({"error": "Erro ao processar senha"}), 500
+            
+            if 'salaId' in data:
                 fields.append("sala_id = %s")
-                params.append(data['salaId'])
+                params.append(data['salaId'] if data['salaId'] else None)
 
             if not fields:
-                print("Nenhum campo válido encontrado para atualizar.")
+                
                 return jsonify({"error": "Nenhum campo para atualizar"}), 400
 
             params.append(user_id)
             sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s"
 
-            print(f"--- Executando SQL ({role}/{user_id}) ---")
-            print(sql)
-            print("Parâmetros:", tuple(params))
+            print(f"SQL: {sql}")
+            print(f"Params: {params}")
 
             cursor.execute(sql, tuple(params))
-            print(f"SQL executado com sucesso para {role}/{user_id}.")
+            
+            if cursor.rowcount == 0:
+                return jsonify({"error": "Usuário não encontrado"}), 404
 
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
+        
+    except pymysql.IntegrityError as e:
+        if 'Duplicate entry' in str(e) and 'cpf' in str(e).lower():
+            return jsonify({"error": "CPF já cadastrado"}), 409
+        return jsonify({"error": f"Erro: {str(e)}"}), 409
+        
     except Exception as e:
-        print(f"!!! Erro durante a execução do SQL ({role}/{user_id}) !!!")
-        print(e)
+        print(f"ERRO: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": "Erro ao atualizar no banco de dados"}), 500
+        return jsonify({"error": f"Erro: {str(e)}"}), 500
+        
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
+
 
 @app.route('/api/users/<role>/<user_id>', methods=['DELETE'])
 def delete_user(role, user_id):

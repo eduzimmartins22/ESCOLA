@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -31,7 +32,7 @@
         <button data-role="professor">Professor</button>
         <button data-role="coordenador">Coordenador</button>
       </div>
-      
+
       <!-- Form Aluno -->
       <div id="form-aluno" class="auth-form">
         <label>CPF</label>
@@ -57,7 +58,8 @@
         <label>Senha</label>
         <input id="c_senha" type="password" placeholder="Digite sua senha" />
         <button class="btn verde" onclick="login('coordenador')">Entrar</button>
-        <button class="btn outline" onclick="register('coordenador')" style="margin-top: 10px;">Cadastrar Coordenador</button>
+        <button class="btn outline" onclick="register('coordenador')" style="margin-top: 10px;">Cadastrar
+          Coordenador</button>
       </div>
     </div>
   </section>
@@ -70,11 +72,11 @@
           <div id="ub-nome">Usuário</div>
           <div id="ub-role">Cargo</div>
         </div>
-        
+
         <!-- Menu Aluno -->
         <nav class="menu" id="menu-aluno">
           <h4>Aluno</h4>
-          <button data-tab="a_materias">Matérias</button>          
+          <button data-tab="a_materias">Matérias</button>
           <button data-tab="a_ranking">Ranking</button>
           <button onclick="logout()">Sair</button>
         </nav>
@@ -101,7 +103,7 @@
           <button onclick="logout()">Sair</button>
         </nav>
       </aside>
-      
+
       <main class="content">
         <!-- ========== SEÇÕES ALUNO ========== -->
         <section id="a_materias" class="hidden">
@@ -112,8 +114,9 @@
           <div class="grid2">
             <div class="card">
               <label>Minha Sala</label>
-              <div id="a_nomeSala" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background-color: #f8fafc; min-height: 44px;">
-                Carregando... 
+              <div id="a_nomeSala"
+                style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background-color: #f8fafc; min-height: 44px;">
+                Carregando...
               </div>
               <div class="muted" id="a_salaMutedText">
                 Se não estiver vinculado a uma sala, contacte o coordenador ou professor.
@@ -476,8 +479,10 @@
                 </div>
               </div>
               <label style="margin-top: 8px">Local</label><input id="ban_local" placeholder="Auditório / Escola" />
-              <label style="margin-top: 8px">Matérias da prova</label><input id="ban_mats" placeholder="Matemática; Português; ..." />
-              <label style="margin-top: 8px">Dicas</label><input id="ban_dicas" placeholder="Revisar frações, leitura..." />
+              <label style="margin-top: 8px">Matérias da prova</label><input id="ban_mats"
+                placeholder="Matemática; Português; ..." />
+              <label style="margin-top: 8px">Dicas</label><input id="ban_dicas"
+                placeholder="Revisar frações, leitura..." />
               <button class="btn verde" style="margin-top: 10px" onclick="salvarBanner()">
                 Salvar Banner
               </button>
@@ -501,17 +506,19 @@
       <label>CPF</label><input id="reg_c_cpf" type="text" />
       <label>Matrícula</label><input id="reg_c_mat" />
       <label>Senha</label><input id="reg_c_senha" type="password" />
-      <div class="row" style="margin-top: 12px;"> <div> 
-                <label>Chave Mestre</label>
-                <input id="reg_c_masterkey" type="password" placeholder="Chave de segurança" />
-            </div>
-            <div></div> </div>
-      <div class="actions">
-            <button class="btn verde" onclick="submitRegister('coordenador')">...</button>
-            <button class="btn outline" onclick="cancelarCadastro()"> 
-                Cancelar
-            </button>
+      <div class="row" style="margin-top: 12px;">
+        <div>
+          <label>Chave Mestre</label>
+          <input id="reg_c_masterkey" type="password" placeholder="Chave de segurança" />
         </div>
+        <div></div>
+      </div>
+      <div class="actions">
+        <button class="btn verde" onclick="submitRegister('coordenador')">...</button>
+        <button class="btn outline" onclick="cancelarCadastro()">
+          Cancelar
+        </button>
+      </div>
     </div>
   </section>
 
@@ -633,4 +640,5 @@
     }
   </script>
 </body>
+
 </html>
