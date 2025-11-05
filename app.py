@@ -35,7 +35,7 @@ def get_db_connection():
         return None
 
 # ===========================
-# ��� ROTA PRINCIPAL
+# ��� ROTA PRINCIPAL
 # ===========================
 @app.route('/')
 def index():
@@ -43,7 +43,7 @@ def index():
     return render_template('index.html')
 
 # ===========================
-# ��� ROTAS DE API - AUTENTICAÇÃO E USUÁRIOS
+# ��� ROTAS DE API - AUTENTICAÇÃO E USUÁRIOS
 # ===========================
 
 @app.route('/api/login', methods=['POST'])
@@ -252,7 +252,7 @@ def delete_user(role, user_id):
         if conn: conn.close()
 
 # ===========================
-# ��� ROTAS DE API - SALAS E MATÉRIAS
+# ��� ROTAS DE API - SALAS E MATÉRIAS
 # ===========================
 
 @app.route('/api/salas', methods=['GET'])
@@ -366,7 +366,7 @@ def list_materias():
             # 3. Busca todas as perguntas <<-- NOVO BLOCO
             sql_perguntas = """
                 SELECT id, materia_id, nivel, enunciado, 
-                       alt0, alt1, alt2, alt3, alt4, correta 
+                       alt0, alt1, alt2, alt3, alt4, correta, img_url 
                 FROM perguntas 
                 ORDER BY created_at ASC 
             """
@@ -383,7 +383,7 @@ def list_materias():
                          "nivel": p['nivel'],
                          "q": p['enunciado'], # Renomeia 'enunciado' para 'q'
                          "a": [p['alt0'], p['alt1'], p['alt2'], p['alt3'], p['alt4']], # Cria array 'a'
-                         "correta": p['correta']
+                         "correta": p['correta'], "img_url": p.get('img_url')
                      }
                      materias_dict[materia_id]['perguntas'].append(pergunta_formatada)
             # --- FIM DO NOVO BLOCO ---
@@ -512,7 +512,7 @@ def create_materia():
 
 
 # ===========================
-# ��� ROTAS DE API - LOGS, STATS E OUTROS
+# ��� ROTAS DE API - LOGS, STATS E OUTROS
 # ===========================
 
 @app.route('/api/logs', methods=['GET'])
@@ -929,49 +929,96 @@ def reset_ranking():
 
 @app.route('/api/perguntas', methods=['POST'])
 def create_pergunta():	
-    """Cria uma nova pergunta para uma matéria."""
-    data = request.get_json()
+    """Cria uma nova pergunta para uma matéria (recebe FormData)."""
+    print("--- Iniciando create_pergunta (FormData) ---") # Log
 
-    # Validação básica (adapte conforme necessário)
-    required_fields = ['materia_id', 'nivel', 'enunciado', 'alt0', 'alt1', 'alt2', 'alt3', 'alt4', 'correta']
-    if not data or not all(k in data for k in required_fields):
-        return jsonify({"error": "Todos os campos da pergunta são obrigatórios"}), 400
+    # Lê dados do formulário (request.form) em vez de request.get_json()
+    data = request.form 
+    print(f"Dados recebidos (form): {data}") # Log
 
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Falha na conexão"}), 500
-
-    pergunta_id = str(uuid.uuid4())
+    # Validação básica
+    required_fields = ['materia_id', 'nivel', 'enunciado', 'opcao_a', 'opcao_b', 'opcao_c', 'opcao_d', 'opcao_e', 'resposta_correta']
+    if not all(k in data for k in required_fields):
+        print("!!! Erro create_pergunta: Dados incompletos.") # Log
+        return jsonify({"error": "Todos os campos da pergunta (form) são obrigatórios"}), 400
 
     try:
+        correta_idx = int(data['resposta_correta'])
+        if not (0 <= correta_idx <= 4):
+             raise ValueError("Índice fora do intervalo")
+    except (ValueError, TypeError):
+         print(f"!!! Erro create_pergunta: Valor inválido para 'resposta_correta': {data.get('resposta_correta')}") # Log
+         return jsonify({"error": "O índice da resposta correta deve ser um número entre 0 e 4"}), 400
+
+    # --- Lógica de Upload de Imagem (Opcional) ---
+    img_file = request.files.get('imagem') # Obtém o ficheiro da chave 'imagem'
+    img_url_to_save = None 
+    if img_file and img_file.filename != '':
+        print(f"Processando ficheiro de imagem da pergunta: {img_file.filename}")
+        try:
+            upload_folder = os.path.join(app.root_path, app.static_folder, 'uploads', 'perguntas')
+            os.makedirs(upload_folder, exist_ok=True) 
+            filename = secure_filename(img_file.filename) 
+            unique_filename = str(uuid.uuid4()) + "_" + filename 
+            save_path = os.path.join(upload_folder, unique_filename)
+
+            img_file.save(save_path) 
+            print(f"Imagem da pergunta guardada: {unique_filename}")
+
+            img_url_to_save = f"/static/uploads/perguntas/{unique_filename}" 
+            print(f"URL da imagem da pergunta gerada: {img_url_to_save}")
+
+        except Exception as e_upload:
+            print(f"!!! ERRO AO GUARDAR IMAGEM DA PERGUNTA: {e_upload}")
+            # Não bloqueia a criação da pergunta se o upload da imagem falhar
+            img_url_to_save = None
+    # --- Fim da Lógica de Upload ---
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: return jsonify({"error": "Falha na conexão DB"}), 500
+
         with conn.cursor() as cursor:
+            pergunta_id = str(uuid.uuid4())
+
+            # Atualiza o SQL para incluir a coluna img_url (se a tiver na tabela perguntas)
+            # Assumindo que a tabela 'perguntas' tem uma coluna 'img_url TEXT'
             sql = """
-                INSERT INTO perguntas (id, materia_id, nivel, enunciado, alt0, alt1, alt2, alt3, alt4, correta)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO perguntas (id, materia_id, nivel, enunciado, 
+                                       alt0, alt1, alt2, alt3, alt4, correta, 
+                                       img_url) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (
+            params = (
                 pergunta_id,
                 data['materia_id'],
                 data['nivel'],
                 data['enunciado'],
-                data['alt0'],
-                data['alt1'],
-                data['alt2'],
-                data['alt3'],
-                data['alt4'],
-                data['correta']
-            ))
-        # Pode ser necessário atualizar a lista de perguntas na matéria em memória ou refazer a busca
+                data['opcao_a'], # Usa os nomes do FormData
+                data['opcao_b'],
+                data['opcao_c'],
+                data['opcao_d'],
+                data['opcao_e'],
+                correta_idx,
+                img_url_to_save # Guarda a URL da imagem (ou None)
+            )
+            print("Executando SQL para pergunta...")
+            cursor.execute(sql, params)
+            print("SQL executado com sucesso.")
+
         return jsonify({"message": "Pergunta criada com sucesso!", "id": pergunta_id}), 201
+
     except Exception as e:
-        print(f"Erro ao criar pergunta: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Erro interno ao criar pergunta"}), 500
+         print(f"!!! Erro inesperado em create_pergunta: {e}") 
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao criar pergunta"}), 500
     finally:
         if conn: conn.close()
 
 # ===========================
-# ��� ROTAS DE API - CONTEÚDOS
+# ��� ROTAS DE API - CONTEÚDOS
 # ===========================
 
 @app.route('/api/conteudos', methods=['POST'])
@@ -1063,7 +1110,7 @@ def upload_conteudo():
             print("Conexão DB fechada.") # Log
 
 # ===========================
-# ��� EXECUÇÃO
+# ��� EXECUÇÃO
 # ===========================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
