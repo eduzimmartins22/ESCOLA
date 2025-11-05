@@ -225,3 +225,21 @@ th {
 .sala-card strong {
   display: block;
 }
+/* Estilos para o botão de apagar banner */
+.btn-delete {
+    background-color: #dc2626; /* Vermelho */
+    color: white;
+    font-size: 11px; /* Tamanho pequeno */
+    padding: 4px 8px; /* Padding pequeno */
+    border: none; /* Remove borda padrão se .btn não o fizer */
+    line-height: 1.2; /* Ajusta altura da linha para texto pequeno */
+}
+
+.btn-delete:hover {
+    background-color: #b91c1c; /* Vermelho mais escuro no hover */
+}
+
+/* Garante que a classe banner lida bem com 3 filhos */
+.banner {
+   align-items: center; /* Alinha verticalmente imagem, info e botão */
+}

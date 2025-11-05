@@ -19,23 +19,69 @@
   /* ========== HEADER ========== */
   header {
     padding: 12px 16px;
-    text-align: center;
     background: linear-gradient(135deg, #1e40af, #3b82f6);
     color: white;
     position: sticky;
     top: 0;
     z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   header h1 {
     font-size: 18px;
     margin: 0;
     font-weight: 600;
+    flex: 1;
+    text-align: center;
   }
 
   header img {
     display: none;
   }
+
+
+
+/* ========== BOTÃO mobile ========== */
+  .menu-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 110;
+    flex-shrink: 0;
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  .menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(8px, 8px);
+  }
+
+  .menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+  }
+
+
+
+
 
   /* ========== SEÇÃO DE AUTENTICAÇÃO ========== */
   .auth {
@@ -226,17 +272,20 @@
     background: linear-gradient(180deg, #1e293b, #334155);
     color: white;
     padding: 16px;
-    order: 2;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    max-height: 60vh;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100vh;
+    z-index: 105;
     overflow-y: auto;
-    border-top: 3px solid #3b82f6;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 2px solid #3b82f6;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+  }
+
+  .sidebar.open {
+    left: 0;
   }
 
   .userbox {
@@ -245,17 +294,20 @@
     background: rgba(255,255,255,0.1);
     border-radius: 8px;
     margin-bottom: 16px;
+    margin-top: 70px;
   }
 
   .userbox #ub-nome {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 4px;
+    color: white;
   }
 
   .userbox #ub-role {
     font-size: 12px;
     opacity: 0.8;
+    color: #d1fae5;
   }
 
   .menu {
@@ -279,25 +331,44 @@
     border: 1px solid rgba(255,255,255,0.2);
     color: white;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.3s ease;
+    text-align: left;
   }
 
   .menu button:hover,
   .menu button.active {
     background: rgba(59, 130, 246, 0.3);
     border-color: #3b82f6;
-    transform: translateY(-1px);
+    transform: translateY(4px);
   }
 
   /* ========== CONTEÚDO PRINCIPAL ========== */
   .content {
     flex: 1;
     padding: 16px;
-    padding-bottom: 300px; /* Espaço para o sidebar fixo */
     background: #f8fafc;
-    order: 1;
+    min-height: calc(100vh - 64px);
+  }
+
+
+ .menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 104;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .menu-overlay.active {
+    display: block;
+    opacity: 1;
   }
 
   .title {
@@ -718,7 +789,7 @@
   @media screen and (max-width: 360px) {
     .content {
       padding: 12px;
-      padding-bottom: 280px;
+      
     }
 
     .card {
@@ -730,8 +801,10 @@
     }
 
     .sidebar {
+      
       padding: 12px;
-      max-height: 55vh;
+      width: 260px;
+      left: -260px  
     }
 
     table th,
@@ -809,5 +882,20 @@
 
   header {
     position: static;
+  }
+}
+
+
+
+
+
+/* ========== DESKTOP: ESCONDER MENU E OVERLAY ========== */
+@media screen and (min-width: 481px) {
+  .menu-toggle {
+    display: none !important;
+  }
+  
+  .menu-overlay {
+    display: none !important;
   }
 }

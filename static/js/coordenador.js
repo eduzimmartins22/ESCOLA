@@ -3,10 +3,20 @@ const COORD_MASTER_PASSWORD = '12345'; // ainda usado só client-side se desejar
 
 async function coordCriarProfessor() {
   try {
-    const nome = val('c_p_nome'), cpf = (val('c_p_cpf')||'').replace(/[^\d]/g,''), mat = val('c_p_mat'), senha = val('c_p_senha');
+    const nome = val('c_p_nome');
+    const cpf = (val('c_p_cpf')||'').replace(/[^\d]/g,'');
+    const mat = val('c_p_mat');
+    const senha = val('c_p_senha');
+
     if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
     if (!cpfRegex.test(cpf)) return alert('CPF inválido. Use 11 dígitos numéricos.');
-    await API.createUser('professores', { nome, cpf, mat, senha });
+
+    // ### CORREÇÃO ABAIXO ###
+    // Criamos o payload correto com o 'role' dentro do objeto
+    // e chamamos a API.createUser com apenas um argumento.
+    const payload = { nome, cpf, mat, senha, role: 'professor' };
+    await API.createUser(payload);
+
     ['c_p_nome','c_p_cpf','c_p_mat','c_p_senha'].forEach(id => byId(id).value='');
     await renderProfsCoord();
     await refreshAllSelectsAsync();
@@ -29,7 +39,7 @@ async function renderProfsCoord() {
       tr.innerHTML = `
         <td>${p.nome}</td>
         <td>${p.cpf}</td>
-        <td>${p.mat||'-'}</td>
+        <td>${p.matricula||'-'}</td>
         <td>
           <button class="btn" style="background:#dc2626; color:white; padding:4px 8px;" onclick="apagarUsuario('${p.id}','professor')">Excluir</button>
           <button class="btn" style="background:#3b82f6; color:white; padding:4px 8px;" onclick="editarUsuario('${p.id}','professor')">Editar</button>
@@ -49,11 +59,12 @@ async function coordCriarAluno() {
     if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
     const cpfLimpo = cpf.replace(/[^\d]/g,'');
     if (!cpfRegex.test(cpfLimpo)) return alert('CPF inválido.');
-    await API.createUser('alunos', { nome, cpf: cpfLimpo, mat, senha, salaId: null });
+    const payload = { nome, cpf: cpfLimpo, mat, senha, role: 'aluno', salaId: null };
+    await API.createUser(payload);
     ['c_a_nome','c_a_cpf','c_a_mat','c_a_senha'].forEach(id => byId(id).value='');
-    await renderAlunosCoord();
-    await refreshAllSelectsAsync();
-    alert('Aluno criado!');
+    alert('Aluno criado!'); // Mostra o alerta
+    await refreshAllSelectsAsync(); // Busca os dados atualizados PRIMEIRO
+    await renderAlunosCoord(); // AGORA desenha a tabela com o novo aluno
   } catch(err) {
     console.error(err);
     alert('Erro ao criar aluno');
@@ -67,8 +78,8 @@ async function vincularAlunoASala() {
     if (!alunoId || !salaId) return alert('Selecione um aluno e uma sala.');
     await API.updateUser('alunos', alunoId, { salaId });
     alert('Aluno vinculado à sala com sucesso!');
-    await renderAlunosCoord();
-    await refreshAllSelectsAsync();
+    await refreshAllSelectsAsync(); // Busca os dados atualizados PRIMEIRO
+    await renderAlunosCoord(); // AGORA desenha a tabela com os novos dados
   } catch(err) {
     console.error(err);
     alert('Erro ao vincular aluno');
@@ -77,22 +88,39 @@ async function vincularAlunoASala() {
 
 async function renderAlunosCoord() {
   try {
-    const users = await API.listUsers('alunos');
-    window.appState.users.alunos = users || [];
-    const salas = await API.listSalas();
-    window.appState.salas = salas || [];
-    fillSelectById('c_vincular_aluno', window.appState.users.alunos.map(a => ({ id: a.id, nome: a.nome })));
-    fillSelectById('c_vincular_sala', window.appState.salas.map(s => ({ id: s.id, nome: s.nome })));
+    // Removemos as chamadas API.listUsers e API.listSalas daqui
+    // A função agora confia que window.appState já está atualizado pela refreshAllSelectsAsync
+
+    // Atualiza os selects de vinculação (isso está correto aqui)
+    fillSelectById('c_vincular_aluno', (window.appState.users.alunos || []).map(a => ({ id: a.id, nome: a.nome })));
+    fillSelectById('c_vincular_sala', (window.appState.salas || []).map(s => ({ id: s.id, nome: s.nome })));
+
     const tb = byId('c_tbAlunos');
     tb.innerHTML = '';
-    window.appState.users.alunos.forEach(a => {
-      const salaNome = (window.appState.salas.find(s => s.id === a.salaId) || {}).nome || '-';
-      const tr = document.createElement('tr');
+
+    // Garante que temos a lista de alunos antes de tentar desenhar
+    const alunosParaRenderizar = window.appState.users.alunos || [];
+
+    if (alunosParaRenderizar.length === 0) {
+        tb.innerHTML = '<tr><td colspan="5">Nenhum aluno cadastrado.</td></tr>';
+        return;
+    }
+
+    alunosParaRenderizar.forEach(a => {
+      console.log(`>> renderAlunosCoord: Renderizando aluno ${a.nome}, Sala ID: ${a.sala_id}`); // LOG ADICIONADO
+
+  // Busca o nome da sala na lista JÁ ATUALIZADA em window.appState.salas
+  const sala = window.appState.salas.find(s => s.id === a.sala_id); // Guardamos a sala encontrada
+  const salaNome = sala ? sala.nome : '-'; // Usamos a sala encontrada para pegar o nome
+
+  console.log(`>> renderAlunosCoord: Sala encontrada para ${a.nome}:`, sala); // LOG ADICIONAL
+
+  const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${a.nome}</td>
         <td>${a.cpf}</td>
-        <td>${a.mat||'-'}</td>
-        <td>${salaNome}</td>
+        <td>${a.matricula||'-'}</td>
+        <td>${salaNome}</td> 
         <td>
           <button class="btn" style="background:#dc2626; color:white; padding:4px 8px;" onclick="apagarUsuario('${a.id}','aluno')">Apagar</button>
           <button class="btn" style="background:#3b82f6; color:white; padding:4px 8px;" onclick="editarUsuario('${a.id}','aluno')">Editar</button>
@@ -101,7 +129,7 @@ async function renderAlunosCoord() {
       tb.appendChild(tr);
     });
   } catch(err) {
-    console.error(err);
+    console.error("Erro ao renderizar tabela de alunos:", err); 
   }
 }
 
@@ -117,7 +145,7 @@ async function apagarUsuario(id, role) {
       }
       await API.deleteSala(id);
     } else {
-      await API.deleteUser(role === 'professor' ? 'professores' : role === 'aluno' ? 'alunos' : role, id);
+      await API.deleteUser(role, id);
     }
     await refreshAllSelectsAsync();
     if (role === 'aluno') renderAlunosCoord();
@@ -143,25 +171,50 @@ function editarUsuario(id, role) {
   byId('edit_role').value = role;
   byId('edit_nome').value = user.nome;
   byId('edit_cpf').value = user.cpf;
-  byId('edit_senha').value = user.senha;
-  byId('edit_mat').value = user.mat || user.ra || '';
+  byId('edit_senha').value = ''; // Deixa o campo vazio
+  byId('edit_senha').placeholder = 'Digite NOVA senha (se desejar alterar)';
+  byId('edit_mat').value = user.matricula || ''; // Usa a propriedade correta 'matricula'
   document.getElementById('app').style.display = 'none';
   document.getElementById('c_edit_form').style.display = 'block';
 }
 
 async function salvarEdicao() {
   try {
-    const id = val('edit_id'), role = val('edit_role'), nome = val('edit_nome'), cpf = val('edit_cpf'), senha = val('edit_senha'), mat = val('edit_mat');
-    if (!nome || !cpf || !senha) return alert('Preencha todos os campos.');
+    // Lê todos os campos do formulário
+    const id = val('edit_id'), 
+          role = val('edit_role'), 
+          nome = val('edit_nome'), 
+          cpf = val('edit_cpf'), 
+          senha = val('edit_senha'), // Lê a nova senha (pode ser vazia)
+          mat = val('edit_mat');     // Lê a matrícula
+
+    // Validação corrigida: Senha não é mais obrigatória aqui
+    if (!nome || !cpf) return alert('Preencha pelo menos nome e CPF.'); 
+
     const cpfLimpo = cpf.replace(/[^\d]/g,'');
     if (cpfLimpo.length !== 11) return alert('CPF inválido.');
-    const payload = { nome, cpf: cpfLimpo, senha, mat };
-    await API.updateUser(role === 'aluno' ? 'alunos' : 'professores', id, payload);
+
+    // Cria o payload inicial com os campos sempre presentes
+    const payload = { nome, cpf: cpfLimpo, mat }; 
+
+    // Adiciona a senha ao payload APENAS se o usuário digitou uma nova
+    if (senha) { 
+      payload.senha = senha;
+    }
+    
+    // Envia para a API (o backend já sabe lidar com a senha opcional)
+    await API.updateUser(role === 'aluno' ? 'alunos' : 'professores', id, payload); 
+
     alert('Dados atualizados com sucesso!');
-    cancelarEdicao();
-    if (role === 'aluno') renderAlunosCoord();
+    cancelarEdicao(); // Volta para a tela anterior
+    
+    // Busca os dados atualizados do servidor PRIMEIRO
+    await refreshAllSelectsAsync(); 
+
+    // AGORA atualiza a tabela na tela com os novos dados
+    if (role === 'aluno') renderAlunosCoord(); 
     if (role === 'professor') renderProfsCoord();
-    await refreshAllSelectsAsync();
+
   } catch(err) {
     console.error(err);
     alert('Erro ao salvar edição');
@@ -174,25 +227,46 @@ function cancelarEdicao() {
 }
 
 /* Materias e banners do coordenador (simplificados) */
-async function criarMateria(orig) {
-  // reaproveita função do professor -> chama API.createMateria
-  await window.criarMateria ? window.criarMateria(orig) : null;
-}
+
 async function renderMateriasCoord() {
+  console.log(">> renderMateriasCoord (coordenador.js) iniciada."); // LOG INÍCIO
   try {
-    const materias = await API.listMaterias();
-    window.appState.materias = materias || [];
+    // Usa as matérias já carregadas no estado global
+    const materias = window.appState.materias || []; 
+    console.log(">> renderMateriasCoord: Usando matérias do appState:", materias); // LOG MATÉRIAS
+
     const tb = byId('c_m_list');
+    if (!tb) {
+         console.error(">> renderMateriasCoord: Elemento 'c_m_list' não encontrado!");
+         return;
+    }
     tb.innerHTML = '';
-    if (!materias.length) { tb.innerHTML = '<span class="muted">Nenhuma matéria cadastrada.</span>'; return; }
-    materias.forEach(m => {
+
+    if (!materias.length) { 
+        tb.innerHTML = '<span class="muted">Nenhuma matéria cadastrada.</span>'; 
+        console.log(">> renderMateriasCoord: Nenhuma matéria encontrada."); // LOG VAZIO
+        return; 
+    }
+
+    materias.forEach((m, index) => {
+      console.log(`>> renderMateriasCoord: Processando matéria ${index}:`, m); // LOG DENTRO DO LOOP
       const d = document.createElement('div');
       d.className = 'card';
-      const sala = (window.appState.salas || []).find(s => s.id === m.salaId) || {};
-      d.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${sala.nome || '-'}</div>`;
+
+      // --- CORREÇÃO AQUI ---
+      // Usa m.sala_id (snake_case) para encontrar a sala
+      const sala = (window.appState.salas || []).find(s => s.id === m.sala_id) || {}; 
+      const nomeSala = sala.nome || '-';
+      console.log(`>> renderMateriasCoord: Matéria ${index} - Sala encontrada:`, sala); // LOG SALA
+
+      d.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${nomeSala}</div>`;
       tb.appendChild(d);
     });
-  } catch(err){ console.error(err); }
+  } catch(err){ 
+      console.error(">> ERRO em renderMateriasCoord:", err); // LOG ERRO
+      // Poderíamos adicionar um alerta aqui se quiséssemos
+  }
+  console.log(">> renderMateriasCoord (coordenador.js) finalizada."); // LOG FIM
 }
 
 /* Banners */
@@ -217,55 +291,321 @@ async function salvarBanner() {
     alert('Erro ao salvar banner');
   }
 }
+
 async function renderBannersCoord() {
+  console.log(">> renderBannersCoord: Iniciando renderização..."); 
   try {
-    const banners = await API.listBanners();
-    window.appState.banners = banners || [];
+    // Usa os banners já do appState (atualizados por refreshAllSelectsAsync)
+    const banners = window.appState.banners || []; 
+    console.log(">> renderBannersCoord: Banners recebidos:", banners); 
+
     const col = byId('c_bannersList');
-    col.innerHTML = '';
-    if (!window.appState.banners.length) { col.innerHTML = '<span class="muted">Nenhum banner cadastrado.</span>'; return; }
-    window.appState.banners.slice(-3).forEach(b => {
-      const d = document.createElement('div');
-      d.className = 'banner-item';
-      d.innerHTML = `<div class="banner-head"><h4>${b.tit}</h4></div><div class="banner-body"><p>${b.dicas||''}</p><span class="muted"><b>Data:</b> ${b.data||''}</span></div>`;
-      col.appendChild(d);
+    if (!col) {
+        console.error(">> renderBannersCoord: Elemento 'c_bannersList' não encontrado!");
+        return;
+    }
+    col.innerHTML = ''; // Limpa a lista
+
+    const bannersParaRenderizar = banners || [];
+
+    if (bannersParaRenderizar.length === 0) { 
+        col.innerHTML = '<span class="muted">Nenhum banner cadastrado.</span>'; 
+        console.log(">> renderBannersCoord: Nenhum banner encontrado."); 
+        return; 
+    }
+
+    // Mostra apenas os últimos 3 (ou menos, se houver menos)
+    bannersParaRenderizar.slice(-3).forEach((b, index) => { 
+      console.log(`>> renderBannersCoord: Chamando renderSingleBannerPreview para banner ${index} (ID: ${b.id})`); // Log antes da chamada
+
+      // --- CORREÇÃO: Chama a função auxiliar ---
+      renderSingleBannerPreview(b, col); 
+      // --- FIM DA CORREÇÃO ---
+
     });
-  } catch(err){ console.error(err); }
+  } catch(err){ 
+      console.error(">> ERRO em renderBannersCoord:", err); 
+  }
+  console.log(">> renderBannersCoord: Renderização finalizada."); 
 }
 
 /* Dashboard */
 async function renderDashboard() {
+  console.log(">> renderDashboard: Iniciando renderização...");
   try {
-    const logs = await API.listLogs();
+    // Busca os dados mais recentes da API
+    // Adicionamos listUsers aqui para ter a contagem total mais precisa
+    const [logs, materias, stats, users] = await Promise.all([
+        API.listLogs().catch(()=>[]),
+        API.listMaterias().catch(()=>[]),
+        API.stats().catch(()=>({ respostas: 0, usuarios: 0, materias: 0 })),
+        // Busca todos os tipos de utilizadores para contagem total
+        Promise.all([
+            API.listUsers('alunos').catch(()=>[]),
+            API.listUsers('professores').catch(()=>[]),
+            API.listUsers('coordenadores').catch(()=>[])
+        ]).then(results => [].concat(...results)) // Junta os arrays de utilizadores
+    ]);
+    console.log(">> renderDashboard: Dados recebidos:", { logs, materias, stats, users });
+
+    // Atualiza o estado global
     window.appState.logs = logs || [];
-    const materias = await API.listMaterias();
     window.appState.materias = materias || [];
-    const stats = await API.stats();
-    window.appState.stats = stats || { respostas:0 };
-    byId('d1').textContent = (window.appState.logs || []).filter(l=>l.in).length;
+    window.appState.stats = stats || { respostas: 0, usuarios: 0, materias: 0 };
+    // Atualiza utilizadores no estado global (se necessário noutros locais)
+    // window.appState.users = { alunos: ..., professores: ..., coordenadores: ... }; // Poderia separar aqui
+
+    // --- Atualiza os cartões do Dashboard ---
+    // 'd1' (Total Logins) - Agora usamos a contagem total de utilizadores
+    byId('d1').textContent = users.length || 0;
+    // 'd2' (Questões Respondidas)
     byId('d2').textContent = window.appState.stats.respostas || 0;
-    byId('d3').textContent = window.appState.materias.length;
-    const tb = byId('c_tbLogs'); tb.innerHTML='';
-    (window.appState.logs || []).slice(-15).reverse().forEach(l=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${l.user}</td><td>${l.role}</td><td>${l.in}</td><td>${l.out||'-'}</td>`;
-      tb.appendChild(tr);
-    });
-    // gráfico simples (canvas)
-    const ctx = byId('c_chart').getContext('2d');
-    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
-    const counts = { aluno:0, professor:0, coordenador:0 };
-    (window.appState.logs||[]).forEach(l => counts[l.role] = (counts[l.role]||0) + 1);
-    const labels = ['Aluno','Professor','Coordenador'];
-    const vals = [counts.aluno||0, counts.professor||0, counts.coordenador||0];
-    const W = ctx.canvas.width, H = ctx.canvas.height, pad=30, bw=40, gap=40;
-    const max = Math.max(...vals,1);
-    labels.forEach((lb,i)=>{
-      const x = pad + i*(bw+gap);
-      const h = (H - 2*pad)*(vals[i]/max);
-      ctx.fillStyle = i===0? '#8ecae6' : i===1? '#90be6d' : '#219ebc';
-      ctx.fillRect(x, H-pad-h, bw, h);
-      ctx.fillStyle = '#111'; ctx.fillText(lb, x, H-pad+14); ctx.fillText(vals[i], x+12, H-pad-h-6);
-    });
-  } catch(err){ console.error(err); }
+    // 'd3' (Matérias)
+    byId('d3').textContent = window.appState.materias.length || 0; // Usa o comprimento do array de matérias
+
+    // --- Atualiza a Tabela de Acessos ---
+        const tbodyEl = byId('c_tbLogs'); // Obtém o elemento tbody
+        if (!tbodyEl) {
+            console.error(">> renderDashboard: Tabela tbody 'c_tbLogs' não encontrada!");
+        } else {
+            const tableEl = tbodyEl.closest('table'); // Encontra o elemento <table> pai
+            if (!tableEl) {
+                 console.error(">> renderDashboard: Elemento <table> pai para 'c_tbLogs' não encontrado!");
+                 // Considerar retornar aqui ou lidar com o erro de outra forma
+            } else {
+                // Remove o cabeçalho antigo, se existir
+                tableEl.tHead?.remove(); 
+                // Limpa o conteúdo atual do tbody
+                tbodyEl.innerHTML = ''; 
+
+                const logsParaRenderizar = window.appState.logs || [];
+
+                if (logsParaRenderizar.length === 0) {
+                     tbodyEl.innerHTML = '<tr><td colspan="2">Nenhum registo de acesso encontrado.</td></tr>'; // colspan="2"
+                } else {
+                    // Cria o novo cabeçalho (<thead>) na tabela pai (tableEl)
+                    const thead = tableEl.createTHead(); 
+                    const headerRow = thead.insertRow();
+                    headerRow.innerHTML = '<th>Usuário</th><th>Papel</th>'; // Cabeçalho com 2 colunas
+
+                    // Adiciona as linhas de dados ao tbody existente (tbodyEl)
+                    logsParaRenderizar.forEach(l=>{
+                      const tr = tbodyEl.insertRow(); // Insere linha no tbody correto
+                      const dataEntrada = l.in ? new Date(l.in).toLocaleString('pt-BR') : '-'; // Formata a data se existir
+                      // Cria células apenas para user e role (removemos 'Entrou' e 'Saiu')
+                      tr.innerHTML = `<td>${l.user || '-'}</td><td>${l.role || '-'}</td>`; 
+                    });
+                }
+                console.log(">> renderDashboard: Tabela de logs simplificada preenchida.");
+            }
+        }
+
+    // --- Atualiza o Gráfico ---
+        const canvasEl = byId('c_chart'); // Pega o elemento canvas
+        if (!canvasEl) {
+             console.error(">> renderDashboard: Elemento canvas 'c_chart' não encontrado!");
+             // Considerar retornar aqui se o gráfico for essencial
+        } else {
+            const ctx = canvasEl.getContext('2d');
+            ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height); // Limpa o canvas
+
+            // Reconta os papéis a partir da lista 'users' obtida no Promise.all
+            const counts = { aluno: 0, professor: 0, coordenador: 0 };
+            const usersArray = users || []; // Garante que é um array
+            console.log(">> renderDashboard: Array 'usersArray' para contagem:", usersArray); // LOG: Verifica o array final
+
+            usersArray.forEach((u, index) => {
+                console.log(`>> renderDashboard: Verificando utilizador ${index}:`, u); // LOG: Mostra cada utilizador
+                // Verifica se 'u' é um objeto válido e se tem a propriedade 'role'
+                if (typeof u === 'object' && u !== null && u.hasOwnProperty('role') && counts.hasOwnProperty(u.role)) {
+                   counts[u.role] = counts[u.role] + 1;
+                   console.log(`>> renderDashboard: Utilizador ${index} contado como ${u.role}. Contagens atuais:`, counts); // LOG: Sucesso na contagem
+                } else {
+                   console.warn(`>> renderDashboard: Utilizador ${index} inválido ou sem 'role' válida encontrado:`, u); // LOG: Falha na contagem (mostra o objeto problemático)
+                }
+            });
+
+            console.log(">> renderDashboard: Contagens FINAIS para gráfico:", counts); // LOG contagens finais
+
+            const labels = ['Aluno','Professor','Coordenador'];
+            const vals = [counts.aluno||0, counts.professor||0, counts.coordenador||0];
+            console.log(">> renderDashboard: Valores para gráfico:", vals); // LOG valores
+
+            const W = ctx.canvas.width, H = ctx.canvas.height;
+            // Ajusta padding e largura/gap das barras se necessário
+            const pad=30, numBars=3;
+            const totalGapWidth = W - 2*pad;
+            const barWidth = Math.max(10, Math.floor(totalGapWidth / (numBars * 1.5))); // Calcula largura da barra
+            const gap = Math.floor((totalGapWidth - (numBars * barWidth)) / (numBars + 1)); // Calcula gap entre barras
+
+            console.log(">> renderDashboard: Dimensões Canvas (W, H):", W, H, "BarWidth:", barWidth, "Gap:", gap); // LOG dimensões
+
+            const maxVal = Math.max(...vals, 1); // Garante que maxVal é pelo menos 1
+            console.log(">> renderDashboard: Valor máximo:", maxVal); // LOG maxVal
+
+            labels.forEach((lb,i)=>{
+              // Calcula posição X da barra (considerando gaps)
+              const x = pad + gap + i*(barWidth + gap);
+              // Calcula altura da barra
+              const h = Math.max(0, (H - 2*pad) * (vals[i] / maxVal)); // Garante que h >= 0
+              console.log(`>> renderDashboard: Barra ${i} (${lb}): x=${x.toFixed(1)}, h=${h.toFixed(1)}, val=${vals[i]}`); // LOG barra individual
+
+              // Define a cor da barra
+              ctx.fillStyle = i===0? '#8ecae6' : i===1? '#90be6d' : '#219ebc';
+              // Desenha a barra (a partir da base y=H-pad, subindo por h)
+              ctx.fillRect(x, H-pad-h, barWidth, h);
+
+              // Desenha os rótulos e valores
+              ctx.fillStyle = '#111'; // Cor do texto
+              ctx.textAlign = 'center'; // Centraliza texto horizontalmente
+              ctx.fillText(lb, x + barWidth/2, H-pad+14); // Rótulo abaixo da barra, centralizado
+              ctx.fillText(vals[i], x + barWidth/2, H-pad-h-6); // Valor acima da barra, centralizado
+            });
+             console.log(">> renderDashboard: Gráfico desenhado."); // LOG final
+        } // Fecha o else para canvasEl
+
+  } catch(err){
+      console.error(">> ERRO em renderDashboard:", err);
+  }
+  console.log(">> renderDashboard: Renderização finalizada.");
+}
+// Função auxiliar para renderizar UM banner (usando DOM)
+function renderSingleBannerPreview(b, containerElement) {
+    // --- LOGS IMEDIATAMENTE NA ENTRADA ---
+    console.log("--- renderSingleBannerPreview EXECUTANDO ---");
+    console.log("Dados do Banner (b):", JSON.stringify(b)); // Mostra os dados recebidos
+    console.log("Elemento Container:", containerElement);
+    // --- FIM DOS LOGS INICIAIS ---
+
+    try {
+        // Verificação 1: Container (Simplificada)
+        if (!containerElement) {
+            console.error("!!! FALHA CHECK 1: containerElement é nulo ou indefinido!");
+            return; // Sai imediatamente se o container não existe
+        }
+        if (typeof containerElement.appendChild !== 'function') {
+             console.error("!!! FALHA CHECK 1b: containerElement não tem appendChild!");
+             return;
+        }
+        console.log("--- Check 1 OK: containerElement parece válido ---");
+
+        // Verificação 2: Banner Object e ID (Simplificada)
+        if (!b) {
+            console.error("!!! FALHA CHECK 2: Objeto banner 'b' é nulo ou indefinido!");
+            return; // Sai se o banner não existe
+        }
+         if (typeof b !== 'object') {
+             console.error("!!! FALHA CHECK 2b: Banner 'b' não é um objeto:", b);
+             return;
+         }
+        if (!b.id) {
+             console.error("!!! FALHA CHECK 2c: Objeto banner 'b' não tem ID:", b);
+             // Poderíamos tentar renderizar sem o botão de apagar ou retornar
+             return; 
+        }
+        console.log(`--- Check 2 OK: Banner ID ${b.id} parece válido ---`);
+
+        // --- Cria o DIV principal do banner ---
+        const d = document.createElement('div');
+        d.id = `banner-item-${b.id}`;
+        d.className = 'banner banner-item-coord';
+        console.log("--- Passo 3: Div principal criado ---");
+
+        // --- Cria e adiciona a Imagem ou Placeholder ---
+        const imgUrl = b.img_url || '';
+        let imgElement;
+        // ... (código para criar imgElement como <img> ou <div>) ...
+        // (O código anterior para criar a imagem parecia correto, vamos mantê-lo)
+         if (imgUrl) {
+            imgElement = document.createElement('img');
+            imgElement.src = imgUrl;
+            imgElement.alt = b.tit || 'Banner';
+            imgElement.style.width = '120px';
+            imgElement.style.height = '90px';
+            imgElement.style.objectFit = 'cover';
+            imgElement.style.borderRadius = '10px';
+            imgElement.style.border = '1px solid var(--borda)';
+            imgElement.onerror = function() { this.style.display = 'none'; console.error('Erro ao carregar imagem (DOM):', imgUrl); };
+        } else {
+            imgElement = document.createElement('div');
+            imgElement.style.width = '120px'; /*...*/ imgElement.textContent = 'Sem Imagem';
+        }
+        d.appendChild(imgElement);
+        console.log("--- Passo 4: Imagem/Placeholder adicionado ---");
+
+        // --- Cria o DIV para as informações de texto ---
+        const infoDiv = document.createElement('div');
+        infoDiv.style.flexGrow = '1';
+        // ... (código para adicionar titleH4, dicasP, dataSpan, localSpan a infoDiv) ...
+         // Título (h4)
+        const titleH4 = document.createElement('h4'); /*...*/ infoDiv.appendChild(titleH4);
+        // Dicas (p)
+        const dicasP = document.createElement('p'); /*...*/ infoDiv.appendChild(dicasP);
+        // Data e Hora (span)
+        const dataSpan = document.createElement('span'); /*...*/ infoDiv.appendChild(dataSpan); infoDiv.appendChild(document.createElement('br'));
+        // Local e Matérias (span)
+        const localSpan = document.createElement('span'); /*...*/ infoDiv.appendChild(localSpan);
+        d.appendChild(infoDiv);
+        console.log("--- Passo 5: Div de info adicionado ---");
+
+        // --- Cria e adiciona o Botão Apagar ---
+        const deleteButton = document.createElement('button');
+        // Usa a classe base 'btn' e adiciona uma classe específica 'btn-delete'
+        deleteButton.className = 'btn btn-delete'; 
+        // Mantém apenas estilos essenciais de layout que não vêm do .btn
+        deleteButton.style.marginLeft = '10px'; 
+        deleteButton.style.alignSelf = 'center';
+        deleteButton.style.flexShrink = '0'; // Impede que o botão encolha
+        deleteButton.textContent = 'Apagar';
+        const bannerIdForClick = b.id; 
+        deleteButton.onclick = function(event) { 
+            event.stopPropagation();
+            if (typeof apagarBanner === 'function') { 
+                apagarBanner(bannerIdForClick); 
+            } else { 
+                console.error("Função apagarBanner não definida!"); 
+            }
+        }; 
+        d.appendChild(deleteButton); 
+        console.log("--- Passo 6: Botão Apagar adicionado ---");
+
+        // Adiciona o elemento banner completo ao container
+        containerElement.appendChild(d);
+        console.log("--- Passo 7: Banner completo adicionado ao container (FIM) ---");
+
+    } catch (domError) {
+         console.error(`!!! ERRO FATAL CAPTURADO em renderSingleBannerPreview para banner ID ${b ? b.id : 'desconhecido'} !!!`, domError);
+    }
+    // console.log("--- renderSingleBannerPreview END ---"); // Log movido para dentro do try ou não será alcançado em caso de erro
+}
+
+async function apagarBanner(bannerId) {
+    console.log(">> apagarBanner: Tentando apagar banner com ID:", bannerId);
+    if (!bannerId) return alert("ID do banner inválido.");
+
+    // Pede confirmação ao utilizador
+    if (!confirm("Tem a certeza que deseja apagar este banner?")) {
+        console.log(">> apagarBanner: Exclusão cancelada pelo utilizador.");
+        return; 
+    }
+
+    try {
+        console.log(">> apagarBanner: Chamando API.deleteBanner...");
+        // Chama a nova função da API (que adicionaremos ao api.js)
+        await API.deleteBanner(bannerId); 
+        console.log(">> apagarBanner: Banner apagado com sucesso via API.");
+
+        alert("Banner apagado com sucesso!");
+
+        // Atualiza a lista de banners na interface
+        // Busca os dados atualizados do servidor
+        await refreshAllSelectsAsync(); 
+        // Redesenha a lista de banners
+        renderBannersCoord(); 
+
+    } catch (err) {
+        console.error(">> ERRO em apagarBanner:", err);
+        const errorMsg = err.body?.message || err.message || 'Erro desconhecido ao apagar banner.';
+        alert(`Erro ao apagar banner: ${errorMsg}`);
+    }
 }

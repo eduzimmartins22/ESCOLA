@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ESTUDE — MVP</title>
+  <link rel="icon" type="image/png" href="/static/image/logo.png">
   <link rel="stylesheet" href="static/css/app.css">
   <link rel="stylesheet" href="static/css/auth.css">
   <link rel="stylesheet" href="static/css/base.css">
@@ -12,9 +12,14 @@
 </head>
 <body>
   <header>
-    <img src="" alt="Logo" onerror="this.style.display='none'" />
-    <h1>ESTUDE — Jogo Institucional</h1>
-  </header>
+  <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">
+   <span></span>
+   <span></span>
+   <span></span>
+  </button>
+  <img src="/static/image/logo.png" alt="Logo" style="height: 36px;">
+  <h1>ESTUDE — Jogo Institucional</h1>
+</header>
 
   <section class="auth" id="auth">
     <div class="top">
@@ -90,8 +95,9 @@
   </section>
 
   <section class="app" id="app">
+    <div class="menu-overlay" id="menuOverlay"></div>
     <div class="layout">
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
         <div class="userbox">
           <div id="ub-nome" style="font-weight: 600"></div>
           <div id="ub-role" class="muted" style="color: #d1fae5"></div>
@@ -99,13 +105,13 @@
         <div class="menu" id="menu-aluno" class="hidden">
           <h4>Aluno</h4>
           <button data-tab="a_materias">Escolher Matéria</button>
-          <button data-tab="a_sala">Entrar em Sala</button>
           <button data-tab="a_ranking">Ranking</button>
         </div>
         <div class="menu" id="menu-professor" class="hidden">
           <h4>Professor</h4>
           <button data-tab="p_materias">Criar/Ver Matérias</button>
           <button data-tab="p_questoes">Perguntas e Distribuição</button>
+          <button data-tab="p_ver_sala">Ver Alunos da Sala</button>
           <button data-tab="p_conteudos">Conteúdos</button>
         </div>
         <div class="menu" id="menu-coordenador" class="hidden">
@@ -131,12 +137,14 @@
           </div>
           <div class="grid2">
             <div class="card">
-              <label>Minha sala</label>
-              <select id="a_selSala"></select>
-              <div class="muted">
-                Se a sala estiver vazia, peça ao professor/coordenador para criá-la.
-              </div>
-            </div>
+          <label>Minha Sala</label>
+          <div id="a_nomeSala" style="padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background-color: #f8fafc; min-height: 44px;">
+              Carregando... 
+          </div>
+          <div class="muted" id="a_salaMutedText">
+              Se não estiver vinculado a uma sala, contacte o coordenador ou professor.
+          </div>
+        </div>
             <div class="card">
               <label>Matérias da sala</label>
               <select id="a_selMateria"></select>
@@ -192,16 +200,16 @@
             </div>
           </section>
 
-          <section id="a_sala" class="hidden">
+          <section id="p_ver_sala" class="hidden">
             <h2 class="title">Sala — Alunos</h2>
             <div class="grid2">
               <div class="card">
                 <label>Minha sala</label>
-                <select id="a_salaView"></select>
+                <select id="p_salaView"></select>
                 <button
                   class="btn outline"
                   style="margin-top: 8px"
-                  onclick="renderAlunosSala()"
+                  onclick="renderAlunosSalaProfessor()"
                 >
                   Ver alunos
                 </button>
@@ -212,10 +220,10 @@
                   <thead>
                     <tr>
                       <th>Nome</th>
-                      <th>RA</th>
+                      <th>Matrícula</th>
                     </tr>
                   </thead>
-                  <tbody id="a_tbAlunos"></tbody>
+                  <tbody id="p_tbAlunos"></tbody>
                 </table>
               </div>
             </div>
@@ -272,21 +280,26 @@
                 </select>
                 <label style="margin-top: 8px">Enunciado</label>
                 <input id="p_q_enun" placeholder="Digite a pergunta" />
+                <label style="margin-top: 8px">Imagem (opcional)</label>
+                <input id="p_q_img" type="file" accept="image/*" />
+                <img id="p_q_preview" style="display:none; margin-top:8px; max-width:200px; border-radius:8px;" />
+
                 <label style="margin-top: 8px">Alternativas (5)</label>
                 <input id="p_q_a0" placeholder="A" />
                 <input id="p_q_a1" placeholder="B" />
                 <input id="p_q_a2" placeholder="C" />
                 <input id="p_q_a3" placeholder="D" />
                 <input id="p_q_a4" placeholder="E" />
-                <label style="margin-top: 8px">Índice da correta (0-4)</label>
+                <label style="margin-top: 8px">Índice da correta (1 à 5)</label>
                 <input id="p_q_cor" type="number" min="0" max="4" value="0" />
-                <button
-                  class="btn verde"
-                  style="margin-top: 10px"
-                  onclick="adicionarPergunta()"
-                >
-                  Adicionar Pergunta
-                </button>
+
+		<button
+ id="btn_add_pergunta"
+ class="btn verde" 
+style="margin-top: 10px">
+Adicionar Pergunta
+</button>
+
               </div>
               <div class="card">
                 <h3 style="margin: 0 0 8px">Distribuição de Níveis</h3>
@@ -368,8 +381,6 @@
                     <tr>
                       <th>Usuário</th>
                       <th>Papel</th>
-                      <th>Entrou</th>
-                      <th>Saiu</th>
                     </tr>
                   </thead>
                   <tbody id="c_tbLogs"></tbody>
@@ -573,11 +584,17 @@
                 <div><label>Matrícula</label><input id="reg_c_mat" /></div>
                 <div><label>Senha</label><input id="reg_c_senha" type="password" /></div>
             </div>
-            <div class="actions">
-                <button class="btn verde" onclick="submitRegister('coordenador')">
-                    Concluir Cadastro
-                </button>
+            <div class="row" style="margin-top: 12px;"> <div> 
+                <label>Chave Mestre</label>
+                <input id="reg_c_masterkey" type="password" placeholder="Chave de segurança" />
             </div>
+            <div></div> </div>
+            <div class="actions">
+            <button class="btn verde" onclick="submitRegister('coordenador')">...</button>
+            <button class="btn outline" onclick="cancelarCadastro()"> 
+                Cancelar
+            </button>
+        </div>
         </div>
         <div class="right">
             <h2>Processo de Cadastro</h2>
@@ -621,8 +638,33 @@
         </div>
     </div>
 </section>
+<section id="c_edit_sala_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Sala</h3>
+            <p class="muted">Altere as informações da sala selecionada.</p>
+            <input type="hidden" id="edit_sala_id">
+            <div class="row">
+                <div><label>Nome da Sala</label><input id="edit_sala_nome" /></div>
+                <div><label>Capacidade</label><input id="edit_sala_cap" type="number" /></div>
+            </div>
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicaoSala()">
+                    Salvar Edição
+                </button>
+                <button class="btn outline" onclick="cancelarEdicaoSala()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Salas</h2>
+            <p>Altere o nome e a capacidade de uma sala existente.</p>
+        </div>
+    </div>
+</section>
 
-  <script src="api.js"></script>    
+  <script src="static/js/api.js"></script>    
   <script src="static/js/storage.js"></script>
   <script src="static/js/util.js"></script>
   <script src="static/js/auth.js"></script>
@@ -647,6 +689,92 @@
       function renderSalasCoordOnMaterias() {
         fillSelect("c_m_selSala", LS.get("salas"));
       }
+    </script>
+
+   <script>
+    // ========================================
+    // MENU HAMBÚRGUER MOBILE (INLINE)
+    // ========================================
+    (function() {
+      'use strict';
+
+      function initMobileMenu() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const menuOverlay = document.getElementById('menuOverlay');
+
+        if (!menuToggle || !sidebar || !menuOverlay) {
+          console.warn('[Menu Mobile] Elementos não encontrados');
+          return;
+        }
+
+        function isMobile() {
+          return window.innerWidth <= 480;
+        }
+
+        function openMenu() {
+          if (!isMobile()) return;
+          sidebar.classList.add('open');
+          menuOverlay.classList.add('active');
+          menuToggle.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function closeMenu() {
+          sidebar.classList.remove('open');
+          menuOverlay.classList.remove('active');
+          menuToggle.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+
+        function toggleMenu() {
+          if (sidebar.classList.contains('open')) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        }
+
+        // Event: clicar no hambúrguer
+        menuToggle.addEventListener('click', toggleMenu);
+
+        // Event: clicar no overlay
+        menuOverlay.addEventListener('click', closeMenu);
+
+        // Event: clicar em botões do menu
+        const menuButtons = sidebar.querySelectorAll('.menu button');
+        menuButtons.forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            if (isMobile()) {
+              closeMenu();
+            }
+          });
+        });
+
+        // Event: redimensionar janela
+        window.addEventListener('resize', function() {
+          if (!isMobile() && sidebar.classList.contains('open')) {
+            closeMenu();
+          }
+        });
+
+        // Event: tecla ESC
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+            closeMenu();
+          }
+        });
+
+        console.log('[Menu Mobile] Inicializado com sucesso');
+      }
+
+      // Inicializar quando DOM estiver pronto
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMobileMenu);
+      } else {
+        initMobileMenu();
+      }
+    })();
     </script>
   </body>
 

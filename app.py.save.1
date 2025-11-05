@@ -134,7 +134,7 @@ def list_users(role):
         return jsonify({"error": "Falha na conexão com o servidor."}), 500
 
     try:
-        with conn.cursor() as cursor:
+        with conn.
             # Seleciona explicitamente as colunas com snake_case
             sql = "SELECT id, nome, cpf, matricula, sala_id, role FROM users WHERE role = %s"
             cursor.execute(sql, (db_role,))
@@ -147,13 +147,8 @@ def list_users(role):
 def update_user(role, user_id):
     """Atualiza os dados de um usuário específico."""
     data = request.get_json()
-    print(f"\n{'='*60}")
-    print(f"UPDATE USER - Role: {role}, ID: {user_id}")
-    print(f"Dados recebidos: {data}")
-    print(f"{'='*60}\n")
-
-    if not data:
-        return jsonify({"error": "Nenhum dado fornecido"}), 400
+    print(f"--- Dados recebidos para atualização ({role}/{user_id}) ---")
+    print(data)
 
     conn = get_db_connection()
     if not conn:
@@ -164,69 +159,9 @@ def update_user(role, user_id):
             fields = []
             params = []
 
-            if 'nome' in data and data['nome']:
+            if 'nome' in data:
                 fields.append("nome = %s")
-                params.append(data['nome'])
-            
-            if 'mat' in data:
-                fields.append("matricula = %s")
-                params.append(data['mat'] if data['mat'] else None)
-            
-            if 'cpf' in data and data['cpf']:
-                cpf_limpo = data['cpf'].replace('-', '').replace('.', '').strip()
-                fields.append("cpf = %s")
-                params.append(cpf_limpo)
-            
-            if 'senha' in data and data['senha'] and len(str(data['senha']).strip()) > 0:
-                try:
-                    senha_hash = bcrypt.hashpw(data['senha'].encode('utf-8'), bcrypt.gensalt())
-                    fields.append("senha_hash = %s")
-                    params.append(senha_hash)
-                    print(f"✓ Senha será atualizada")
-                except Exception as e:
-                    print(f"✗ Erro ao gerar hash: {e}")
-                    return jsonify({"error": "Erro ao processar senha"}), 500
-            
-            if 'salaId' in data:
-                fields.append("sala_id = %s")
-                params.append(data['salaId'] if data['salaId'] else None)
-
-            if not fields:
-                return jsonify({"error": "Nenhum campo para atualizar"}), 400
-
-            params.append(user_id)
-            sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s"
-
-            print(f"SQL: {sql}")
-            print(f"Params: {params}")
-
-            cursor.execute(sql, tuple(params))
-            
-            if cursor.rowcount == 0:
-                return jsonify({"error": "Usuário não encontrado"}), 404
-
-        return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
-        
-    except pymysql.IntegrityError as e:
-        if 'Duplicate entry' in str(e) and 'cpf' in str(e).lower():
-            return jsonify({"error": "CPF já cadastrado"}), 409
-        return jsonify({"error": f"Erro: {str(e)}"}), 409
-        
-    except Exception as e:
-        print(f"ERRO: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": f"Erro: {str(e)}"}), 500
-        
-    finally:
-        if conn:
-            conn.close()
-
-            
-         
-         
-
-            
+                params.append(data['n
 
 @app.route('/api/users/<role>/<user_id>', methods=['DELETE'])
 def delete_user(role, user_id):

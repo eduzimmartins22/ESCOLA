@@ -1,30 +1,90 @@
 // aluno.js
 async function renderAlunoMaterias() {
-  await refreshAllSelectsAsync();
-  fillSelect('a_selSala', window.appState.salas, window.appState.user?.salaId || '');
-  if (window.appState.user?.salaId) {
-    const materias = (window.appState.materias || []).filter(m => m.salaId === window.appState.user.salaId);
-    fillSelectWithMaterias('a_selMateria', materias, false);
-  } else {
-    byId('a_selMateria').innerHTML = '<option value="">Selecione uma sala</option>';
+  console.log(">> renderAlunoMaterias: Iniciando..."); // Log
+  try {
+    // Garante que os dados mais recentes (salas, matérias, utilizador) estão disponíveis
+    await refreshAllSelectsAsync(); 
+
+    const salaDisplayEl = byId('a_nomeSala');
+    const materiaSelectEl = byId('a_selMateria');
+    const salaMutedTextEl = byId('a_salaMutedText');
+    const materiaViewEl = byId('a_materiaView');
+
+    // Garante que os elementos existem antes de continuar
+    if (!salaDisplayEl || !materiaSelectEl || !salaMutedTextEl || !materiaViewEl) {
+        console.error(">> renderAlunoMaterias: Elementos essenciais do DOM não encontrados!");
+        return;
+    }
+
+    // Esconde a vista detalhada da matéria por defeito
+    materiaViewEl.classList.add('hidden'); 
+
+    const userSalaId = window.appState.user?.sala_id; // Usa snake_case
+    console.log(">> renderAlunoMaterias: ID da sala do utilizador:", userSalaId); // Log
+
+    if (userSalaId) {
+        // Encontra o nome da sala
+        const sala = window.appState.salas.find(s => s.id === userSalaId);
+        const nomeSala = sala ? sala.nome : `Sala ID: ${userSalaId} (não encontrada)`;
+        console.log(">> renderAlunoMaterias: Nome da sala encontrado:", nomeSala); // Log
+
+        // Exibe o nome da sala
+        salaDisplayEl.textContent = nomeSala;
+        salaMutedTextEl.textContent = ''; // Limpa a mensagem muted padrão
+
+        // Filtra as matérias APENAS para a sala do utilizador
+        const materiasDaSala = (window.appState.materias || []).filter(m => m.sala_id === userSalaId); // Usa snake_case
+        console.log(">> renderAlunoMaterias: Matérias filtradas para a sala:", materiasDaSala); // Log
+
+        // Preenche o select de matérias (usa a função correta)
+        fillSelectById('a_selMateria', materiasDaSala.map(m => ({ id: m.id, nome: m.nome })), null); // Passa um array de {id, nome}
+
+        if (materiasDaSala.length === 0) {
+             materiaSelectEl.innerHTML = '<option value="">(Sem matérias nesta sala)</option>';
+             salaMutedTextEl.textContent = 'A sua sala ainda não tem matérias cadastradas.';
+        }
+
+    } else {
+        // Caso o utilizador não esteja vinculado a nenhuma sala
+        console.log(">> renderAlunoMaterias: Utilizador não vinculado a uma sala."); // Log
+        salaDisplayEl.textContent = 'Nenhuma sala vinculada';
+        materiaSelectEl.innerHTML = '<option value="">Vincule-se a uma sala primeiro</option>';
+        salaMutedTextEl.textContent = 'Contacte o coordenador para ser vinculado a uma sala.';
+    }
+
+  } catch (err) {
+      console.error(">> ERRO em renderAlunoMaterias:", err);
+      // Opcional: Mostrar uma mensagem de erro na UI
   }
-  byId('a_materiaView').classList.add('hidden');
+  console.log(">> renderAlunoMaterias: Finalizada."); // Log
 }
 
 async function abrirMateriaAluno() {
-  const salaId = sel('a_selSala').value;
-  const materiaId = sel('a_selMateria').value;
-  if (!salaId || !materiaId) return alert('Selecione sala e matéria.');
+  const materiaId = sel('a_selMateria').value; // Obtém apenas o ID da matéria
+  // Usa o sala_id do utilizador logado (se necessário internamente, mas não para a lógica atual)
+  const userSalaId = window.appState.user?.sala_id; 
+
+  if (!materiaId) return alert('Selecione uma matéria.');
+  if (!userSalaId) return alert('Utilizador não vinculado a uma sala.'); // Verificação adicional
+
   const m = (window.appState.materias || []).find(x => x.id === materiaId);
-  const cont = byId('a_conteudos');
+
+  // ... (Resto da função que exibe conteúdos e inicia o quiz continua igual) ...
+   const cont = byId('a_conteudos');
   cont.innerHTML = '';
-  if (!m || !m.conteudos || m.conteudos.length === 0) cont.innerHTML = '<span class="muted">Sem conteúdos cadastrados.</span>';
-  (m.conteudos || []).forEach(c => {
-    const d = document.createElement('div');
-    d.className = 'banner';
-    d.innerHTML = `<img src="${c.url}" onerror="this.style.background='#eef2ff'"><div><strong>${c.nome}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
-    cont.appendChild(d);
-  });
+  if (!m || !m.conteudos || m.conteudos.length === 0) {
+       cont.innerHTML = '<span class="muted">Sem conteúdos cadastrados.</span>';
+  } else {
+      (m.conteudos || []).forEach(c => {
+        const d = document.createElement('div');
+        // Ajusta a classe para 'banner' para usar estilos existentes
+        d.className = 'banner'; 
+        // Usa b.img_url se existir, ou placeholder/esconde
+        const imgHtml = c.url ? `<img src="${c.url}" alt="${c.nome || 'Conteúdo'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none';">` : '';
+        d.innerHTML = `${imgHtml}<div><strong>${c.nome || 'Sem Nome'}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
+        cont.appendChild(d);
+      });
+  }
   quizStart(materiaId);
   byId('a_materiaView').classList.remove('hidden');
 }
@@ -71,26 +131,80 @@ async function renderAlunosSala() {
 
 /* Banners */
 async function renderBannersAluno() {
+  console.log(">> renderBannersAluno: Iniciando...");
   const col = byId('a_bannersCol');
-  col.innerHTML = '';
-  await refreshAllSelectsAsync();
+  if (!col) return console.error(">> renderBannersAluno: Elemento 'a_bannersCol' não encontrado.");
+
+  col.innerHTML = ''; 
+
+  // Usa os banners já existentes em appState (atualizados pelo refreshAllSelectsAsync chamado em enterApp ou openTab)
   const banners = window.appState.banners || [];
-  banners.forEach(b => {
+  console.log(">> renderBannersAluno: Banners a renderizar:", banners);
+
+  if (banners.length === 0) {
+      col.innerHTML = '<span class="muted">Nenhum banner disponível.</span>';
+      return;
+  }
+
+  banners.forEach((b, index) => {
+    console.log(`>> renderBannersAluno: Renderizando banner ${index}:`, b);
     const d = document.createElement('div');
-    d.className = 'banner';
+    d.className = 'banner'; // Usa a classe 'banner'
     d.style.cursor = 'pointer';
-    d.onclick = () => showBannerInfo(b);
-    d.innerHTML = `<img src="${b.img}" onerror="this.style.background='#eef2ff'"><div><strong>${b.tit}</strong><div class="muted">${b.data || ''} ${b.hora || ''}</div></div>`;
+    d.onclick = () => showBannerInfo(b); 
+
+    // --- CORREÇÃO: Verifica se b.img_url existe ---
+    const imgUrl = b.img_url || ''; // Usa a URL ou string vazia
+    console.log(`>> renderBannersAluno: Banner ${index} - img_url:`, imgUrl); // LOG URL
+
+    const imgHtml = imgUrl ? 
+        `<img src="${imgUrl}" alt="${b.tit || 'Banner'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none'; console.error('Erro ao carregar imagem (renderBannersAluno):', '${imgUrl}');">` // Adiciona log no onerror
+        : 
+        '<div style="width:120px; height: 90px; background-color:#eef2ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6b7280; text-align: center;">Sem Imagem</div>';
+
+    // Formata data e hora
+    let dataFormatada = '-';
+    if (b.data_evento) { try { dataFormatada = new Date(b.data_evento + 'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' }); } catch (e) {} }
+    let horaFormatada = b.hora ? b.hora.substring(0,5) : '';
+
+    // Monta o HTML interno
+    d.innerHTML = `
+        ${imgHtml}
+        <div>
+            <strong>${b.tit || 'Sem Título'}</strong>
+            <div class="muted" style="font-size: 11px;">${dataFormatada} ${horaFormatada}</div>
+        </div>
+    `;
     col.appendChild(d);
   });
+  console.log(">> renderBannersAluno: Finalizado.");
 }
+
+// Garante que showBannerInfo também usa img_url corretamente
 function showBannerInfo(b) {
-  byId('a_bannerInfo').innerHTML = `
+  console.log(">> showBannerInfo: Mostrando detalhes para:", b);
+  const infoEl = byId('a_bannerInfo');
+  if (!infoEl) return console.error(">> showBannerInfo: Elemento 'a_bannerInfo' não encontrado.");
+
+  let dataFormatada = '-';
+  if (b.data_evento) { try { dataFormatada = new Date(b.data_evento + 'T00:00:00Z').toLocaleDateString('pt-BR', { timeZone: 'UTC' }); } catch(e){} }
+  let horaFormatada = b.hora ? b.hora.substring(0,5) : '';
+
+  // --- CORREÇÃO: Verifica se b.img_url existe ---
+  const imgUrl = b.img_url || ''; 
+  console.log(`>> showBannerInfo: img_url:`, imgUrl); // LOG URL
+
+  const imgHtml = imgUrl ? 
+      `<img src="${imgUrl}" alt="${b.tit || 'Banner'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none'; console.error('Erro ao carregar imagem (showBannerInfo):', '${imgUrl}');">` // Adiciona log no onerror
+      : 
+      '<div style="width:120px; height: 90px; background-color:#eef2ff; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #6b7280; text-align: center;">Sem Imagem</div>';
+
+  infoEl.innerHTML = `
     <div class="banner">
-      <img src="${b.img}" onerror="this.style.background='#eef2ff'">
+      ${imgHtml}
       <div>
-        <strong>${b.tit}</strong>
-        <div class="muted">${b.data || ''} ${b.hora || ''} • ${b.local || ''}</div>
+        <strong>${b.tit || 'Sem Título'}</strong>
+        <div class="muted">${dataFormatada} ${horaFormatada} • ${b.local || '-'}</div>
         <div class="muted">Matérias: ${b.materias || '-'}</div>
         <div class="muted">Dicas: ${b.dicas || '-'}</div>
       </div>
@@ -143,6 +257,9 @@ function responder(i) {
   }
   stats.respostas = (stats.respostas||0) + 1;
   window.appState.stats = stats;
+  API.incrementStat({ stat_key: 'questions_answered' }).catch(err => {
+      console.error("Erro ao incrementar 'questions_answered':", err);
+  });
   novaPergunta();
 }
 function quizTentarNovamente() { Q.streak=0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0); novaPergunta(); }
@@ -175,7 +292,10 @@ function renderRanking() {
 }
 function resetarRanking() {
   if (!confirm('Confirma resetar o ranking?')) return;
-  API.delete(`${ENDPOINTS.ranking}/all`).catch(()=>{}); // opcional, depende do backend
+  API.deleteRanking().catch(err => {
+    console.error("Erro ao tentar resetar ranking via API:", err);
+    // Poderia mostrar um alerta de erro aqui
+});
   window.appState.ranking = [];
   renderRanking();
   alert('Ranking resetado.');
