@@ -225,20 +225,54 @@ function perguntasPorNivel(materiaId, nivel) {
   const m = (window.appState.materias||[]).find(x => x.id === materiaId);
   return (m?.perguntas||[]).filter(q => q.nivel === nivel);
 }
+
 function novaPergunta() {
   const pool = perguntasPorNivel(Q.materiaId, Q.nivel);
-  if (!pool.length) { byId('a_q').textContent = 'Sem perguntas neste nível.'; byId('a_ans').innerHTML=''; return; }
-  Q.pergunta = pool[Math.floor(Math.random()*pool.length)];
-  byId('a_q').textContent = Q.pergunta.q;
-  const ans = byId('a_ans');
-  ans.innerHTML = '';
-  Q.pergunta.a.forEach((t,i)=> {
+
+  const qContainer = byId('a_q'); // Elemento que conterá o enunciado E a imagem
+  const ansContainer = byId('a_ans'); // Elemento que conterá as respostas
+
+  if (!pool.length) { 
+      qContainer.innerHTML = 'Sem perguntas neste nível.'; // Limpa enunciado e imagem
+      ansContainer.innerHTML = ''; // Limpa respostas
+      return; 
+  }
+
+  Q.pergunta = pool[Math.floor(Math.random() * pool.length)];
+
+  // --- LÓGICA DA IMAGEM ADICIONADA ---
+  let htmlEnunciado = '';
+
+  // 1. Adiciona a imagem SE ela existir
+  if (Q.pergunta.img_url) {
+      console.log(">> novaPergunta: Exibindo imagem:", Q.pergunta.img_url);
+      htmlEnunciado += `
+          <img src="${Q.pergunta.img_url}" 
+               alt="Imagem da pergunta" 
+               style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--borda);"
+               onerror="this.style.display='none'; console.error('Erro ao carregar imagem da pergunta:', '${Q.pergunta.img_url}');">
+      `;
+  }
+
+  // 2. Adiciona o texto do enunciado
+  htmlEnunciado += `<p>${Q.pergunta.q}</p>`; // Envolve o texto num <p> para melhor espaçamento
+
+  // Define o conteúdo do container do enunciado
+  qContainer.innerHTML = htmlEnunciado; 
+
+  // Limpa as respostas antigas
+  ansContainer.innerHTML = '';
+
+  // Adiciona os botões de resposta
+  Q.pergunta.a.forEach((t, i) => {
     const b = document.createElement('button');
     b.textContent = t;
     b.onclick = () => responder(i);
-    ans.appendChild(b);
+    ansContainer.appendChild(b);
   });
+  // --- FIM DAS ALTERAÇÕES ---
 }
+
 function responder(i) {
   const stats = window.appState.stats || { respostas:0 };
   if (i === Q.pergunta.correta) {

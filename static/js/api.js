@@ -95,11 +95,17 @@ const API = {
   createSala: (payload) => apiPost(`/salas`, payload), // CORRIGIDO
 
   // ---------- MATERIAS ----------
-  listMaterias: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return apiGet(`/materias${qs ? "?" + qs : ""}`); // CORRIGIDO
-  },
-  createMateria: (payload) => apiPost('/materias', payload), // CORRIGIDO
+listMaterias: (params = {}) => {
+  const qs = new URLSearchParams(params).toString();
+  return apiGet(`/materias${qs ? "?" + qs : ""}`);
+},
+createMateria: (payload) => apiPost('/materias', payload),
+updateMateria: (id, payload) => // ✅ NOVA FUNÇÃO
+  apiFetch(`/materias/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  }),
+
 
   // ---------- PERGUNTAS ----------
 listPerguntas: (params = {}) => {

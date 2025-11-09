@@ -35,7 +35,7 @@ def get_db_connection():
         return None
 
 # ===========================
-# ��� ROTA PRINCIPAL
+# ROTA PRINCIPAL
 # ===========================
 @app.route('/')
 def index():
@@ -43,7 +43,7 @@ def index():
     return render_template('index.html')
 
 # ===========================
-# ��� ROTAS DE API - AUTENTICAÇÃO E USUÁRIOS
+# ROTAS DE API - AUTENTICAÇÃO E USUÁRIOS
 # ===========================
 
 @app.route('/api/login', methods=['POST'])
@@ -167,16 +167,16 @@ def update_user(role, user_id):
             if 'nome' in data and data['nome']:
                 fields.append("nome = %s")
                 params.append(data['nome'])
-            
+           
             if 'mat' in data:
                 fields.append("matricula = %s")
                 params.append(data['mat'] if data['mat'] else None)
-            
+           
             if 'cpf' in data and data['cpf']:
                 cpf_limpo = data['cpf'].replace('-', '').replace('.', '').strip()
                 fields.append("cpf = %s")
                 params.append(cpf_limpo)
-            
+           
             if 'senha' in data and data['senha'] and len(str(data['senha']).strip()) > 0:
                 try:
                     senha_hash = bcrypt.hashpw(data['senha'].encode('utf-8'), bcrypt.gensalt())
@@ -186,7 +186,7 @@ def update_user(role, user_id):
                 except Exception as e:
                     print(f"✗ Erro ao gerar hash: {e}")
                     return jsonify({"error": "Erro ao processar senha"}), 500
-            
+           
             if 'salaId' in data:
                 fields.append("sala_id = %s")
                 params.append(data['salaId'] if data['salaId'] else None)
@@ -201,32 +201,32 @@ def update_user(role, user_id):
             print(f"Params: {params}")
 
             cursor.execute(sql, tuple(params))
-            
+           
             if cursor.rowcount == 0:
                 return jsonify({"error": "Usuário não encontrado"}), 404
 
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
-        
+       
     except pymysql.IntegrityError as e:
         if 'Duplicate entry' in str(e) and 'cpf' in str(e).lower():
             return jsonify({"error": "CPF já cadastrado"}), 409
         return jsonify({"error": f"Erro: {str(e)}"}), 409
-        
+       
     except Exception as e:
         print(f"ERRO: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Erro: {str(e)}"}), 500
-        
+       
     finally:
         if conn:
             conn.close()
 
-            
+           
          
          
 
-            
+           
 
 @app.route('/api/users/<role>/<user_id>', methods=['DELETE'])
 def delete_user(role, user_id):
@@ -252,7 +252,7 @@ def delete_user(role, user_id):
         if conn: conn.close()
 
 # ===========================
-# ��� ROTAS DE API - SALAS E MATÉRIAS
+# ROTAS DE API - SALAS E MATÉRIAS
 # ===========================
 
 @app.route('/api/salas', methods=['GET'])
@@ -365,10 +365,10 @@ def list_materias():
 
             # 3. Busca todas as perguntas <<-- NOVO BLOCO
             sql_perguntas = """
-                SELECT id, materia_id, nivel, enunciado, 
-                       alt0, alt1, alt2, alt3, alt4, correta 
-                FROM perguntas 
-                ORDER BY created_at ASC 
+                SELECT id, materia_id, nivel, enunciado,
+                       alt0, alt1, alt2, alt3, alt4, correta, img_url
+                FROM perguntas
+                ORDER BY created_at ASC
             """
             cursor.execute(sql_perguntas)
             perguntas = cursor.fetchall()
@@ -383,7 +383,7 @@ def list_materias():
                          "nivel": p['nivel'],
                          "q": p['enunciado'], # Renomeia 'enunciado' para 'q'
                          "a": [p['alt0'], p['alt1'], p['alt2'], p['alt3'], p['alt4']], # Cria array 'a'
-                         "correta": p['correta']
+                         "correta": p['correta'], "img_url": p.get('img_url')
                      }
                      materias_dict[materia_id]['perguntas'].append(pergunta_formatada)
             # --- FIM DO NOVO BLOCO ---
@@ -409,7 +409,7 @@ def create_materia():
     print("=" * 60)
 
     data = request.get_json()
-    print(f"📥 Dados recebidos: {data}")
+    print(f" Dados recebidos: {data}")
 
     # Validação básica
     if not data or not all(k in data for k in ['nome', 'sala_id']):
@@ -418,7 +418,7 @@ def create_materia():
 
     conn = None
     try:
-        print("🔌 Tentando obter conexão com DB...")
+        print(" Tentando obter conexão com DB...")
         conn = get_db_connection()
         if not conn:
             print("❌ Erro: Falha ao conectar ao DB.")
@@ -428,14 +428,14 @@ def create_materia():
         with conn.cursor() as cursor:
             materia_id = str(uuid.uuid4())
 
-            # 🔧 CORREÇÃO CIRÚRGICA: Extração segura de quizConfig
+            #  CORREÇÃO CIRÚRGICA: Extração segura de quizConfig
             quiz_config = data.get('quizConfig')
             print(
-                f"🎮 quizConfig RAW: {quiz_config} (tipo: {type(quiz_config)})")
+                f" quizConfig RAW: {quiz_config} (tipo: {type(quiz_config)})")
 
             # Proteção dupla: garante que é dict e não None
             if not isinstance(quiz_config, dict) or quiz_config is None:
-                print(f"⚠️  quizConfig inválido, usando padrões")
+                print(f"  quizConfig inválido, usando padrões")
                 quiz_config = {}
 
             # Extração segura dos valores
@@ -460,8 +460,8 @@ def create_materia():
                 quiz_dificil   # ✅ Valor já extraído com segurança
             )
 
-            print(f"📝 Executando SQL: {sql}")
-            print(f"📦 Parâmetros: {params}")
+            print(f" Executando SQL: {sql}")
+            print(f" Parâmetros: {params}")
 
             cursor.execute(sql, params)
             print("✅ SQL executado com sucesso.")
@@ -507,12 +507,12 @@ def create_materia():
     finally:
         if conn:
             conn.close()
-            print("🔌 Conexão DB fechada.")
-          
+            print("Conexão DB fechada.")
+         
 
 
 # ===========================
-# ��� ROTAS DE API - LOGS, STATS E OUTROS
+# ROTAS DE API - LOGS, STATS E OUTROS
 # ===========================
 
 @app.route('/api/logs', methods=['GET'])
@@ -528,7 +528,7 @@ def list_logs():
                 SELECT DISTINCT user_name as user, user_role as role
                 FROM access_logs
                 ORDER BY login_time DESC
-                LIMIT 15 
+                LIMIT 15
             """
             # Ou se quiser os últimos 15 logins individuais (pode ter repetidos):
             # sql = """
@@ -672,10 +672,10 @@ def list_banners():
             # Busca os últimos banners (ex: os 10 mais recentes)
             # Seleciona as colunas necessárias para a pré-visualização
             sql = """
-                SELECT id, tit, data_evento, hora, local, materias, dicas, img_url 
-                FROM banners 
-                ORDER BY created_at DESC 
-                LIMIT 10 
+                SELECT id, tit, data_evento, hora, local, materias, dicas, img_url
+                FROM banners
+                ORDER BY created_at DESC
+                LIMIT 10
             """
             cursor.execute(sql)
             banners = cursor.fetchall()
@@ -730,13 +730,13 @@ def create_banner():
             # app.root_path é o diretório onde app.py está
             # app.static_folder é o nome da pasta estática ('static')
             upload_folder = os.path.join(app.root_path, app.static_folder, 'uploads')
-            print(f"Pasta de upload definida como: {upload_folder}") 
+            print(f"Pasta de upload definida como: {upload_folder}")
             os.makedirs(upload_folder, exist_ok=True) # Cria a pasta se não existir
 
             # Limpa o nome do ficheiro para segurança
-            filename = secure_filename(img_file.filename) 
+            filename = secure_filename(img_file.filename)
             # Cria um nome único para evitar ficheiros com o mesmo nome
-            unique_filename = str(uuid.uuid4()) + "_" + filename 
+            unique_filename = str(uuid.uuid4()) + "_" + filename
             # Caminho completo onde o ficheiro será guardado
             save_path = os.path.join(upload_folder, unique_filename)
 
@@ -746,7 +746,7 @@ def create_banner():
 
             # Gera a URL relativa que o navegador pode aceder através do Nginx/Flask
             # O Flask serve automaticamente ficheiros dentro da pasta 'static'
-            img_url_to_save = f"/static/uploads/{unique_filename}" 
+            img_url_to_save = f"/static/uploads/{unique_filename}"
             print(f"URL relativa gerada: {img_url_to_save}")
 
         except Exception as e_upload:
@@ -798,7 +798,7 @@ def delete_banner(banner_id):
 
     try:
         conn = get_db_connection()
-        if not conn: 
+        if not conn:
             print("!!! Erro delete_banner: Falha na conexão DB.") # Log
             return jsonify({"error": "Falha na conexão com o servidor."}), 500
 
@@ -826,7 +826,7 @@ def delete_banner(banner_id):
             try:
                 # Constrói o caminho absoluto para o ficheiro
                 filename = os.path.basename(banner_img_url) # Extrai o nome do ficheiro da URL
-                file_path = os.path.join(app.root_path, app.static_folder, 'uploads', filename) 
+                file_path = os.path.join(app.root_path, app.static_folder, 'uploads', filename)
 
                 if os.path.exists(file_path):
                     print(f"Tentando apagar ficheiro de imagem: {file_path}") # Log
@@ -846,7 +846,7 @@ def delete_banner(banner_id):
          traceback.print_exc()
          return jsonify({"error": "Erro interno no servidor ao excluir banner"}), 500
     finally:
-        if conn: 
+        if conn:
             conn.close()
             print("Conexão DB fechada.") # Log
 
@@ -860,10 +860,10 @@ def list_ranking():
         with conn.cursor() as cursor:
             # Busca nome e score, ordena pelo score (maior primeiro) e limita (ex: top 50)
             sql = """
-                SELECT nome, score 
-                FROM ranking 
-                ORDER BY score DESC, created_at ASC 
-                LIMIT 50 
+                SELECT nome, score
+                FROM ranking
+                ORDER BY score DESC, created_at ASC
+                LIMIT 50
             """
             cursor.execute(sql)
             ranking = cursor.fetchall()
@@ -928,50 +928,97 @@ def reset_ranking():
         if conn: conn.close()
 
 @app.route('/api/perguntas', methods=['POST'])
-def create_pergunta():	
-    """Cria uma nova pergunta para uma matéria."""
-    data = request.get_json()
+def create_pergunta():  
+    """Cria uma nova pergunta para uma matéria (recebe FormData)."""
+    print("--- Iniciando create_pergunta (FormData) ---") # Log
 
-    # Validação básica (adapte conforme necessário)
-    required_fields = ['materia_id', 'nivel', 'enunciado', 'alt0', 'alt1', 'alt2', 'alt3', 'alt4', 'correta']
-    if not data or not all(k in data for k in required_fields):
-        return jsonify({"error": "Todos os campos da pergunta são obrigatórios"}), 400
+    # Lê dados do formulário (request.form) em vez de request.get_json()
+    data = request.form
+    print(f"Dados recebidos (form): {data}") # Log
 
-    conn = get_db_connection()
-    if not conn: return jsonify({"error": "Falha na conexão"}), 500
-
-    pergunta_id = str(uuid.uuid4())
+    # Validação básica
+    required_fields = ['materia_id', 'nivel', 'enunciado', 'opcao_a', 'opcao_b', 'opcao_c', 'opcao_d', 'opcao_e', 'resposta_correta']
+    if not all(k in data for k in required_fields):
+        print("!!! Erro create_pergunta: Dados incompletos.") # Log
+        return jsonify({"error": "Todos os campos da pergunta (form) são obrigatórios"}), 400
 
     try:
+        correta_idx = int(data['resposta_correta'])
+        if not (0 <= correta_idx <= 4):
+             raise ValueError("Índice fora do intervalo")
+    except (ValueError, TypeError):
+         print(f"!!! Erro create_pergunta: Valor inválido para 'resposta_correta': {data.get('resposta_correta')}") # Log
+         return jsonify({"error": "O índice da resposta correta deve ser um número entre 0 e 4"}), 400
+
+    # --- Lógica de Upload de Imagem (Opcional) ---
+    img_file = request.files.get('imagem') # Obtém o ficheiro da chave 'imagem'
+    img_url_to_save = None
+    if img_file and img_file.filename != '':
+        print(f"Processando ficheiro de imagem da pergunta: {img_file.filename}")
+        try:
+            upload_folder = os.path.join(app.root_path, app.static_folder, 'uploads', 'perguntas')
+            os.makedirs(upload_folder, exist_ok=True)
+            filename = secure_filename(img_file.filename)
+            unique_filename = str(uuid.uuid4()) + "_" + filename
+            save_path = os.path.join(upload_folder, unique_filename)
+
+            img_file.save(save_path)
+            print(f"Imagem da pergunta guardada: {unique_filename}")
+
+            img_url_to_save = f"/static/uploads/perguntas/{unique_filename}"
+            print(f"URL da imagem da pergunta gerada: {img_url_to_save}")
+
+        except Exception as e_upload:
+            print(f"!!! ERRO AO GUARDAR IMAGEM DA PERGUNTA: {e_upload}")
+            # Não bloqueia a criação da pergunta se o upload da imagem falhar
+            img_url_to_save = None
+    # --- Fim da Lógica de Upload ---
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: return jsonify({"error": "Falha na conexão DB"}), 500
+
         with conn.cursor() as cursor:
+            pergunta_id = str(uuid.uuid4())
+
+            # Atualiza o SQL para incluir a coluna img_url (se a tiver na tabela perguntas)
+            # Assumindo que a tabela 'perguntas' tem uma coluna 'img_url TEXT'
             sql = """
-                INSERT INTO perguntas (id, materia_id, nivel, enunciado, alt0, alt1, alt2, alt3, alt4, correta)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO perguntas (id, materia_id, nivel, enunciado,
+                                       alt0, alt1, alt2, alt3, alt4, correta,
+                                       img_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql, (
+            params = (
                 pergunta_id,
                 data['materia_id'],
                 data['nivel'],
                 data['enunciado'],
-                data['alt0'],
-                data['alt1'],
-                data['alt2'],
-                data['alt3'],
-                data['alt4'],
-                data['correta']
-            ))
-        # Pode ser necessário atualizar a lista de perguntas na matéria em memória ou refazer a busca
+                data['opcao_a'], # Usa os nomes do FormData
+                data['opcao_b'],
+                data['opcao_c'],
+                data['opcao_d'],
+                data['opcao_e'],
+                correta_idx,
+                img_url_to_save # Guarda a URL da imagem (ou None)
+            )
+            print("Executando SQL para pergunta...")
+            cursor.execute(sql, params)
+            print("SQL executado com sucesso.")
+
         return jsonify({"message": "Pergunta criada com sucesso!", "id": pergunta_id}), 201
+
     except Exception as e:
-        print(f"Erro ao criar pergunta: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "Erro interno ao criar pergunta"}), 500
+         print(f"!!! Erro inesperado em create_pergunta: {e}")
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao criar pergunta"}), 500
     finally:
         if conn: conn.close()
 
 # ===========================
-# ��� ROTAS DE API - CONTEÚDOS
+# ROTAS DE API - CONTEÚDOS
 # ===========================
 
 @app.route('/api/conteudos', methods=['POST'])
@@ -1063,8 +1110,10 @@ def upload_conteudo():
             print("Conexão DB fechada.") # Log
 
 # ===========================
-# ��� EXECUÇÃO
+# EXECUÇÃO
 # ===========================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True) # debug=True é útil para desenvolvimento
+
+

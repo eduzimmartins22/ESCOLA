@@ -20,49 +20,6 @@ async function criarSala() {
   }
 }
 
-async function renderSalasCoord() {
-  try {
-    const salas = await API.listSalas();
-    window.appState.salas = salas || [];
-    const list = byId('c_m_list');
-    list.innerHTML = '';
-    const materias = window.appState.materias || [];
-    window.appState.salas.forEach((s) => {
-      const bloco = document.createElement('div');
-      bloco.className = 'card';
-      bloco.innerHTML = `<strong>${s.nome}</strong><div class="muted">Matérias:</div>`;
-      const ul = document.createElement('ul');
-      materias.filter(m => m.salaId === s.id).forEach(m => {
-        const li = document.createElement('li');
-        li.textContent = m.nome;
-        ul.appendChild(li);
-      });
-      bloco.appendChild(ul);
-      list.appendChild(bloco);
-    });
-    // atualizar tabela de salas do coordenador se existir
-    if (byId('c_tbSalas')) {
-      const tb = byId('c_tbSalas');
-      tb.innerHTML = '';
-      window.appState.salas.forEach(s => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${s.nome}</td>
-          <td>${s.capacidade}</td>
-          <td>
-            <button class="btn" style="background:#dc2626; color:white; padding: 4px 8px; font-size:12px;" onclick="apagarUsuario('${s.id}', 'sala')">Apagar</button>
-            <button class="btn" style="background:#3b82f6; color:white; padding: 4px 8px; font-size:12px;" onclick="editarSala('${s.id}')">Editar</button>
-          </td>
-        `;
-        tb.appendChild(tr);
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Erro ao obter salas');
-  }
-}
-
 /* ========= Matérias =========*/
 async function criarMateria(orig) {
   console.log(">> criarMateria iniciada. Origem:", orig); // LOG INÍCIO
@@ -208,7 +165,7 @@ async function adicionarPergunta() {
     if (imgFile) fd.append("imagem", imgFile);
 
     // Debug opcional — mostra o que será enviado
-    console.log("��� Dados sendo enviados para o backend:");
+    console.log("��� Dados sendo enviados para o backend:");
     for (const [k, v] of fd.entries()) console.log(`${k}:`, v);
 
     // Envia para a API
@@ -226,10 +183,6 @@ async function adicionarPergunta() {
     alert("Erro ao criar a pergunta.");
   }
 }
-
-
-    // ✅ Aqui está o ponto certo:
-    await API.uploadPergunta(`${API_BASE}/perguntas`, fd);
 
 async function salvarDistribuicao() {
   try {
