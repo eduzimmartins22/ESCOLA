@@ -225,6 +225,7 @@ function perguntasPorNivel(materiaId, nivel) {
   const m = (window.appState.materias||[]).find(x => x.id === materiaId);
   return (m?.perguntas||[]).filter(q => q.nivel === nivel);
 }
+
 function novaPergunta() {
   const pool = perguntasPorNivel(Q.materiaId, Q.nivel);
 
@@ -271,6 +272,7 @@ function novaPergunta() {
   });
   // --- FIM DAS ALTERAÇÕES ---
 }
+
 function responder(i) {
   const stats = window.appState.stats || { respostas:0 };
   if (i === Q.pergunta.correta) {

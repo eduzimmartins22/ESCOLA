@@ -27,6 +27,47 @@ async function coordCriarProfessor() {
   }
 }
 
+async function renderSalasCoord() {
+  console.log(">> renderSalasCoord: Iniciando renderização da tabela de salas...");
+  try {
+    // Usa os dados do appState que já foram buscados (ou busca novamente se necessário)
+    // Para garantir que os dados estão sempre atualizados ao abrir a tab:
+    const salas = await API.listSalas();
+    window.appState.salas = salas || [];
+
+    // Atualiza a tabela de salas do coordenador (c_tbSalas)
+    const tb = byId('c_tbSalas');
+    if (!tb) {
+        console.warn(">> renderSalasCoord: Tabela 'c_tbSalas' não encontrada.");
+        return; // Sai se a tabela não estiver na DOM
+    }
+
+    tb.innerHTML = ''; // Limpa a tabela
+    if (salas.length === 0) {
+        tb.innerHTML = '<tr><td colspan="3">Nenhuma sala cadastrada.</td></tr>'; // Colspan 3 para Nome, Cap, Ações
+        return;
+    }
+
+    salas.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${s.nome}</td>
+        <td>${s.capacidade}</td>
+        <td>
+          <button class="btn" style="background:#dc2626; color:white; padding: 4px 8px; font-size:12px;" onclick="apagarUsuario('${s.id}', 'sala')">Apagar</button>
+          <button class="btn" style="background:#3b82f6; color:white; padding: 4px 8px; font-size:12px;" onclick="editarSala('${s.id}')">Editar</button>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+    console.log(">> renderSalasCoord: Tabela 'c_tbSalas' preenchida.");
+
+  } catch (err) {
+    console.error(">> ERRO em renderSalasCoord:", err);
+    alert('Erro ao renderizar salas');
+  }
+}
+
 async function renderProfsCoord() {
   try {
     const users = await API.listUsers('professores');

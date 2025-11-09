@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ESTUDE — MVP</title>
   <link rel="icon" type="image/png" href="/static/image/logo.png">
-  <link rel="stylesheet" href="static/css/app.css">
-  <link rel="stylesheet" href="static/css/auth.css">
   <link rel="stylesheet" href="static/css/base.css">
+  <link rel="stylesheet" href="static/css/auth.css">
+  <link rel="stylesheet" href="static/css/app.css">
   <link rel="stylesheet" href="static/css/responsividade.css">
 </head>
 <body>
@@ -266,73 +266,70 @@
             </div>
           </section>
 
-          <section id="p_questoes" class="hidden">
-            <h2 class="title">Perguntas e Distribuição</h2>
-            <div class="grid3">
-              <div class="card">
-                <label>Matéria</label>
-                <select id="p_q_materia"></select>
-                <label style="margin-top: 8px">Nível</label>
-                <select id="p_q_nivel">
-                  <option value="facil">Fácil</option>
-                  <option value="medio">Médio</option>
-                  <option value="dificil">Difícil</option>
-                </select>
-                <label style="margin-top: 8px">Enunciado</label>
-                <input id="p_q_enun" placeholder="Digite a pergunta" />
-                <label style="margin-top: 8px">Imagem (opcional)</label>
-                <input id="p_q_img" type="file" accept="image/*" />
-                <img id="p_q_preview" style="display:none; margin-top:8px; max-width:200px; border-radius:8px;" />
+<section id="p_questoes" class="hidden">
+  <h2 class="title">Perguntas da Matéria</h2>
+  <div class="form-card">
+    <div class="form-group">
+      <label>Matéria</label>
+      <select id="p_q_materia"></select>
+    </div>
 
-                <label style="margin-top: 8px">Alternativas (5)</label>
-                <input id="p_q_a0" placeholder="A" />
-                <input id="p_q_a1" placeholder="B" />
-                <input id="p_q_a2" placeholder="C" />
-                <input id="p_q_a3" placeholder="D" />
-                <input id="p_q_a4" placeholder="E" />
-                <label style="margin-top: 8px">Índice da correta (1 à 5)</label>
-                <input id="p_q_cor" type="number" min="0" max="4" value="0" />
+    <div class="form-group">
+      <label>Nível de Dificuldade</label>
+      <select id="p_q_nivel">
+        <option value="facil">Fácil</option>
+        <option value="medio">Médio</option>
+        <option value="dificil">Difícil</option>
+      </select>
+    </div>
 
-		<button
- id="btn_add_pergunta"
- class="btn verde" 
-style="margin-top: 10px">
-Adicionar Pergunta
-</button>
+    <div class="form-group">
+      <label>Enunciado</label>
+      <textarea id="p_q_enun" rows="3" placeholder="Digite a pergunta completa"></textarea>
+    </div>
 
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 8px">Distribuição de Níveis</h3>
-                <div class="row">
-                  <div>
-                    <label>% Fácil</label
-                    ><input id="p_dist_facil" type="number" value="60" />
-                  </div>
-                  <div>
-                    <label>% Médio</label
-                    ><input id="p_dist_medio" type="number" value="30" />
-                  </div>
-                </div>
-                <div class="row" style="margin-top: 8px">
-                  <div>
-                    <label>% Difícil</label
-                    ><input id="p_dist_dificil" type="number" value="10" />
-                  </div>
-                  <div>
-                    <label>&nbsp;</label
-                    ><button class="btn outline" onclick="salvarDistribuicao()">
-                      Salvar
-                    </button>
-                  </div>
-                </div>
-                <div class="muted">A soma deve dar 100%.</div>
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Resumo</h3>
-                <div id="p_q_resumo" class="notice">Selecione a matéria.</div>
-              </div>
-            </div>
-          </section>
+    <div class="form-group">
+      <label>Imagem (opcional)</label>
+      <input id="p_q_img" type="file" accept="image/*" />
+      <img id="p_q_preview" class="preview" />
+    </div>
+
+    <div class="form-group alternativas">
+      <label>Alternativas</label>
+      <div class="alt">
+        <span>A)</span> <input id="p_q_a0" placeholder="Alternativa A" />
+      </div>
+      <div class="alt">
+        <span>B)</span> <input id="p_q_a1" placeholder="Alternativa B" />
+      </div>
+      <div class="alt">
+        <span>C)</span> <input id="p_q_a2" placeholder="Alternativa C" />
+      </div>
+      <div class="alt">
+        <span>D)</span> <input id="p_q_a3" placeholder="Alternativa D" />
+      </div>
+      <div class="alt">
+        <span>E)</span> <input id="p_q_a4" placeholder="Alternativa E" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Alternativa Correta</label>
+      <select id="p_q_cor">
+        <option value="0">A</option>
+        <option value="1">B</option>
+        <option value="2">C</option>
+        <option value="3">D</option>
+        <option value="4">E</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="btn_add_pergunta" class="btn verde">Adicionar Pergunta</button>
+    </div>
+  </div>
+</section>
+
 
           <section id="p_conteudos" class="hidden">
             <h2 class="title">Conteúdos da Matéria</h2>
@@ -530,7 +527,7 @@ Adicionar Pergunta
             </div>
           </section>
 
-          <section id="c_banners" class="hidden">
+             <section id="c_banners" class="hidden">
             <h2 class="title">Banners de Provas</h2>
             <div class="grid2">
               <div class="card">
@@ -567,6 +564,10 @@ Adicionar Pergunta
               </div>
             </div>
           </section>
+        </main>
+      </div>
+    </section>
+
         </main>
       </div>
     </section>
