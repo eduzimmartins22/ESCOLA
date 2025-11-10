@@ -354,7 +354,7 @@ def list_materias():
                 materias_dict[m['id']] = m
 
             # 2. Busca todos os conteúdos
-            sql_conteudos = "SELECT id, materia_id, nome, tipo, url FROM conteudos ORDER BY created_at ASC"
+            sql_conteudos = "SELECT id, materia_id, nome, tipo, url, texto, link_externo FROM conteudos ORDER BY created_at ASC"
             cursor.execute(sql_conteudos)
             conteudos = cursor.fetchall()
             # Associa conteúdos às matérias
@@ -509,7 +509,60 @@ def create_materia():
             conn.close()
             print("Conexão DB fechada.")
          
+@app.route('/api/materias/<materia_id>', methods=['PUT'])
+def update_materia(materia_id):
+    """Atualiza os dados de uma matéria específica."""
+    data = request.get_json()
+    if not data or 'nome' not in data or 'sala_id' not in data:
+        return jsonify({"error": "Campos nome e sala_id são obrigatórios"}), 400
 
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão com o servidor."}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            sql = "UPDATE materias SET nome = %s, sala_id = %s WHERE id = %s"
+            result = cursor.execute(sql, (data['nome'], data['sala_id'], materia_id))
+            if result == 0:
+                return jsonify({"error": "Matéria não encontrada"}), 404
+        return jsonify({"message": "Matéria atualizada com sucesso!"}), 200
+    except Exception as e:
+        print(f"Erro ao atualizar matéria: {e}")
+        return jsonify({"error": "Erro interno ao atualizar matéria"}), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/materias/<materia_id>', methods=['DELETE'])
+def delete_materia(materia_id):
+    """Exclui uma matéria e seus conteúdos/perguntas associados."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão com o servidor."}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Apagar perguntas associadas
+            sql_del_perguntas = "DELETE FROM perguntas WHERE materia_id = %s"
+            cursor.execute(sql_del_perguntas, (materia_id,))
+            
+            # 2. Apagar conteúdos associados
+            sql_del_conteudos = "DELETE FROM conteudos WHERE materia_id = %s"
+            cursor.execute(sql_del_conteudos, (materia_id,))
+
+            # 3. Apagar a matéria
+            sql_del_materia = "DELETE FROM materias WHERE id = %s"
+            result = cursor.execute(sql_del_materia, (materia_id,))
+            
+            if result == 0:
+                return jsonify({"error": "Matéria não encontrada"}), 404
+
+        return jsonify({"message": "Matéria e seus dados associados foram excluídos!"}), 200
+    except Exception as e:
+        print(f"Erro ao excluir matéria: {e}")
+        return jsonify({"error": "Erro interno ao excluir matéria"}), 500
+    finally:
+        if conn: conn.close()
 
 # ===========================
 # ROTAS DE API - LOGS, STATS E OUTROS
@@ -1026,16 +1079,30 @@ def upload_conteudo():
     """Recebe uploads de ficheiros de conteúdo para uma matéria."""
     print("--- Iniciando upload_conteudo ---") # Log
 
-    # Verifica se a matéria_id foi enviada no formulário
+    # Verifica se a matéria_id e o nome (título) foram enviados
     materia_id = request.form.get('materia_id')
+    nome_conteudo = request.form.get('nome') # Título
+    texto_conteudo = request.form.get('texto')
+    link_conteudo = request.form.get('link_externo')
+    
     if not materia_id:
         print("!!! Erro upload_conteudo: materia_id não fornecida.") # Log
         return jsonify({"error": "materia_id é obrigatório"}), 400
+        
+    if not nome_conteudo:
+        print("!!! Erro upload_conteudo: 'nome' (título) não fornecido.") # Log
+        return jsonify({"error": "O título do conteúdo é obrigatório"}), 400
 
-    # Verifica se foram enviados ficheiros
-    if 'files' not in request.files:
-        print("!!! Erro upload_conteudo: Nenhum ficheiro enviado com a chave 'files'.") # Log
-        return jsonify({"error": "Nenhum ficheiro enviado"}), 400
+    # Pega o arquivo (opcional)
+    files = request.files.getlist('files')
+    file = files[0] if files else None
+    
+    # Valida se pelo menos um tipo de conteúdo foi enviado
+    if not file and not texto_conteudo and not link_conteudo:
+        print("!!! Erro upload_conteudo: Nenhum conteúdo enviado (arquivo, texto ou link).") # Log
+        return jsonify({"error": "Forneça pelo menos um arquivo, um texto ou um link."}), 400
+        
+    print(f"Recebido conteúdo para matéria {materia_id}. Título: {nome_conteudo}") # Log
 
     uploaded_files_info = []
     files = request.files.getlist('files') # Recebe a lista de ficheiros
@@ -1053,51 +1120,49 @@ def upload_conteudo():
         print("Conexão DB obtida.") # Log
 
         with conn.cursor() as cursor:
-            for file in files:
-                if file and file.filename != '':
-                    try:
-                        # --- Lógica de Guardar Ficheiro ---
-                        upload_folder = os.path.join(app.static_folder, 'uploads', 'conteudos') # Pasta específica
-                        os.makedirs(upload_folder, exist_ok=True)
+            # --- INÍCIO DA INTERVENÇÃO CIRÚRGICA (Processamento de arquivo opcional) ---
+            file_url = None
+            file_type = None
+            
+            if file and file.filename != '':
+                try:
+                    # --- Lógica de Guardar Ficheiro ---
+                    upload_folder = os.path.join(app.static_folder, 'uploads', 'conteudos') # Pasta específica
+                    os.makedirs(upload_folder, exist_ok=True)
 
-                        filename = secure_filename(file.filename)
-                        unique_filename = str(uuid.uuid4()) + "_" + filename
-                        save_path = os.path.join(upload_folder, unique_filename)
+                    filename = secure_filename(file.filename)
+                    unique_filename = str(uuid.uuid4()) + "_" + filename
+                    save_path = os.path.join(upload_folder, unique_filename)
 
-                        print(f"Guardando ficheiro '{filename}' em '{save_path}'...") # Log
-                        file.save(save_path)
-                        print("Ficheiro guardado.") # Log
+                    print(f"Guardando ficheiro '{filename}' em '{save_path}'...") # Log
+                    file.save(save_path)
+                    print("Ficheiro guardado.") # Log
 
-                        # Gera a URL pública relativa
-                        file_url = url_for('static', filename=f'uploads/conteudos/{unique_filename}', _external=False)
-                        print(f"URL gerada: {file_url}") # Log
+                    file_url = url_for('static', filename=f'uploads/conteudos/{unique_filename}', _external=False)
+                    file_type = file.mimetype
+                    print(f"URL gerada: {file_url}") # Log
 
-                        # Extrai o tipo de ficheiro (MIME type)
-                        file_type = file.mimetype
-                        print(f"Tipo de ficheiro: {file_type}") # Log
+                except Exception as e_file:
+                    print(f"!!! Erro ao processar o ficheiro '{file.filename}': {e_file}") # Log erro ficheiro
+                    # Não retorna erro, apenas continua sem o arquivo
+            
+            # --- Lógica de Inserir no DB (Modificada) ---
+            conteudo_id = str(uuid.uuid4())
+            sql = """
+                INSERT INTO conteudos (id, materia_id, nome, tipo, url, texto, link_externo)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            params = (conteudo_id, materia_id, nome_conteudo, file_type, file_url, texto_conteudo, link_conteudo)
+            print(f"Executando SQL para conteúdo: {sql}") # Log
+            print(f"Parâmetros SQL: {params}") # Log
+            cursor.execute(sql, params)
+            print("Registo de conteúdo inserido no DB.") # Log
 
-                        # --- Lógica de Inserir no DB ---
-                        conteudo_id = str(uuid.uuid4())
-                        sql = """
-                            INSERT INTO conteudos (id, materia_id, nome, tipo, url)
-                            VALUES (%s, %s, %s, %s, %s)
-                        """
-                        params = (conteudo_id, materia_id, filename, file_type, file_url)
-                        print(f"Executando SQL para conteúdo: {sql}") # Log
-                        print(f"Parâmetros SQL: {params}") # Log
-                        cursor.execute(sql, params)
-                        print("Registo de conteúdo inserido no DB.") # Log
+            uploaded_files_info.append({"id": conteudo_id, "nome": nome_conteudo, "url": file_url})
+            # --- FIM DA INTERVENÇÃO CIRÚRGICA ---
 
-                        uploaded_files_info.append({"id": conteudo_id, "nome": filename, "url": file_url})
-
-                    except Exception as e_file:
-                        print(f"!!! Erro ao processar o ficheiro '{file.filename}': {e_file}") # Log erro ficheiro
-                        # Decide se quer parar ou continuar com os outros ficheiros
-                        # return jsonify({"error": f"Erro ao processar ficheiro {file.filename}: {e_file}"}), 500 # Para imediatamente
-                        continue # Continua para o próximo ficheiro
-
-        print(f"--- upload_conteudo: {len(uploaded_files_info)} ficheiros processados com sucesso. ---") # Log sucesso
-        return jsonify({"message": f"{len(uploaded_files_info)} ficheiro(s) enviado(s) com sucesso!", "files": uploaded_files_info}), 201
+        print(f"--- upload_conteudo: 1 conteúdo processado com sucesso. ---") # Log sucesso
+        return jsonify({"message": f"Conteúdo '{nome_conteudo}' enviado com sucesso!", "files": uploaded_files_info}), 201
 
     except Exception as e:
          print(f"!!! Erro inesperado em upload_conteudo: {e}") # Log erro geral
@@ -1115,5 +1180,4 @@ def upload_conteudo():
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True) # debug=True é útil para desenvolvimento
-
 

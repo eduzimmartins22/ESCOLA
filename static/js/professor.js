@@ -165,7 +165,7 @@ async function adicionarPergunta() {
     if (imgFile) fd.append("imagem", imgFile);
 
     // Debug opcional — mostra o que será enviado
-    console.log("��� Dados sendo enviados para o backend:");
+    console.log(" Dados sendo enviados para o backend:");
     for (const [k, v] of fd.entries()) console.log(`${k}:`, v);
 
     // Envia para a API
@@ -219,20 +219,42 @@ function renderResumoQuestoes() {
 
 async function adicionarConteudo() {
   try {
+    // --- INÍCIO DA INTERVENÇÃO CIRÚRGICA (Linha 147) ---
     const materiaId = sel('p_c_materia').value;
     if (!materiaId) return alert('Selecione a matéria.');
-    const files = byId('p_c_file').files;
-    if (!files.length) return alert('Selecione arquivos.');
+    
+    const nome = val('p_c_nome');
+    const file = byId('p_c_file').files[0]; // Pega o primeiro arquivo, se existir
+    const texto = val('p_c_texto');
+    const link = val('p_c_link');
+
+    if (!nome) return alert('Por favor, dê um título ao conteúdo.');
+    if (!file && !texto && !link) return alert('Adicione pelo menos um arquivo, um texto ou um link.');
+
     const fd = new FormData();
-    [...files].forEach(f => fd.append('files', f));
-    await API.uploadConteudo(materiaId, fd);
+    fd.append('materia_id', materiaId);
+    fd.append('nome', nome);
+    fd.append('texto', texto);
+    fd.append('link_externo', link);
+    if (file) {
+      fd.append('files', file); // Adiciona o arquivo apenas se ele existir
+    }
+    
+    await API.uploadConteudo(materiaId, fd); // materiaId é adicionado dentro da API.js, mas enviaremos de novo
+    
+    // Limpa os campos
+    byId('p_c_nome').value = '';
     byId('p_c_file').value = '';
+    byId('p_c_texto').value = '';
+    byId('p_c_link').value = '';
+    // --- FIM DA INTERVENÇÃO CIRÚRGICA ---
+
     alert('Conteúdo enviado!'); // Mostra o alerta primeiro
     await refreshAllSelectsAsync(); // Espera a busca dos dados atualizados (incluindo o novo conteúdo)
     renderPConteudos(); // AGORA redesenha a lista com os dados novos
   } catch (err) {
     console.error(err);
-    alert('Erro ao enviar conteúdo');
+    alert(err.body?.message || 'Erro ao enviar conteúdo');
   }
 }
 
@@ -251,9 +273,33 @@ async function renderPConteudos() {
   }
   m.conteudos.forEach(c => {
     const d = document.createElement('div');
-    d.className = 'banner';
-    d.innerHTML = `<img src="${c.url}" onerror="this.src=''; this.style.background='#eef2ff'">
-      <div><strong>${c.nome}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
+    d.className = 'card'; // Usando a classe 'card' para um visual melhor
+    d.style.marginBottom = '12px';
+
+    let html = `<strong>${c.nome}</strong>`; // Título
+
+    // 2. Adiciona o Texto
+    if (c.texto) {
+      html += `<p class="muted" style="font-size: 13px; white-space: pre-wrap; margin-top: 5px;">${c.texto}</p>`;
+    }
+    
+    // 3. Adiciona o Link Clicável
+    if (c.link_externo) {
+      html += `<a href="${c.link_externo}" target="_blank" rel="noopener noreferrer" style="font-size: 13px; margin-top: 5px; display: block;">Acessar Link</a>`;
+    }
+
+    // 4. Adiciona o Arquivo (se houver) - `c.url` é o link para o arquivo upado
+    if (c.url) {
+        // Verifica se é imagem
+        const isImg = c.tipo && c.tipo.startsWith('image/');
+        if (isImg) {
+             html += `<img src="${c.url}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" onerror="this.style.display='none'">`;
+        } else {
+             html += `<a href="${c.url}" target="_blank" rel="noopener noreferrer" style="font-size: 13px; margin-top: 5px; display: block;">Baixar Arquivo (${c.tipo || 'arquivo'})</a>`;
+        }
+    }
+    
+    d.innerHTML = html;
     list.appendChild(d);
   });
 }

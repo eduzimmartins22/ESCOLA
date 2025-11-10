@@ -120,7 +120,7 @@
           <button data-tab="c_prof">Gerenciar Professores</button>
           <button data-tab="c_alunos">Gerenciar Alunos</button>
           <button data-tab="c_salas">Gerenciar Salas</button>
-          <button data-tab="c_materias">Criar Matéria</button>
+          <button data-tab="c_materias">Gerenciar Matéria</button>
           <button data-tab="c_banners">Banners de Provas</button>
         </div>
         <div class="menu">
@@ -337,18 +337,29 @@
               <div class="card">
                 <label>Matéria</label>
                 <select id="p_c_materia"></select>
-                <label style="margin-top: 8px">Adicionar arquivo</label>
-                <input id="p_c_file" type="file" multiple />
+                
+                <label style="margin-top: 8px">Título do Conteúdo</label>
+                <input id="p_c_nome" type="text" placeholder="Ex: Vídeo sobre Revolução Francesa" />
+                
+                <label style="margin-top: 8px">Adicionar arquivo (Opcional)</label>
+                <input id="p_c_file" type="file" />
+                
+                <label style="margin-top: 8px">Adicionar Texto (Opcional)</label>
+                <textarea id="p_c_texto" rows="4" placeholder="Digite uma descrição ou o conteúdo em texto aqui..."></textarea>
+                
+                <label style="margin-top: 8px">Adicionar Link (Opcional)</label>
+                <input id="p_c_link" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+                
                 <button
                   class="btn verde"
                   style="margin-top: 10px"
                   onclick="adicionarConteudo()"
                 >
-                  Enviar
+                  Enviar Conteúdo
                 </button>
-              </div>
+                </div>
               <div class="card">
-                <h3 style="margin: 0 0 8px">Arquivos</h3>
+                <h3 style="margin: 0 0 8px">Arquivos e Conteúdos</h3>
                 <div id="p_c_lista"></div>
               </div>
             </div>
@@ -397,135 +408,181 @@
           </section>
 
           <section id="c_prof" class="hidden">
-            <h2 class="title">Gerenciar Professores</h2>
-            <div class="grid2">
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Criar Professor</h3>
-                <label>Nome</label><input id="c_p_nome" />
-                <label style="margin-top: 8px">CPF</label><input id="c_p_cpf" />
-                <label style="margin-top: 8px">Matrícula</label><input id="c_p_mat" />
-                <label style="margin-top: 8px">Senha</label><input id="c_p_senha" type="password" />
-                <button
-                  class="btn verde"
-                  style="margin-top: 10px"
-                  onclick="coordCriarProfessor()"
-                >
-                  Cadastrar Professor
-                </button>
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Professores</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Nome</th>
-                      <th>CPF</th>
-                      <th>Matrícula</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="c_tbProfs"></tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+  <h2 class="title">Gerenciar Professores</h2>
+  
+  <div class="coord-section">
+    <!-- Card de Criação -->
+    <div class="coord-form-card">
+      <h3>Criar Professor</h3>
+      <div class="form-group">
+        <label>Nome</label>
+        <input id="c_p_nome" />
+      </div>
+      <div class="form-group">
+        <label>CPF</label>
+        <input id="c_p_cpf" type="number" />
+      </div>
+      <div class="form-group">
+        <label>Matrícula</label>
+        <input id="c_p_mat" />
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input id="c_p_senha" type="password" />
+      </div>
+      <div class="actions">
+        <button class="btn verde" onclick="coordCriarProfessor()">
+          Cadastrar Professor
+        </button>
+      </div>
+    </div>
+
+    <!-- Card de Tabela -->
+    <div class="coord-table-card">
+      <h3>Professores Cadastrados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Matrícula</th>
+            <th style="text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="c_tbProfs"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 
           <section id="c_alunos" class="hidden">
-            <h2 class="title">Gerenciar Alunos</h2>
-            <div class="grid2">
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Criar Aluno</h3>
-                <label>Nome</label><input id="c_a_nome" />
-                <label style="margin-top: 8px">CPF</label><input id="c_a_cpf" />
-                <label style="margin-top: 8px">Matrícula</label><input id="c_a_mat" />
-                <label style="margin-top: 8px">Senha</label><input id="c_a_senha" type="password" />
-                <button
-                  class="btn verde"
-                  style="margin-top: 10px"
-                  onclick="coordCriarAluno()"
-                >
-                  Cadastrar Aluno
-                </button>
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Alunos</h3>
+  <h2 class="title">Gerenciar Alunos</h2>
+  
+  <div class="coord-section">
+    <!-- Card de Criação -->
+    <div class="coord-form-card">
+      <h3>Criar Aluno</h3>
+      <div class="form-group">
+        <label>Nome</label>
+        <input id="c_a_nome" />
+      </div>
+      <div class="form-group">
+        <label>CPF</label>
+        <input id="c_a_cpf" type="number" />
+      </div>
+      <div class="form-group">
+        <label>Matrícula</label>
+        <input id="c_a_mat" />
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input id="c_a_senha" type="password" />
+      </div>
+      <div class="actions">
+        <button class="btn verde" onclick="coordCriarAluno()">
+          Cadastrar Aluno
+        </button>
+      </div>
+    </div>
+
+    <!-- Card de Tabela -->
+    <div class="coord-table-card">
+      <h3>Alunos Cadastrados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Matrícula</th>
+            <th>Sala</th>
+            <th style="text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="c_tbAlunos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Card de Vinculação -->
+  <div class="coord-vincular-card">
+    <h3>Vincular Aluno à Sala</h3>
+    <div class="form-group">
+      <label>Selecione o Aluno</label>
+      <select id="c_vincular_aluno"></select>
+    </div>
+    <div class="form-group">
+      <label>Selecione a Sala</label>
+      <select id="c_vincular_sala"></select>
+    </div>
+    <div class="actions">
+      <button class="btn verde" onclick="vincularAlunoASala()">
+        Vincular Aluno
+      </button>
+    </div>
+  </div>
+</section>
+
+
+  <section id="c_salas" class="hidden">
+  <h2 class="title">Gerenciar Salas</h2>
+  
+  <div class="coord-section">
+    <!-- Card de Criação -->
+    <div class="coord-form-card">
+      <h3>Criar Sala</h3>
+      <div class="form-group">
+        <label>Nome da Sala (ex.: 9º A)</label>
+        <input id="c_s_nome" />
+      </div>
+      <div class="form-group">
+        <label>Capacidade</label>
+        <input id="c_s_cap" type="number" value="30" />
+      </div>
+      <div class="actions">
+        <button class="btn verde" onclick="criarSala()">
+          Criar Sala
+        </button>
+      </div>
+    </div>
+
+    <!-- Card de Tabela -->
+    <div class="coord-table-card">
+      <h3>Salas Cadastradas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Capacidade</th>
+            <th style="text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="c_tbSalas"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+          <section id="c_materias" class="hidden">
+            <h2 class="title">Gerenciar Matérias</h2>
+            <div class="card">
+              <h3 style="margin: 0 0 6px">Matérias Cadastradas</h3>
+              <div style="overflow-x: auto;">
                 <table>
                   <thead>
                     <tr>
                       <th>Nome</th>
-                      <th>CPF</th>
-                      <th>Matrícula</th>
                       <th>Sala</th>
-                      <th>Ações</th>
+                      <th style="width: 120px;">Ações</th>
                     </tr>
                   </thead>
-                  <tbody id="c_tbAlunos"></tbody>
-                </table>
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Vincular Aluno à Sala</h3>
-                <label>Alunos</label>
-                <select id="c_vincular_aluno"></select>
-                <label style="margin-top: 8px">Salas</label>
-                <select id="c_vincular_sala"></select>
-                <button class="btn verde" style="margin-top: 10px;" onclick="vincularAlunoASala()">Vincular Aluno</button>
-              </div>
-            </div>
-          </section>
-
-          <section id="c_salas" class="hidden">
-            <h2 class="title">Gerenciar Salas</h2>
-            <div class="grid2">
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Criar Sala</h3>
-                <label>Nome da sala (ex.: 9º A)</label><input id="c_s_nome" />
-                <label style="margin-top: 8px">Capacidade</label
-                ><input id="c_s_cap" type="number" value="30" />
-                <button
-                  class="btn verde"
-                  style="margin-top: 10px"
-                  onclick="criarSala()"
-                >
-                  Criar Sala
-                </button>
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Salas</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Capacidade</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="c_tbSalas"></tbody>
+                  <tbody id="c_m_list_table">
+                    </tbody>
                 </table>
               </div>
             </div>
-          </section>
-
-          <section id="c_materias" class="hidden">
-            <h2 class="title">Criar Matéria</h2>
-            <div class="grid2">
-              <div class="card">
-                <label>Sala</label><select id="c_m_selSala"></select>
-                <label style="margin-top: 8px">Nome da matéria</label
-                ><input id="c_m_nome" />
-                <button
-                  class="btn verde"
-                  style="margin-top: 10px"
-                  onclick="criarMateria('coordenador')"
-                >
-                  Criar Matéria
-                </button>
-              </div>
-              <div class="card">
-                <h3 style="margin: 0 0 6px">Matérias por sala</h3>
-                <div id="c_m_list" class="cards"></div>
-              </div>
-            </div>
-          </section>
+            </section>
 
              <section id="c_banners" class="hidden">
             <h2 class="title">Banners de Provas</h2>
@@ -661,6 +718,39 @@
         <div class="right">
             <h2>Edição de Salas</h2>
             <p>Altere o nome e a capacidade de uma sala existente.</p>
+        </div>
+    </div>
+</section>
+
+<section id="c_edit_materia_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Matéria</h3>
+            <p class="muted">Altere as informações da matéria selecionada.</p>
+            <input type="hidden" id="edit_materia_id">
+            <div class
+="row">
+                <div>
+                  <label>Nome da Matéria</label>
+                  <input id="edit_materia_nome" />
+                </div>
+                <div>
+                  <label>Sala</label>
+                  <select id="edit_m_selSala"></select>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicaoMateria()">
+                    Salvar Edição
+                </button>
+                <button class="btn outline" onclick="cancelarEdicaoMateria()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Matérias</h2>
+            <p>Altere o nome e a sala de uma matéria existente.</p>
         </div>
     </div>
 </section>

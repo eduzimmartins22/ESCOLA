@@ -34,7 +34,7 @@ async function apiFetch(path, options = {}) { // Recebe o 'path' relativo (ex: '
 
     // Verifica se a resposta NÃO foi bem-sucedida (status diferente de 2xx)
     if (!response.ok) {
-      console.error(`❌ API error: ${response.status} ${response.statusText} para ${url}`); // Adiciona URL ao erro
+      console.error(` API error: ${response.status} ${response.statusText} para ${url}`); // Adiciona URL ao erro
       console.error("Resposta completa do servidor (texto):", text); // LOG: Mostra o texto completo em caso de erro
 
       let errorBody = null;
@@ -55,13 +55,13 @@ async function apiFetch(path, options = {}) { // Recebe o 'path' relativo (ex: '
       console.log(`>> apiFetch: JSON parseado com sucesso para ${url}.`); // LOG: Confirma que o JSON é válido
       return jsonData; // Retorna os dados JSON
     } catch (e) {
-      console.error(`⚠️ Resposta OK (${response.status}), mas não é JSON válido para ${url}:`, text.substring(0, 100)); // LOG: Indica que a resposta não era JSON
+      console.error(`Resposta OK (${response.status}), mas não é JSON válido para ${url}:`, text.substring(0, 100)); // LOG: Indica que a resposta não era JSON
       // Rejeita a Promise indicando que a resposta do servidor foi inválida
       return Promise.reject({ status: response.status, body: { message: "Resposta inválida do servidor (não JSON)" } });
     }
 
   } catch (error) { // Captura erros de rede ou outros erros inesperados
-    console.error(`��� Falha na conexão ou processamento da API para ${url}:`, error); // LOG: Mostra o erro de rede/conexão
+    console.error(`��� Falha na conexão ou processamento da API para ${url}:`, error); // LOG: Mostra o erro de rede/conexão
     // Rejeita a Promise com um erro genérico de rede/conexão
     return Promise.reject({ status: 0, body: { message: `Falha de rede ou conexão: ${error.message || error}` } });
   }
@@ -100,12 +100,16 @@ listMaterias: (params = {}) => {
   return apiGet(`/materias${qs ? "?" + qs : ""}`);
 },
 createMateria: (payload) => apiPost('/materias', payload),
-updateMateria: (id, payload) => // ✅ NOVA FUNÇÃO
+updateMateria: (id, payload) => // NOVA FUNÇÃO
   apiFetch(`/materias/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload)
   }),
 
+deleteMateria: (id) => //  NOVA FUNÇÃO
+  apiFetch(`/materias/${id}`, {
+    method: "DELETE"
+  }),
 
   // ---------- PERGUNTAS ----------
 listPerguntas: (params = {}) => {

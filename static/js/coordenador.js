@@ -30,21 +30,19 @@ async function coordCriarProfessor() {
 async function renderSalasCoord() {
   console.log(">> renderSalasCoord: Iniciando renderização da tabela de salas...");
   try {
-    // Usa os dados do appState que já foram buscados (ou busca novamente se necessário)
-    // Para garantir que os dados estão sempre atualizados ao abrir a tab:
     const salas = await API.listSalas();
     window.appState.salas = salas || [];
 
-    // Atualiza a tabela de salas do coordenador (c_tbSalas)
     const tb = byId('c_tbSalas');
     if (!tb) {
         console.warn(">> renderSalasCoord: Tabela 'c_tbSalas' não encontrada.");
-        return; // Sai se a tabela não estiver na DOM
+        return;
     }
 
-    tb.innerHTML = ''; // Limpa a tabela
+    tb.innerHTML = '';
+    
     if (salas.length === 0) {
-        tb.innerHTML = '<tr><td colspan="3">Nenhuma sala cadastrada.</td></tr>'; // Colspan 3 para Nome, Cap, Ações
+        tb.innerHTML = '<tr><td colspan="3" class="empty-message">Nenhuma sala cadastrada.</td></tr>';
         return;
     }
 
@@ -54,8 +52,10 @@ async function renderSalasCoord() {
         <td>${s.nome}</td>
         <td>${s.capacidade}</td>
         <td>
-          <button class="btn" style="background:#dc2626; color:white; padding: 4px 8px; font-size:12px;" onclick="apagarUsuario('${s.id}', 'sala')">Apagar</button>
-          <button class="btn" style="background:#3b82f6; color:white; padding: 4px 8px; font-size:12px;" onclick="editarSala('${s.id}')">Editar</button>
+          <div class="table-actions">
+            <button class="btn-table btn-delete" onclick="apagarUsuario('${s.id}', 'sala')">Apagar</button>
+            <button class="btn-table btn-edit" onclick="editarSala('${s.id}')">Editar</button>
+          </div>
         </td>
       `;
       tb.appendChild(tr);
@@ -68,13 +68,20 @@ async function renderSalasCoord() {
   }
 }
 
+    
+
 async function renderProfsCoord() {
   try {
     const users = await API.listUsers('professores');
     window.appState.users.professores = users || [];
     const tb = byId('c_tbProfs');
     tb.innerHTML = '';
-    if (!window.appState.users.professores.length) { tb.innerHTML = '<tr><td colspan="4">Nenhum professor cadastrado.</td></tr>'; return; }
+    
+    if (!window.appState.users.professores.length) { 
+      tb.innerHTML = '<tr><td colspan="4" class="empty-message">Nenhum professor cadastrado.</td></tr>'; 
+      return; 
+    }
+    
     window.appState.users.professores.forEach(p => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -82,8 +89,10 @@ async function renderProfsCoord() {
         <td>${p.cpf}</td>
         <td>${p.matricula||'-'}</td>
         <td>
-          <button class="btn" style="background:#dc2626; color:white; padding:4px 8px;" onclick="apagarUsuario('${p.id}','professor')">Excluir</button>
-          <button class="btn" style="background:#3b82f6; color:white; padding:4px 8px;" onclick="editarUsuario('${p.id}','professor')">Editar</button>
+          <div class="table-actions">
+            <button class="btn-table btn-delete" onclick="apagarUsuario('${p.id}','professor')">Excluir</button>
+            <button class="btn-table btn-edit" onclick="editarUsuario('${p.id}','professor')">Editar</button>
+          </div>
         </td>
       `;
       tb.appendChild(tr);
@@ -129,42 +138,38 @@ async function vincularAlunoASala() {
 
 async function renderAlunosCoord() {
   try {
-    // Removemos as chamadas API.listUsers e API.listSalas daqui
-    // A função agora confia que window.appState já está atualizado pela refreshAllSelectsAsync
-
-    // Atualiza os selects de vinculação (isso está correto aqui)
     fillSelectById('c_vincular_aluno', (window.appState.users.alunos || []).map(a => ({ id: a.id, nome: a.nome })));
     fillSelectById('c_vincular_sala', (window.appState.salas || []).map(s => ({ id: s.id, nome: s.nome })));
 
     const tb = byId('c_tbAlunos');
     tb.innerHTML = '';
 
-    // Garante que temos a lista de alunos antes de tentar desenhar
     const alunosParaRenderizar = window.appState.users.alunos || [];
 
     if (alunosParaRenderizar.length === 0) {
-        tb.innerHTML = '<tr><td colspan="5">Nenhum aluno cadastrado.</td></tr>';
+        tb.innerHTML = '<tr><td colspan="5" class="empty-message">Nenhum aluno cadastrado.</td></tr>';
         return;
     }
 
     alunosParaRenderizar.forEach(a => {
-      console.log(`>> renderAlunosCoord: Renderizando aluno ${a.nome}, Sala ID: ${a.sala_id}`); // LOG ADICIONADO
+      console.log(`>> renderAlunosCoord: Renderizando aluno ${a.nome}, Sala ID: ${a.sala_id}`);
 
-  // Busca o nome da sala na lista JÁ ATUALIZADA em window.appState.salas
-  const sala = window.appState.salas.find(s => s.id === a.sala_id); // Guardamos a sala encontrada
-  const salaNome = sala ? sala.nome : '-'; // Usamos a sala encontrada para pegar o nome
+      const sala = window.appState.salas.find(s => s.id === a.sala_id);
+      const salaNome = sala ? sala.nome : '-';
 
-  console.log(`>> renderAlunosCoord: Sala encontrada para ${a.nome}:`, sala); // LOG ADICIONAL
+      console.log(`>> renderAlunosCoord: Sala encontrada para ${a.nome}:`, sala);
 
-  const tr = document.createElement('tr');
+      const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${a.nome}</td>
         <td>${a.cpf}</td>
         <td>${a.matricula||'-'}</td>
         <td>${salaNome}</td> 
         <td>
-          <button class="btn" style="background:#dc2626; color:white; padding:4px 8px;" onclick="apagarUsuario('${a.id}','aluno')">Apagar</button>
-          <button class="btn" style="background:#3b82f6; color:white; padding:4px 8px;" onclick="editarUsuario('${a.id}','aluno')">Editar</button>
+          <div class="table-actions">
+            <button class="btn-table btn-delete" onclick="apagarUsuario('${a.id}','aluno')">Apagar</button>
+            <button class="btn-table btn-edit" onclick="editarUsuario('${a.id}','aluno')">Editar</button>
+          </div>
         </td>
       `;
       tb.appendChild(tr);
@@ -173,6 +178,7 @@ async function renderAlunosCoord() {
     console.error("Erro ao renderizar tabela de alunos:", err); 
   }
 }
+
 
 async function apagarUsuario(id, role) {
   try {
@@ -270,44 +276,103 @@ function cancelarEdicao() {
 /* Materias e banners do coordenador (simplificados) */
 
 async function renderMateriasCoord() {
-  console.log(">> renderMateriasCoord (coordenador.js) iniciada."); // LOG INÍCIO
+  console.log(">> renderMateriasCoord (coordenador.js) iniciada.");
   try {
-    // Usa as matérias já carregadas no estado global
-    const materias = window.appState.materias || []; 
-    console.log(">> renderMateriasCoord: Usando matérias do appState:", materias); // LOG MATÉRIAS
+    const materias = window.appState.materias || [];
+    console.log(">> renderMateriasCoord: Usando matérias do appState:", materias);
 
-    const tb = byId('c_m_list');
+    // Alvo é o TBody da nova tabela
+    const tb = byId('c_m_list_table'); 
     if (!tb) {
-         console.error(">> renderMateriasCoord: Elemento 'c_m_list' não encontrado!");
+         console.error(">> renderMateriasCoord: Elemento 'c_m_list_table' não encontrado!");
          return;
     }
-    tb.innerHTML = '';
+    tb.innerHTML = ''; // Limpa o TBody
 
     if (!materias.length) { 
-        tb.innerHTML = '<span class="muted">Nenhuma matéria cadastrada.</span>'; 
-        console.log(">> renderMateriasCoord: Nenhuma matéria encontrada."); // LOG VAZIO
+        tb.innerHTML = '<tr><td colspan="3" class="muted">Nenhuma matéria cadastrada.</td></tr>'; 
+        console.log(">> renderMateriasCoord: Nenhuma matéria encontrada.");
         return; 
     }
 
-    materias.forEach((m, index) => {
-      console.log(`>> renderMateriasCoord: Processando matéria ${index}:`, m); // LOG DENTRO DO LOOP
-      const d = document.createElement('div');
-      d.className = 'card';
-
-      // --- CORREÇÃO AQUI ---
-      // Usa m.sala_id (snake_case) para encontrar a sala
+    materias.forEach((m) => {
       const sala = (window.appState.salas || []).find(s => s.id === m.sala_id) || {}; 
       const nomeSala = sala.nome || '-';
-      console.log(`>> renderMateriasCoord: Matéria ${index} - Sala encontrada:`, sala); // LOG SALA
-
-      d.innerHTML = `<strong>${m.nome}</strong><div class="muted">Sala: ${nomeSala}</div>`;
-      tb.appendChild(d);
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${m.nome}</td>
+        <td>${nomeSala}</td>
+        <td>
+          <button class="btn" style="background:#3b82f6; color:white; padding: 4px 8px; font-size:12px;" onclick="editarMateria('${m.id}')">Editar</button>
+          <button class="btn" style="background:#dc2626; color:white; padding: 4px 8px; font-size:12px; margin-top: 4px;" onclick="apagarMateria('${m.id}', '${m.nome}')">Apagar</button>
+        </td>
+      `;
+      tb.appendChild(tr);
     });
   } catch(err){ 
-      console.error(">> ERRO em renderMateriasCoord:", err); // LOG ERRO
-      // Poderíamos adicionar um alerta aqui se quiséssemos
+      console.error(">> ERRO em renderMateriasCoord:", err);
   }
-  console.log(">> renderMateriasCoord (coordenador.js) finalizada."); // LOG FIM
+  console.log(">> renderMateriasCoord (coordenador.js) finalizada.");
+}
+ 
+function editarMateria(id) {
+  const materia = (window.appState.materias || []).find(m => m.id === id);
+  if (!materia) return alert('Matéria não encontrada para edição.');
+
+  console.log("Editando matéria:", materia);
+
+  // Preenche o novo modal
+  byId('edit_materia_id').value = materia.id;
+  byId('edit_materia_nome').value = materia.nome;
+  
+  // Preenche o select de salas e seleciona a sala atual
+  fillSelectById('edit_m_selSala', (window.appState.salas || []).map(s => ({ id: s.id, nome: s.nome })), materia.sala_id);
+
+  // Exibe o modal
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('c_edit_materia_form').style.display = 'block'; 
+}
+
+function cancelarEdicaoMateria() {
+  document.getElementById('c_edit_materia_form').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function salvarEdicaoMateria() {
+  try {
+    const id = val('edit_materia_id');
+    const nome = val('edit_materia_nome');
+    const salaId = sel('edit_m_selSala').value;
+
+    if (!nome || !salaId) return alert('Preencha nome e selecione a sala.');
+
+    const payload = { nome, sala_id: salaId };
+
+    await API.updateMateria(id, payload); 
+
+    alert('Matéria atualizada com sucesso!');
+    cancelarEdicaoMateria(); // Volta para a tela principal
+    await refreshAllSelectsAsync(); // Atualiza os dados
+    renderMateriasCoord(); // Redesenha a tabela
+  } catch(err) {
+    console.error("Erro ao salvar edição da matéria:", err);
+    alert(err.body?.message || 'Erro ao salvar edição da matéria');
+  }
+}
+
+async function apagarMateria(id, nome) {
+  if (!confirm(`Tem certeza que deseja apagar a matéria "${nome}"?\n\nATENÇÃO: Todas as perguntas e conteúdos associados a ela também serão permanentemente excluídos.`)) return;
+
+  try {
+    await API.deleteMateria(id);
+    alert('Matéria excluída com sucesso!');
+    await refreshAllSelectsAsync();
+    renderMateriasCoord();
+  } catch (err) {
+    console.error("Erro ao apagar matéria:", err);
+    alert(err.body?.message || 'Erro ao apagar matéria');
+  }
 }
 
 /* Banners */

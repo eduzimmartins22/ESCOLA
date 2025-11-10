@@ -69,19 +69,39 @@ async function abrirMateriaAluno() {
 
   const m = (window.appState.materias || []).find(x => x.id === materiaId);
 
-  // ... (Resto da função que exibe conteúdos e inicia o quiz continua igual) ...
-   const cont = byId('a_conteudos');
+  const cont = byId('a_conteudos');
   cont.innerHTML = '';
   if (!m || !m.conteudos || m.conteudos.length === 0) {
        cont.innerHTML = '<span class="muted">Sem conteúdos cadastrados.</span>';
   } else {
       (m.conteudos || []).forEach(c => {
         const d = document.createElement('div');
-        // Ajusta a classe para 'banner' para usar estilos existentes
-        d.className = 'banner'; 
-        // Usa b.img_url se existir, ou placeholder/esconde
-        const imgHtml = c.url ? `<img src="${c.url}" alt="${c.nome || 'Conteúdo'}" style="width:120px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borda);" onerror="this.style.display='none';">` : '';
-        d.innerHTML = `${imgHtml}<div><strong>${c.nome || 'Sem Nome'}</strong><div class="muted">${c.tipo||'arquivo'}</div></div>`;
+        d.className = 'card'; // Usando a classe 'card'
+        d.style.marginBottom = '12px';
+
+        let html = `<strong>${c.nome || 'Sem Título'}</strong>`; // Título
+
+        // 2. Adiciona o Texto
+        if (c.texto) {
+          html += `<p class="muted" style="font-size: 13px; white-space: pre-wrap; margin-top: 5px;">${c.texto}</p>`;
+        }
+        
+        // 3. Adiciona o Link Clicável
+        if (c.link_externo) {
+          html += `<a href="${c.link_externo}" target="_blank" rel="noopener noreferrer" style="font-size: 13px; margin-top: 5px; display: block;">Acessar Link</a>`;
+        }
+
+        // 4. Adiciona o Arquivo (se houver)
+        if (c.url) {
+            const isImg = c.tipo && c.tipo.startsWith('image/');
+            if (isImg) {
+                 html += `<img src="${c.url}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" onerror="this.style.display='none'">`;
+            } else {
+                 html += `<a href="${c.url}" target="_blank" rel="noopener noreferrer" style="font-size: 13px; margin-top: 5px; display: block;">Baixar Arquivo (${c.tipo || 'arquivo'})</a>`;
+            }
+        }
+        
+        d.innerHTML = html;
         cont.appendChild(d);
       });
   }
