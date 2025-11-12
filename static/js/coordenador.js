@@ -53,8 +53,8 @@ async function renderSalasCoord() {
         <td>${s.capacidade}</td>
         <td>
           <div class="table-actions">
-            <button class="btn-table btn-delete" onclick="apagarUsuario('${s.id}', 'sala')">Apagar</button>
-            <button class="btn-table btn-edit" onclick="editarSala('${s.id}')">Editar</button>
+            <button class="btn-action btn-editar" onclick="editarSala('${s.id}')">Editar</button>
+            <button class="btn-action btn-apagar" onclick="apagarUsuario('${s.id}', 'sala')">Apagar</button>
           </div>
         </td>
       `;
@@ -67,6 +67,7 @@ async function renderSalasCoord() {
     alert('Erro ao renderizar salas');
   }
 }
+
 
     
 
@@ -90,8 +91,8 @@ async function renderProfsCoord() {
         <td>${p.matricula||'-'}</td>
         <td>
           <div class="table-actions">
-            <button class="btn-table btn-delete" onclick="apagarUsuario('${p.id}','professor')">Excluir</button>
-            <button class="btn-table btn-edit" onclick="editarUsuario('${p.id}','professor')">Editar</button>
+            <button class="btn-action btn-editar" onclick="editarUsuario('${p.id}','professor')">Editar</button>
+            <button class="btn-action btn-apagar" onclick="apagarUsuario('${p.id}','professor')">Apagar</button>
           </div>
         </td>
       `;
@@ -101,6 +102,9 @@ async function renderProfsCoord() {
     console.error(err);
   }
 }
+
+
+
 
 /* ========= Alunos ========= */
 async function coordCriarAluno() {
@@ -167,8 +171,8 @@ async function renderAlunosCoord() {
         <td>${salaNome}</td> 
         <td>
           <div class="table-actions">
-            <button class="btn-table btn-delete" onclick="apagarUsuario('${a.id}','aluno')">Apagar</button>
-            <button class="btn-table btn-edit" onclick="editarUsuario('${a.id}','aluno')">Editar</button>
+            <button class="btn-action btn-editar" onclick="editarUsuario('${a.id}','aluno')">Editar</button>
+            <button class="btn-action btn-apagar" onclick="apagarUsuario('${a.id}','aluno')">Apagar</button>
           </div>
         </td>
       `;
@@ -178,6 +182,9 @@ async function renderAlunosCoord() {
     console.error("Erro ao renderizar tabela de alunos:", err); 
   }
 }
+
+
+    
 
 
 async function apagarUsuario(id, role) {
@@ -273,6 +280,7 @@ function cancelarEdicao() {
   document.getElementById('app').style.display = 'block';
 }
 
+
 /* Materias e banners do coordenador (simplificados) */
 
 async function renderMateriasCoord() {
@@ -281,16 +289,15 @@ async function renderMateriasCoord() {
     const materias = window.appState.materias || [];
     console.log(">> renderMateriasCoord: Usando matérias do appState:", materias);
 
-    // Alvo é o TBody da nova tabela
     const tb = byId('c_m_list_table'); 
     if (!tb) {
          console.error(">> renderMateriasCoord: Elemento 'c_m_list_table' não encontrado!");
          return;
     }
-    tb.innerHTML = ''; // Limpa o TBody
+    tb.innerHTML = '';
 
     if (!materias.length) { 
-        tb.innerHTML = '<tr><td colspan="3" class="muted">Nenhuma matéria cadastrada.</td></tr>'; 
+        tb.innerHTML = '<tr><td colspan="3" class="empty-message">Nenhuma matéria cadastrada.</td></tr>'; 
         console.log(">> renderMateriasCoord: Nenhuma matéria encontrada.");
         return; 
     }
@@ -304,8 +311,10 @@ async function renderMateriasCoord() {
         <td>${m.nome}</td>
         <td>${nomeSala}</td>
         <td>
-          <button class="btn" style="background:#3b82f6; color:white; padding: 4px 8px; font-size:12px;" onclick="editarMateria('${m.id}')">Editar</button>
-          <button class="btn" style="background:#dc2626; color:white; padding: 4px 8px; font-size:12px; margin-top: 4px;" onclick="apagarMateria('${m.id}', '${m.nome}')">Apagar</button>
+          <div class="table-actions">
+            <button class="btn-action btn-editar" onclick="editarMateria('${m.id}')">Editar</button>
+            <button class="btn-action btn-apagar" onclick="apagarMateria('${m.id}', '${m.nome}')">Apagar</button>
+          </div>
         </td>
       `;
       tb.appendChild(tr);
@@ -315,6 +324,10 @@ async function renderMateriasCoord() {
   }
   console.log(">> renderMateriasCoord (coordenador.js) finalizada.");
 }
+
+
+   
+
  
 function editarMateria(id) {
   const materia = (window.appState.materias || []).find(m => m.id === id);

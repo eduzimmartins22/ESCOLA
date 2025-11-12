@@ -667,3 +667,80 @@ tr:hover td {
 }
 
 /* --- FIM DA INTERVENÇÃO CIRÚRGICA --- */
+
+
+
+
+
+/* ========================================
+   BOTÕES DE AÇÃO - PADRÃO GERENCIAR MATÉRIAS
+   (Todas as abas: Professores, Alunos, Salas, Matérias)
+   Atualizado: 12/11/2025
+   ======================================== */
+
+/* Container de ações - HORIZONTAL (lado a lado) */
+td .table-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Botão base - MESMA LARGURA */
+.btn-action {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  white-space: nowrap;
+  min-width: 70px;
+  text-align: center;
+}
+
+.btn-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+}
+
+/* Botão EDITAR - AZUL */
+.btn-action.btn-editar {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-action.btn-editar:hover {
+  background-color: #2563eb;
+}
+
+/* Botão APAGAR - VERMELHO */
+.btn-action.btn-apagar {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-action.btn-apagar:hover {
+  background-color: #b91c1c;
+}
+
+/* Responsividade - Mantém horizontal mesmo em mobile */
+@media (max-width: 768px) {
+  td .table-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .btn-action {
+    min-width: 65px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
