@@ -134,6 +134,19 @@ uploadPergunta: (formData) => apiPost('/perguntas', formData),
     return apiPost(`/conteudos`, formData); 
   },
 
+  updateConteudo: (id, formData) => {
+    // Envia FormData para a rota PUT, pois pode conter um arquivo
+    return apiFetch(`/conteudos/${id}`, {
+      method: "PUT",
+      body: formData
+    });
+  },
+  deleteConteudo: (id) => {
+    return apiFetch(`/conteudos/${id}`, {
+      method: "DELETE"
+    });
+  },
+
   // ---------- BANNERS ----------
   listBanners: () => apiGet(`/banners`), // CORRIGIDO
   createBanner: (formData) => apiPost(`/banners`, formData), // CORRIGIDO

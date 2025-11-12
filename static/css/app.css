@@ -621,278 +621,49 @@ tr:hover td {
   }
 }
 
+/* --- INÍCIO DA INTERVENÇÃO CIRÚRGICA (Novas Classes de Formulário) --- */
 
-
-
-/* ========================================
-   COORDENADOR: GERENCIAMENTO (Padrão Form-Card)
-   Inspirado na página "Perguntas e Distribuição" do Professor
-   ======================================== */
-
-/* Container de Formulário - Reutiliza padrão existente */
-.coord-form-card {
-  background: #fff;
-  border: 1px solid var(--borda);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  margin-bottom: 16px;
-  transition: box-shadow 0.3s ease;
-}
-
-.coord-form-card:hover {
-  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-}
-
-/* Grupo de Campos - Consistente com .form-card do professor */
-.coord-form-card .form-group {
+/* Estilos para grupos de formulário. 
+  Isso corrige o layout quebrado que você viu na imagem, 
+  forçando cada grupo de label/input a se comportar como um bloco.
+*/
+.form-group {
   display: flex;
   flex-direction: column;
   margin-bottom: 16px;
 }
 
-.coord-form-card label {
-  font-weight: 600;
+.form-group label {
+  font-weight: 500;
+  color: var(--txt);
   margin-bottom: 6px;
-  color: var(--txt);
-  font-size: 13px;
-}
-
-.coord-form-card input,
-.coord-form-card select {
-  border: 1px solid var(--borda);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 15px;
-  background: #f9fafb;
-  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
-}
-
-.coord-form-card input:focus,
-.coord-form-card select:focus {
-  outline: none;
-  border-color: var(--azul);
-  box-shadow: 0 0 0 3px rgba(15,115,209,0.15);
-  background: #fff;
-}
-
-/* Botões de Ação - Substitui estilos inline */
-.coord-form-card .actions {
-  text-align: right;
-  margin-top: 12px;
-}
-
-/* ===== TABELAS DE GERENCIAMENTO ===== */
-
-/* Container da Tabela - Eleva do padrão base */
-.coord-table-card {
-  background: #fff;
-  border: 1px solid var(--borda);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  overflow: hidden; /* Garante border-radius na tabela */
-}
-
-.coord-table-card h3 {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--txt);
-}
-
-/* Tabela - Mantém estrutura base, adiciona refinamentos */
-.coord-table-card table {
-  margin: 0; /* Remove margin se houver */
-}
-
-.coord-table-card table th {
-  background: var(--cinza);
-  font-weight: 600;
-  font-size: 13px;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.coord-table-card table td {
   font-size: 14px;
-  color: #4b5563;
-  vertical-align: middle;
 }
 
-/* Coluna de Ações - Centraliza botões */
-.coord-table-card .table-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-/* ===== BOTÕES DE AÇÃO (Substitui inline styles) ===== */
-
-/* Botão Base para Tabelas */
-.btn-table {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
-  white-space: nowrap;
-}
-
-.btn-table:hover {
-  transform: translateY(-1px);
-}
-
-.btn-table:active {
-  transform: translateY(0);
-}
-
-/* Botão Excluir/Apagar - Vermelho */
-.btn-table.btn-delete {
-  background-color: #dc2626;
-  color: white;
-}
-
-.btn-table.btn-delete:hover {
-  background-color: #b91c1c;
-}
-
-/* Botão Editar - Azul */
-.btn-table.btn-edit {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.btn-table.btn-edit:hover {
-  background-color: #2563eb;
-}
-
-/* ===== SEÇÃO DE VINCULAÇÃO (Alunos) ===== */
-
-.coord-vincular-card {
-  background: linear-gradient(135deg, #e0f2fe, #dbeafe);
-  border: 1px solid #bfdbfe;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
-}
-
-.coord-vincular-card h3 {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e40af;
-}
-
-.coord-vincular-card label {
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #1e3a8a;
-  font-size: 13px;
-  display: block;
-}
-
-.coord-vincular-card select {
-  width: 100%;
-  border: 1px solid #93c5fd;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 15px;
-  background: white;
-  margin-bottom: 12px;
-  transition: border 0.2s, box-shadow 0.2s;
-}
-
-.coord-vincular-card select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-/* ===== RESPONSIVIDADE MOBILE ===== */
-
-@media (max-width: 768px) {
-  /* Form Cards empilham melhor em mobile */
-  .coord-form-card,
-  .coord-table-card,
-  .coord-vincular-card {
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-
-  /* Tabelas em mobile - Scroll horizontal se necessário */
-  .coord-table-card {
-    overflow-x: auto;
-  }
-
-  .coord-table-card table {
-    min-width: 600px; /* Força largura mínima */
-  }
-
-  /* Botões de ação empilham em telas pequenas */
-  .coord-table-card .table-actions {
-    flex-direction: column;
-    gap: 6px;
-    align-items: stretch;
-  }
-
-  .btn-table {
-    width: 100%;
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  /* Ajustes para mobile extra pequeno */
-  .coord-form-card h3,
-  .coord-table-card h3,
-  .coord-vincular-card h3 {
-    font-size: 15px;
-  }
-
-  .coord-table-card table th,
-  .coord-table-card table td {
-    font-size: 12px;
-    padding: 8px 6px;
-  }
-
-  .btn-table {
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-
-  /* Em mobile extremo, força tabela responsiva */
-  .coord-table-card table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-}
-
-/* ===== UTILITÁRIOS ===== */
-
-/* Espaçamento entre grid de cards */
-.coord-section {
+/* Container de grid para alinhar campos lado a lado,
+  como "Matéria" e "Título".
+*/
+.form-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 20px;
 }
 
-@media (max-width: 900px) {
-  .coord-section {
-    grid-template-columns: 1fr;
+/* Garante que inputs e selects dentro do .form-group ocupem todo o espaço.
+  Os estilos de borda e padding já são herdados dos seletores globais.
+*/
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+}
+
+/* Ajuste de responsividade para o novo grid */
+@media (max-width: 600px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr; /* Faz o grid empilhar em telas pequenas */
+    gap: 0; /* Remove o 'gap' para que o 'margin-bottom' do form-group funcione */
   }
 }
 
-/* Mensagem quando tabela vazia */
-.coord-table-card .empty-message {
-  text-align: center;
-  color: #6b7280;
-  font-style: italic;
-  padding: 20px;
-}
+/* --- FIM DA INTERVENÇÃO CIRÚRGICA --- */

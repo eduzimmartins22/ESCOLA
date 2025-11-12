@@ -1174,6 +1174,138 @@ def upload_conteudo():
             conn.close()
             print("Conexão DB fechada.") # Log
 
+@app.route('/api/conteudos/<conteudo_id>', methods=['PUT'])
+def update_conteudo(conteudo_id):
+    """Atualiza um conteúdo existente (texto, link e/ou arquivo)."""
+    print(f"--- Iniciando update_conteudo para ID: {conteudo_id} ---")
+    
+    # 1. Validação dos dados do formulário
+    materia_id = request.form.get('materia_id')
+    nome_conteudo = request.form.get('nome')
+    texto_conteudo = request.form.get('texto')
+    link_conteudo = request.form.get('link_externo')
+
+    if not all([materia_id, nome_conteudo]):
+        return jsonify({"error": "Matéria ID e Título são obrigatórios"}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão DB"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # 2. Buscar o conteúdo antigo para saber se existe um arquivo para apagar
+            sql_find = "SELECT url FROM conteudos WHERE id = %s"
+            cursor.execute(sql_find, (conteudo_id,))
+            old_content = cursor.fetchone()
+            if not old_content:
+                return jsonify({"error": "Conteúdo não encontrado"}), 404
+            
+            old_file_url = old_content.get('url')
+            
+            # 3. Processar o novo arquivo (se enviado)
+            file = request.files.get('file') # Usando 'file' (singular) para o upload de edição
+            new_file_url = None
+            new_file_type = None
+
+            if file and file.filename != '':
+                print(f"Processando novo arquivo: {file.filename}")
+                # Apaga o arquivo antigo se um novo foi enviado
+                if old_file_url and old_file_url.startswith('/static/uploads/conteudos/'):
+                    try:
+                        filename = os.path.basename(old_file_url)
+                        file_path = os.path.join(app.root_path, app.static_folder, 'uploads', 'conteudos', filename)
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            print(f"Arquivo antigo removido: {file_path}")
+                    except Exception as e_del:
+                        print(f"Erro ao remover arquivo antigo: {e_del}")
+                
+                # Salva o novo arquivo
+                upload_folder = os.path.join(app.static_folder, 'uploads', 'conteudos')
+                filename = secure_filename(file.filename)
+                unique_filename = str(uuid.uuid4()) + "_" + filename
+                save_path = os.path.join(upload_folder, unique_filename)
+                file.save(save_path)
+                
+                new_file_url = url_for('static', filename=f'uploads/conteudos/{unique_filename}', _external=False)
+                new_file_type = file.mimetype
+                print(f"Novo arquivo salvo: {new_file_url}")
+            
+            # 4. Atualizar o banco de dados
+            if new_file_url:
+                # Se um novo arquivo foi salvo, atualiza URL e TIPO
+                sql_update = """
+                    UPDATE conteudos 
+                    SET nome = %s, texto = %s, link_externo = %s, materia_id = %s, url = %s, tipo = %s
+                    WHERE id = %s
+                """
+                params = (nome_conteudo, texto_conteudo, link_conteudo, materia_id, new_file_url, new_file_type, conteudo_id)
+            else:
+                # Se nenhum arquivo novo foi enviado, preserva URL e TIPO antigos
+                sql_update = """
+                    UPDATE conteudos 
+                    SET nome = %s, texto = %s, link_externo = %s, materia_id = %s
+                    WHERE id = %s
+                """
+                params = (nome_conteudo, texto_conteudo, link_conteudo, materia_id, conteudo_id)
+
+            cursor.execute(sql_update, params)
+        
+        return jsonify({"message": "Conteúdo atualizado com sucesso!"}), 200
+
+    except Exception as e:
+        print(f"!!! Erro inesperado em update_conteudo: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Erro interno no servidor ao atualizar"}), 500
+    finally:
+        if conn: conn.close()
+
+
+@app.route('/api/conteudos/<conteudo_id>', methods=['DELETE'])
+def delete_conteudo(conteudo_id):
+    """Exclui um conteúdo e seu arquivo associado."""
+    print(f"--- Iniciando delete_conteudo para ID: {conteudo_id} ---")
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão DB"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Buscar o conteúdo para obter a URL do arquivo
+            sql_find = "SELECT url FROM conteudos WHERE id = %s"
+            cursor.execute(sql_find, (conteudo_id,))
+            content = cursor.fetchone()
+            if not content:
+                return jsonify({"error": "Conteúdo não encontrado"}), 404
+            
+            file_url = content.get('url')
+
+            # 2. Apagar o registro do DB
+            sql_delete = "DELETE FROM conteudos WHERE id = %s"
+            cursor.execute(sql_delete, (conteudo_id,))
+            
+            # 3. Apagar o arquivo físico (se existir)
+            if file_url and file_url.startswith('/static/uploads/conteudos/'):
+                try:
+                    filename = os.path.basename(file_url)
+                    file_path = os.path.join(app.root_path, app.static_folder, 'uploads', 'conteudos', filename)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print(f"Arquivo associado removido: {file_path}")
+                    else:
+                        print(f"Arquivo associado não encontrado: {file_path}")
+                except Exception as e_file:
+                    print(f"!!! Erro ao remover arquivo físico: {e_file}")
+            
+        return jsonify({"message": "Conteúdo excluído com sucesso!"}), 200
+    except Exception as e:
+        print(f"!!! Erro inesperado em delete_conteudo: {e}")
+        return jsonify({"error": "Erro interno no servidor ao excluir"}), 500
+    finally:
+        if conn: conn.close()
+
 # ===========================
 # EXECUÇÃO
 # ===========================

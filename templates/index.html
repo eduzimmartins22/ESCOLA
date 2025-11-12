@@ -335,24 +335,34 @@
             <h2 class="title">Conteúdos da Matéria</h2>
             <div class="grid2">
               <div class="card">
-                <label>Matéria</label>
-                <select id="p_c_materia"></select>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label>Matéria</label>
+                    <select id="p_c_materia"></select>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>Título do Conteúdo</label>
+                    <input id="p_c_nome" type="text" placeholder="Ex: Vídeo sobre Revolução Francesa" />
+                  </div>
+                </div> <div class="form-group">
+                  <label>Adicionar arquivo (Opcional)</label>
+                  <input id="p_c_file" type="file" />
+                </div>
                 
-                <label style="margin-top: 8px">Título do Conteúdo</label>
-                <input id="p_c_nome" type="text" placeholder="Ex: Vídeo sobre Revolução Francesa" />
+                <div class="form-group">
+                  <label>Adicionar Texto (Opcional)</label>
+                  <textarea id="p_c_texto" rows="4" placeholder="Digite uma descrição ou o conteúdo em texto aqui..."></textarea>
+                </div>
                 
-                <label style="margin-top: 8px">Adicionar arquivo (Opcional)</label>
-                <input id="p_c_file" type="file" />
-                
-                <label style="margin-top: 8px">Adicionar Texto (Opcional)</label>
-                <textarea id="p_c_texto" rows="4" placeholder="Digite uma descrição ou o conteúdo em texto aqui..."></textarea>
-                
-                <label style="margin-top: 8px">Adicionar Link (Opcional)</label>
-                <input id="p_c_link" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+                <div class="form-group">
+                  <label>Adicionar Link (Opcional)</label>
+                  <input id="p_c_link" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+                </div>
                 
                 <button
                   class="btn verde"
-                  style="margin-top: 10px"
+                  style="margin-top: 10px; width: 100%;"
                   onclick="adicionarConteudo()"
                 >
                   Enviar Conteúdo
@@ -751,6 +761,51 @@
         <div class="right">
             <h2>Edição de Matérias</h2>
             <p>Altere o nome e a sala de uma matéria existente.</p>
+        </div>
+    </div>
+</section>
+
+<section id="p_edit_conteudo_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Conteúdo</h3>
+            <p class="muted">Altere as informações do conteúdo selecionado.</p>
+            <input type="hidden" id="edit_conteudo_id">
+            <input type="hidden" id="edit_conteudo_materia_id">
+            
+            <div class="form-group">
+              <label>Título do Conteúdo</label>
+              <input id="edit_c_nome" type="text" placeholder="Ex: Vídeo sobre Revolução Francesa" />
+            </div>
+            
+            <div class="form-group">
+              <label>Adicionar/Substituir arquivo (Opcional)</label>
+              <input id="edit_c_file" type="file" />
+              <span class="muted" id="edit_c_file_info">Deixe em branco para manter o arquivo atual.</span>
+            </div>
+            
+            <div class="form-group">
+              <label>Adicionar Texto (Opcional)</label>
+              <textarea id="edit_c_texto" rows="4" placeholder="Digite uma descrição ou o conteúdo em texto aqui..."></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label>Adicionar Link (Opcional)</label>
+              <input id="edit_c_link" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+            </div>
+
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicaoConteudo()">
+                    Salvar Edição
+                </button>
+                <button class="btn outline" onclick="cancelarEdicaoConteudo()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Conteúdo</h2>
+            <p>Altere os dados do conteúdo. Se enviar um novo arquivo, ele substituirá o antigo (se houver).</p>
         </div>
     </div>
 </section>

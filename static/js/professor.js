@@ -275,22 +275,19 @@ async function renderPConteudos() {
     const d = document.createElement('div');
     d.className = 'card'; // Usando a classe 'card' para um visual melhor
     d.style.marginBottom = '12px';
+    d.style.position = 'relative'; // Para posicionar os botões
 
     let html = `<strong>${c.nome}</strong>`; // Título
 
-    // 2. Adiciona o Texto
     if (c.texto) {
       html += `<p class="muted" style="font-size: 13px; white-space: pre-wrap; margin-top: 5px;">${c.texto}</p>`;
     }
     
-    // 3. Adiciona o Link Clicável
     if (c.link_externo) {
       html += `<a href="${c.link_externo}" target="_blank" rel="noopener noreferrer" style="font-size: 13px; margin-top: 5px; display: block;">Acessar Link</a>`;
     }
 
-    // 4. Adiciona o Arquivo (se houver) - `c.url` é o link para o arquivo upado
     if (c.url) {
-        // Verifica se é imagem
         const isImg = c.tipo && c.tipo.startsWith('image/');
         if (isImg) {
              html += `<img src="${c.url}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" onerror="this.style.display='none'">`;
@@ -299,10 +296,101 @@ async function renderPConteudos() {
         }
     }
     
+    // Adiciona os botões de ação
+    html += `
+      <div style="position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 5px;">
+        <button class="btn" style="background:#3b82f6; color:white; padding: 4px 8px; font-size:12px;" onclick="editarConteudo('${c.id}')">Editar</button>
+        <button class="btn" style="background:#dc2626; color:white; padding: 4px 8px; font-size:12px;" onclick="apagarConteudo('${c.id}', '${c.nome}')">Apagar</button>
+      </div>
+    `;
+    
     d.innerHTML = html;
     list.appendChild(d);
   });
 }
+
+async function apagarConteudo(id, nome) {
+  if (!confirm(`Tem certeza que deseja apagar o conteúdo "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+
+  try {
+    await API.deleteConteudo(id);
+    alert('Conteúdo excluído com sucesso!');
+    await refreshAllSelectsAsync(); // Atualiza os dados
+    renderPConteudos(); // Redesenha a lista
+  } catch (err) {
+    console.error("Erro ao apagar conteúdo:", err);
+    alert(err.body?.message || 'Erro ao apagar conteúdo');
+  }
+}
+
+function editarConteudo(id) {
+  const materiaId = sel('p_c_materia').value;
+  const materia = (window.appState.materias || []).find(m => m.id === materiaId);
+  if (!materia) return alert('Matéria não encontrada.');
+
+  const conteudo = (materia.conteudos || []).find(c => c.id === id);
+  if (!conteudo) return alert('Conteúdo não encontrado para edição.');
+
+  console.log("Editando conteúdo:", conteudo);
+
+  // Preenche o novo modal
+  byId('edit_conteudo_id').value = conteudo.id;
+  byId('edit_conteudo_materia_id').value = materiaId; // Guarda o ID da matéria
+  byId('edit_c_nome').value = conteudo.nome;
+  byId('edit_c_texto').value = conteudo.texto || '';
+  byId('edit_c_link').value = conteudo.link_externo || '';
+  
+  // Limpa o campo de arquivo e atualiza o info
+  byId('edit_c_file').value = '';
+  const fileInfo = byId('edit_c_file_info');
+  if (conteudo.url) {
+    fileInfo.textContent = `Arquivo atual: ${conteudo.url.split('/').pop().substring(37)}`;
+  } else {
+    fileInfo.textContent = 'Nenhum arquivo associado. Envie um novo.';
+  }
+
+  // Exibe o modal
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('p_edit_conteudo_form').style.display = 'block'; 
+}
+
+function cancelarEdicaoConteudo() {
+  document.getElementById('p_edit_conteudo_form').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function salvarEdicaoConteudo() {
+  try {
+    const id = val('edit_conteudo_id');
+    const materiaId = val('edit_conteudo_materia_id');
+    const nome = val('edit_c_nome');
+    const texto = val('edit_c_texto');
+    const link = val('edit_c_link');
+    const file = byId('edit_c_file').files[0]; // Pega o novo arquivo, se houver
+
+    if (!nome) return alert('O título do conteúdo é obrigatório.');
+
+    const fd = new FormData();
+    fd.append('materia_id', materiaId);
+    fd.append('nome', nome);
+    fd.append('texto', texto);
+    fd.append('link_externo', link);
+    if (file) {
+      fd.append('file', file); // Adiciona o novo arquivo (o backend vai usar 'file')
+    }
+    
+    await API.updateConteudo(id, fd);
+
+    alert('Conteúdo atualizado com sucesso!');
+    cancelarEdicaoConteudo(); // Volta para a tela principal
+    await refreshAllSelectsAsync(); // Atualiza os dados
+    renderPConteudos(); // Redesenha a lista
+  } catch(err) {
+    console.error("Erro ao salvar edição do conteúdo:", err);
+    alert(err.body?.message || 'Erro ao salvar edição do conteúdo');
+  }
+}
+
 function editarSala(id) {
   // Encontra a sala na lista global do appState
   const sala = (window.appState.salas || []).find(s => s.id === id);
