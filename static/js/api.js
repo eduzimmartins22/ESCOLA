@@ -119,7 +119,16 @@ listPerguntas: (params = {}) => {
 createPergunta: (payload) => apiPost(`${API_BASE}/perguntas`, payload),
 uploadPergunta: (formData) => apiPost('/perguntas', formData),
 
-
+updatePergunta: (id, formData) => 
+  apiFetch(`/perguntas/${id}`, {
+    method: "PUT",
+    body: formData
+  }),
+  
+deletePergunta: (id) =>
+  apiFetch(`/perguntas/${id}`, {
+    method: "DELETE"
+  }),
 
   // ---------- CONTEÚDOS ----------
   listConteudos: (materiaId) =>

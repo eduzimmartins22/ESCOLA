@@ -1070,6 +1070,135 @@ def create_pergunta():
     finally:
         if conn: conn.close()
 
+@app.route('/api/perguntas/<pergunta_id>', methods=['PUT'])
+def update_pergunta(pergunta_id):
+    """Atualiza uma pergunta existente (recebe FormData)."""
+    print(f"--- Iniciando update_pergunta para ID: {pergunta_id} ---")
+    data = request.form
+
+    # 1. Validação (similar ao create_pergunta)
+    required_fields = ['materia_id', 'nivel', 'enunciado', 'opcao_a', 'opcao_b', 'opcao_c', 'opcao_d', 'opcao_e', 'resposta_correta']
+    if not all(k in data for k in required_fields):
+        return jsonify({"error": "Todos os campos da pergunta (form) são obrigatórios"}), 400
+    try:
+        correta_idx = int(data['resposta_correta'])
+        if not (0 <= correta_idx <= 4):
+             raise ValueError("Índice fora do intervalo")
+    except (ValueError, TypeError):
+         return jsonify({"error": "O índice da resposta correta deve ser um número entre 0 e 4"}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: return jsonify({"error": "Falha na conexão DB"}), 500
+
+        with conn.cursor() as cursor:
+            # 2. Buscar URL da imagem antiga
+            sql_find = "SELECT img_url FROM perguntas WHERE id = %s"
+            cursor.execute(sql_find, (pergunta_id,))
+            old_pergunta = cursor.fetchone()
+            if not old_pergunta:
+                return jsonify({"error": "Pergunta não encontrada"}), 404
+            
+            old_img_url = old_pergunta.get('img_url')
+            new_img_url_to_save = old_img_url # Mantém a antiga por padrão
+            
+            # 3. Processar nova imagem (se enviada)
+            img_file = request.files.get('imagem')
+            if img_file and img_file.filename != '':
+                print(f"Processando NOVA imagem: {img_file.filename}")
+                # Apaga a imagem antiga do disco
+                if old_img_url and old_img_url.startswith('/static/uploads/perguntas/'):
+                    try:
+                        filename = os.path.basename(old_img_url)
+                        file_path = os.path.join(app.root_path, app.static_folder, 'uploads', 'perguntas', filename)
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            print(f"Imagem antiga removida: {file_path}")
+                    except Exception as e_del:
+                        print(f"Erro ao remover imagem antiga: {e_del}")
+
+                # Salva a nova imagem
+                upload_folder = os.path.join(app.static_folder, 'uploads', 'perguntas')
+                filename = secure_filename(img_file.filename)
+                unique_filename = str(uuid.uuid4()) + "_" + filename
+                save_path = os.path.join(upload_folder, unique_filename)
+                img_file.save(save_path)
+                new_img_url_to_save = f"/static/uploads/perguntas/{unique_filename}"
+                print(f"Nova imagem salva: {new_img_url_to_save}")
+
+            # 4. Atualizar o DB
+            sql_update = """
+                UPDATE perguntas
+                SET materia_id = %s, nivel = %s, enunciado = %s,
+                    alt0 = %s, alt1 = %s, alt2 = %s, alt3 = %s, alt4 = %s,
+                    correta = %s, img_url = %s
+                WHERE id = %s
+            """
+            params = (
+                data['materia_id'], data['nivel'], data['enunciado'],
+                data['opcao_a'], data['opcao_b'], data['opcao_c'],
+                data['opcao_d'], data['opcao_e'], correta_idx,
+                new_img_url_to_save,
+                pergunta_id
+            )
+            cursor.execute(sql_update, params)
+            print("DB atualizado com sucesso.")
+
+        return jsonify({"message": "Pergunta atualizada com sucesso!"}), 200
+
+    except Exception as e:
+         print(f"!!! Erro inesperado em update_pergunta: {e}")
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao atualizar pergunta"}), 500
+    finally:
+        if conn: conn.close()
+
+
+@app.route('/api/perguntas/<pergunta_id>', methods=['DELETE'])
+def delete_pergunta(pergunta_id):
+    """Exclui uma pergunta e sua imagem associada."""
+    print(f"--- Iniciando delete_pergunta para ID: {pergunta_id} ---")
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Falha na conexão DB"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Buscar a pergunta para obter a URL da imagem
+            sql_find = "SELECT img_url FROM perguntas WHERE id = %s"
+            cursor.execute(sql_find, (pergunta_id,))
+            pergunta = cursor.fetchone()
+            if not pergunta:
+                return jsonify({"error": "Pergunta não encontrada"}), 404
+            
+            img_url = pergunta.get('img_url')
+
+            # 2. Apagar o registro do DB
+            sql_delete = "DELETE FROM perguntas WHERE id = %s"
+            cursor.execute(sql_delete, (pergunta_id,))
+            
+            # 3. Apagar o arquivo físico (se existir)
+            if img_url and img_url.startswith('/static/uploads/perguntas/'):
+                try:
+                    filename = os.path.basename(img_url)
+                    file_path = os.path.join(app.root_path, app.static_folder, 'uploads', 'perguntas', filename)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                        print(f"Arquivo de imagem associado removido: {file_path}")
+                    else:
+                        print(f"Arquivo de imagem não encontrado: {file_path}")
+                except Exception as e_file:
+                    print(f"!!! Erro ao remover arquivo físico: {e_file}")
+            
+        return jsonify({"message": "Pergunta excluída com sucesso!"}), 200
+    except Exception as e:
+        print(f"!!! Erro inesperado em delete_pergunta: {e}")
+        return jsonify({"error": "Erro interno no servidor ao excluir"}), 500
+    finally:
+        if conn: conn.close()
+
 # ===========================
 # ROTAS DE API - CONTEÚDOS
 # ===========================

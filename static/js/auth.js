@@ -185,7 +185,7 @@ function showMenuForRole(role) {
   if (role === 'coordenador') byId('menu-coordenador')?.classList.remove('hidden');
 
   document.querySelectorAll('.menu button[data-tab]').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
         console.log(">> Click no botão do menu:", btn.dataset.tab); // LOG CLICK
         openTab(btn.dataset.tab, btn);
     }
@@ -193,7 +193,7 @@ function showMenuForRole(role) {
   console.log(">> showMenuForRole: Finalizada.");
 }
 
-function openTab(id, btn) {
+async function openTab(id, btn) {
   console.log(">> openTab: Abrindo tab:", id); // LOG
   document
     .querySelectorAll("main section")
@@ -224,9 +224,11 @@ function openTab(id, btn) {
      renderProfMaterias();
   }
   if (id === "p_questoes") {
-    console.log(">> openTab: Chamando renderPQSelects e renderResumoQuestoes..."); // LOG
-    refreshAllSelectsAsync();
+    console.log(">> openTab: Chamando renderPQSelects (await)..."); 
+    await renderPQSelects(); // <-- Adiciona 'await'
+    console.log(">> openTab: Chamando renderResumoQuestoes e renderListaPerguntas...");
     renderResumoQuestoes();
+    renderListaPerguntas(); // Isto agora lerá o <select> de filtro (que estará vazio)
   }
   if (id === "p_conteudos") {
     console.log(">> openTab: Chamando renderPConteudos..."); // LOG

@@ -125,8 +125,27 @@ async function renderProfMaterias() {
 
 async function renderPQSelects() {
   await refreshAllSelectsAsync();
-  fillSelectWithMateriasId('p_q_materia', window.appState.materias, true); // Nome CORRIGIDO
-  fillSelectWithMateriasId('p_c_materia', window.appState.materias, true); // Nome CORRIGIDO
+  
+  // 1. Popula os selects de "Criar" e "Conteúdo"
+  fillSelectWithMateriasId('p_q_materia', window.appState.materias, true); 
+  fillSelectWithMateriasId('p_c_materia', window.appState.materias, true); 
+
+  // 2. Popula o NOVO select de "Filtrar"
+  fillSelectWithMateriasId('p_q_filtro_materia', window.appState.materias, true, null, null); //
+  // Adiciona uma opção "Selecione" no início do filtro
+  const filtroSelect = sel('p_q_filtro_materia');
+  if (filtroSelect) {
+    filtroSelect.insertAdjacentHTML('afterbegin', '<option value="">-- Selecione para filtrar --</option>');
+    filtroSelect.value = ""; // Garante que começa vazio
+  }
+
+  // 3. O select de "Criar" (p_q_materia) agora SÓ atualiza o resumo.
+  sel('p_q_materia').onchange = renderResumoQuestoes; 
+
+  // 4. O NOVO select de "Filtrar" (p_q_filtro_materia) SÓ atualiza a lista.
+  if (filtroSelect) {
+    filtroSelect.onchange = renderListaPerguntas;
+  }
 }
 
 async function adicionarPergunta() {
@@ -178,6 +197,10 @@ async function adicionarPergunta() {
     if (byId("p_q_preview")) byId("p_q_preview").style.display = "none";
 
     alert("✅ Pergunta criada com sucesso!");
+    await refreshAllSelectsAsync();
+    renderListaPerguntas();
+    renderResumoQuestoes();
+
   } catch (err) {
     console.error("❌ Erro ao criar pergunta:", err);
     alert("Erro ao criar a pergunta.");
@@ -507,3 +530,188 @@ document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("btn_add_pergunta");
   if (btn) btn.addEventListener("click", adicionarPergunta);
 });
+
+// ===========================================
+// NOVAS FUNÇÕES - CRUD DE PERGUNTAS
+// (Cole este bloco no final de professor.js)
+// ===========================================
+
+/**
+ * Renderiza a tabela de perguntas cadastradas para a matéria selecionada.
+ */
+function renderListaPerguntas() {
+  const materiaId = sel('p_q_filtro_materia').value;
+  const tbody = byId('p_q_lista_tbody');
+  const info = byId('p_q_lista_info');
+
+  // Verifica se os elementos existem (importante para evitar erros)
+  if (!tbody || !info) {
+      console.warn("Elementos da lista de perguntas (tbody ou info) não encontrados.");
+      return;
+  }
+  
+  tbody.innerHTML = ''; // Limpa a tabela
+
+  if (!materiaId) {
+    info.textContent = 'Selecione uma matéria acima para ver as perguntas.';
+    return;
+  }
+
+  const materia = (window.appState.materias || []).find(m => m.id === materiaId);
+  // As perguntas estão em materia.perguntas (como definido no app.py)
+  const perguntas = materia?.perguntas || []; 
+
+  if (perguntas.length === 0) {
+    info.textContent = 'Nenhuma pergunta cadastrada para esta matéria.';
+    return;
+  }
+
+  info.textContent = ''; // Limpa a mensagem de info
+
+  perguntas.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.id = `pergunta-row-${p.id}`; // ID para remoção fácil
+    
+    // 'p.q' é o enunciado (definido no app.py)
+    const enunciadoCurto = p.q.length > 70 ? p.q.substring(0, 70) + '...' : p.q;
+
+    tr.innerHTML = `
+      <td>${enunciadoCurto}</td>
+      <td>${cap(p.nivel)}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-action btn-editar" onclick="abrirModalEditarPergunta('${p.id}')">Editar</button>
+          <button class="btn-action btn-apagar" onclick="apagarPergunta('${p.id}')">Apagar</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * Abre o modal de edição e preenche com os dados da pergunta.
+ */
+function abrirModalEditarPergunta(perguntaId) {
+  const materiaId = sel('p_q_filtro_materia').value;
+  const materia = (window.appState.materias || []).find(m => m.id === materiaId);
+  if (!materia) return alert('Matéria não encontrada.');
+
+  const pergunta = (materia.perguntas || []).find(p => p.id === perguntaId);
+  if (!pergunta) return alert('Pergunta não encontrada para edição.');
+
+  console.log("Editando pergunta:", pergunta);
+
+  // Preenche o modal
+  byId('edit_p_id').value = pergunta.id;
+  byId('edit_p_materia_id_original').value = materiaId;
+  byId('edit_p_materia_nome').value = `${materia.nome} (Matéria não pode ser alterada)`;
+  sel('edit_p_nivel').value = pergunta.nivel;
+  byId('edit_p_enun').value = pergunta.q; // 'q' é o enunciado
+  
+  // Alternativas (pergunta.a é o array de alternativas)
+  (pergunta.a || []).forEach((alt, i) => {
+    byId(`edit_p_a${i}`).value = alt;
+  });
+  
+  sel('edit_p_cor').value = pergunta.correta; // 'correta' é o índice
+
+  // Imagem
+  byId('edit_p_img').value = ''; // Limpa o seletor de arquivo
+  const preview = byId('edit_p_preview');
+  const imgInfo = byId('edit_p_img_info');
+  
+  if (pergunta.img_url) {
+    preview.src = pergunta.img_url;
+    preview.style.display = 'block';
+    imgInfo.textContent = 'Envie um novo arquivo para substituir o atual.';
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+    imgInfo.textContent = 'Nenhuma imagem associada. Envie um arquivo (opcional).';
+  }
+
+  // Exibe o modal
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('p_edit_pergunta_form').style.display = 'block'; 
+}
+
+/**
+ * Fecha o modal de edição de pergunta.
+ */
+function cancelarEdicaoPergunta() {
+  document.getElementById('p_edit_pergunta_form').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+/**
+ * Salva as alterações da pergunta (chama a API PUT).
+ */
+async function salvarEdicaoPergunta() {
+  try {
+    const id = val('edit_p_id');
+    const materiaId = val('edit_p_materia_id_original'); // Matéria original
+    
+    // Validações básicas
+    if (!id || !materiaId) return alert('Erro: IDs não encontrados.');
+    
+    const enun = val('edit_p_enun');
+    if (!enun) return alert('O enunciado é obrigatório.');
+
+    // Monta o FormData
+    const fd = new FormData();
+    fd.append('materia_id', materiaId);
+    fd.append('nivel', sel('edit_p_nivel').value);
+    fd.append('enunciado', enun);
+    fd.append('opcao_a', val('edit_p_a0'));
+    fd.append('opcao_b', val('edit_p_a1'));
+    fd.append('opcao_c', val('edit_p_a2'));
+    fd.append('opcao_d', val('edit_p_a3'));
+    fd.append('opcao_e', val('edit_p_a4'));
+    fd.append('resposta_correta', sel('edit_p_cor').value);
+
+    const imgFile = byId('edit_p_img').files[0];
+    if (imgFile) {
+      fd.append('imagem', imgFile);
+    }
+
+    // Chama a API de atualização
+    await API.updatePergunta(id, fd);
+
+    alert('Pergunta atualizada com sucesso!');
+    cancelarEdicaoPergunta(); // Fecha o modal
+    
+    // Atualiza os dados e a UI
+    await refreshAllSelectsAsync();
+    renderListaPerguntas(); // Redesenha a lista
+
+  } catch(err) {
+    console.error("Erro ao salvar edição da pergunta:", err);
+    alert(err.body?.message || 'Erro ao salvar edição');
+  }
+}
+
+/**
+ * Apaga uma pergunta (chama a API DELETE).
+ */
+async function apagarPergunta(perguntaId) {
+  if (!confirm('Tem certeza que deseja apagar esta pergunta?\nEsta ação não pode ser desfeita.')) return;
+
+  try {
+    await API.deletePergunta(perguntaId);
+    
+    // Remove a linha da tabela localmente (para feedback instantâneo)
+    const row = byId(`pergunta-row-${perguntaId}`);
+    if (row) row.remove();
+    
+    // Atualiza o appState (importante)
+    await refreshAllSelectsAsync();
+    // Re-renderiza a lista para garantir consistência
+    renderListaPerguntas(); 
+
+    alert('Pergunta excluída com sucesso!');
+  } catch (err) {
+    console.error("Erro ao apagar pergunta:", err);
+    alert(err.body?.message || 'Erro ao apagar pergunta');
+  }
+}

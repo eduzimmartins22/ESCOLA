@@ -328,6 +328,38 @@
       <button id="btn_add_pergunta" class="btn verde">Adicionar Pergunta</button>
     </div>
   </div>
+
+<div class="card" style="margin-top: 24px;">
+    <h3 style="margin: 0 0 12px;">Perguntas Cadastradas</h3>
+    <p class="muted" id="p_q_lista_info">Selecione uma matéria acima para ver as perguntas.</p>
+    <div class="card" style="margin-top: 24px;">
+    <h3 style="margin: 0 0 12px;">Perguntas Cadastradas</h3>
+   <div class="form-group" style="margin-bottom: 12px;">
+      <label for="p_q_filtro_materia">Filtrar por Matéria</label>
+      <select id="p_q_filtro_materia">
+        <option value="">-- Selecione uma matéria --</option>
+      </select>
+    </div>
+    <p class="muted" id="p_q_lista_info">Selecione uma matéria acima para ver as perguntas.</p>
+    
+    <div id="p_q_resumo" style="margin-bottom: 12px;"></div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Enunciado</th>
+            <th>Nível</th>
+            <th style="width: 150px; text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="p_q_lista_tbody">
+          </tbody>
+      </table>
+    </div>
+  </div>
 </section>
 
 
@@ -806,6 +838,76 @@
         <div class="right">
             <h2>Edição de Conteúdo</h2>
             <p>Altere os dados do conteúdo. Se enviar um novo arquivo, ele substituirá o antigo (se houver).</p>
+        </div>
+    </div>
+</section>
+
+<section id="p_edit_pergunta_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Pergunta</h3>
+            <p class="muted">Altere as informações da pergunta selecionada.</p>
+            <input type="hidden" id="edit_p_id">
+            <input type="hidden" id="edit_p_materia_id_original">
+
+            <div class="form-group">
+              <label>Matéria (não pode ser alterada)</label>
+              <input id="edit_p_materia_nome" readonly style="background-color: #f3f4f6;" />
+            </div>
+
+            <div class="form-group">
+              <label>Nível de Dificuldade</label>
+              <select id="edit_p_nivel">
+                <option value="facil">Fácil</option>
+                <option value="medio">Médio</option>
+                <option value="dificil">Difícil</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Enunciado</label>
+              <textarea id="edit_p_enun" rows="3" placeholder="Digite a pergunta completa"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Imagem (opcional)</label>
+              <input id="edit_p_img" type="file" accept="image/*" />
+              <img id="edit_p_preview" class="preview" style="max-width: 200px; margin-top: 8px;" />
+              <span class="muted" id="edit_p_img_info">Envie um novo arquivo para substituir o atual.</span>
+            </div>
+
+            <div class="form-group alternativas">
+              <label>Alternativas</label>
+              <div class="alt"><span>A)</span> <input id="edit_p_a0" /></div>
+              <div class="alt"><span>B)</span> <input id="edit_p_a1" /></div>
+              <div class="alt"><span>C)</span> <input id="edit_p_a2" /></div>
+              <div class="alt"><span>D)</span> <input id="edit_p_a3" /></div>
+              <div class="alt"><span>E)</span> <input id="edit_p_a4" /></div>
+            </div>
+
+            <div class="form-group">
+              <label>Alternativa Correta</label>
+              <select id="edit_p_cor">
+                <option value="0">A</option>
+                <option value="1">B</option>
+                <option value="2">C</option>
+                <option value="3">D</option>
+                <option value="4">E</option>
+              </select>
+            </div>
+
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicaoPergunta()">
+                    Salvar Edição
+                </button>
+                <button class="btn outline" onclick="cancelarEdicaoPergunta()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Edição de Pergunta</h2>
+            <p>Altere os dados da pergunta. Se enviar uma nova imagem, ela substituirá a antiga.</p>
         </div>
     </div>
 </section>
