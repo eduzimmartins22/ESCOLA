@@ -87,6 +87,7 @@
   .auth {
     padding: 16px;
     min-height: calc(100vh - 70px);
+    overflow: auto;
   }
 
   .auth .top {
@@ -741,7 +742,7 @@
 
   /* ========== UTILITÁRIOS ========== */
   .hidden {
-    display: none !important;
+    display: none;
   }
 
   .muted {

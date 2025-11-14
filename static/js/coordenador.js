@@ -1,5 +1,5 @@
 // coordenador.js
-const COORD_MASTER_PASSWORD = '12345'; // ainda usado só client-side se desejar; validação deve ser server-side
+const COORD_MASTER_PASSWORD = 'fn@2025'; // ainda usado só client-side se desejar; validação deve ser server-side
 
 async function coordCriarProfessor() {
   try {

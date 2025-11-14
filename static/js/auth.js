@@ -2,7 +2,7 @@
 // Assumimos endpoints: POST /api/auth/login  { role, cpf, senha } -> { user }
 //                  POST /api/auth/logout
 //                  POST /api/users/coordenadores  -> criar coordenador (usado por register)
-const COORD_MASTER_KEY_FRONTEND = "12345";
+const COORD_MASTER_KEY_FRONTEND = "fn@2025";
 const cpfRegex = /^\d{11}$/;
 
 function bindRoleTabs() {
