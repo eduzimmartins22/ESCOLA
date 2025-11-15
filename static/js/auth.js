@@ -179,15 +179,38 @@ function enterApp() {
 
 function showMenuForRole(role) {
   console.log(">> showMenuForRole: Configurando menu para:", role);
-  ['menu-aluno', 'menu-professor', 'menu-coordenador'].forEach(id => byId(id)?.classList.add('hidden'));
-  if (role === 'aluno') byId('menu-aluno')?.classList.remove('hidden');
-  if (role === 'professor') byId('menu-professor')?.classList.remove('hidden');
-  if (role === 'coordenador') byId('menu-coordenador')?.classList.remove('hidden');
 
+  // 1. Esconde todos os menus primeiro
+  ['menu-aluno', 'menu-professor', 'menu-coordenador'].forEach(id => byId(id)?.classList.add('hidden'));
+
+  // 2. Obtém os dados do utilizador logado
+  const user = window.appState.user || {};
+
+  // 3. Mostra menus com base no papel E na flag
+  if (role === 'aluno') {
+    byId('menu-aluno')?.classList.remove('hidden');
+  }
+
+  if (role === 'professor') {
+    byId('menu-professor')?.classList.remove('hidden');
+    // SE for professor E assistente, mostra o menu de coordenador também
+    if (user.is_assistente) {
+      byId('menu-coordenador')?.classList.remove('hidden');
+      console.log(">> showMenuForRole: Professor Assistente detectado, exibindo menu Coordenador.");
+    }
+  }
+
+  if (role === 'coordenador') {
+    byId('menu-coordenador')?.classList.remove('hidden');
+    // (Opcional: se quiser que coordenador também veja menu professor, descomente a linha abaixo)
+    // byId('menu-professor')?.classList.remove('hidden'); 
+  }
+
+  // 4. Liga os botões de clique (código original)
   document.querySelectorAll('.menu button[data-tab]').forEach(btn => {
-    btn.onclick = async () => {
-        console.log(">> Click no botão do menu:", btn.dataset.tab); // LOG CLICK
-        openTab(btn.dataset.tab, btn);
+    btn.onclick = async () => { 
+        console.log(">> Click no botão do menu:", btn.dataset.tab); 
+        await openTab(btn.dataset.tab, btn); 
     }
   });
   console.log(">> showMenuForRole: Finalizada.");

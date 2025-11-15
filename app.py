@@ -65,7 +65,7 @@ def login():
 
     try:
         with conn.cursor() as cursor:
-            sql = "SELECT id, nome, cpf, role, sala_id, senha_hash FROM users WHERE cpf=%s AND role=%s"
+            sql = "SELECT id, nome, cpf, role, sala_id, senha_hash, is_assistente FROM users WHERE cpf=%s AND role=%s"
             cursor.execute(sql, (cpf, role))
             user = cursor.fetchone()
 
@@ -136,7 +136,7 @@ def list_users(role):
     try:
         with conn.cursor() as cursor:
             # Seleciona explicitamente as colunas com snake_case
-            sql = "SELECT id, nome, cpf, matricula, sala_id, role FROM users WHERE role = %s"
+            sql = "SELECT id, nome, cpf, matricula, sala_id, role, is_assistente FROM users WHERE role = %s"
             cursor.execute(sql, (db_role,))
             users = cursor.fetchall()
             return jsonify(users)
@@ -191,11 +191,21 @@ def update_user(role, user_id):
                 fields.append("sala_id = %s")
                 params.append(data['salaId'] if data['salaId'] else None)
 
+            # --- CORREÇÃO 1: Lógica 'is_assistente' ---
+            if 'is_assistente' in data:
+                fields.append("is_assistente = %s")
+                params.append(1 if data['is_assistente'] else 0) 
+
             if not fields:
                 return jsonify({"error": "Nenhum campo para atualizar"}), 400
 
+            # --- CORREÇÃO 2: Verificação de 'role' no SQL ---
+            # Converte 'professores' (API) para 'professor' (DB)
+            db_role = role.rstrip('es') if role.endswith('es') else role
+            
             params.append(user_id)
-            sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s"
+            params.append(db_role) # Adiciona o role aos parâmetros
+            sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s AND role = %s" # Adiciona AND role = %s
 
             print(f"SQL: {sql}")
             print(f"Params: {params}")
@@ -221,12 +231,6 @@ def update_user(role, user_id):
     finally:
         if conn:
             conn.close()
-
-           
-         
-         
-
-           
 
 @app.route('/api/users/<role>/<user_id>', methods=['DELETE'])
 def delete_user(role, user_id):
@@ -1441,4 +1445,3 @@ def delete_conteudo(conteudo_id):
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True) # debug=True é útil para desenvolvimento
-

@@ -228,6 +228,7 @@ function editarUsuario(id, role) {
   byId('edit_senha').value = ''; // Deixa o campo vazio
   byId('edit_senha').placeholder = 'Digite NOVA senha (se desejar alterar)';
   byId('edit_mat').value = user.matricula || ''; // Usa a propriedade correta 'matricula'
+  byId('edit_is_assistente').checked = user.is_assistente || false;
   document.getElementById('app').style.display = 'none';
   document.getElementById('c_edit_form').style.display = 'block';
 }
@@ -250,14 +251,20 @@ async function salvarEdicao() {
 
     // Cria o payload inicial com os campos sempre presentes
     const payload = { nome, cpf: cpfLimpo, mat }; 
+ 
+    payload.is_assistente = byId('edit_is_assistente').checked;
 
     // Adiciona a senha ao payload APENAS se o usuário digitou uma nova
     if (senha) { 
       payload.senha = senha;
     }
     
-    // Envia para a API (o backend já sabe lidar com a senha opcional)
-    await API.updateUser(role === 'aluno' ? 'alunos' : 'professores', id, payload); 
+    // 1. Converte o 'role' singular (ex: 'professor') para plural (ex: 'professores')
+let apiRole = role + 'es'; // 'aluno' -> 'alunoes', 'professor' -> 'professores'
+if (role === 'aluno') apiRole = 'alunos'; // Corrige 'alunoes' para 'alunos'
+
+// 2. Chama a API com o 'role' plural correto
+await API.updateUser(apiRole, id, payload);
 
     alert('Dados atualizados com sucesso!');
     cancelarEdicao(); // Volta para a tela anterior
