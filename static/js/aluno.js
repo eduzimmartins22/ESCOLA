@@ -293,6 +293,8 @@ function novaPergunta() {
   // --- FIM DAS ALTERAÇÕES ---
 }
 
+  
+
 function responder(i) {
   const stats = window.appState.stats || { respostas:0 };
   if (i === Q.pergunta.correta) {

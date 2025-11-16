@@ -1439,6 +1439,70 @@ def delete_conteudo(conteudo_id):
     finally:
         if conn: conn.close()
 
+@app.route('/api/perguntas/copy', methods=['POST'])
+def copy_pergunta():
+    """Copia uma pergunta existente para uma nova matéria."""
+    data = request.get_json()
+    pergunta_id = data.get('pergunta_id')
+    nova_materia_id = data.get('nova_materia_id')
+
+    if not pergunta_id or not nova_materia_id:
+        return jsonify({"error": "ID da pergunta e ID da nova matéria são obrigatórios"}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: return jsonify({"error": "Falha na conexão DB"}), 500
+
+        with conn.cursor() as cursor:
+            # 1. Encontrar a pergunta original
+            sql_find = """
+                SELECT nivel, enunciado, alt0, alt1, alt2, alt3, alt4, correta, img_url
+                FROM perguntas WHERE id = %s
+            """
+            cursor.execute(sql_find, (pergunta_id,))
+            pergunta = cursor.fetchone()
+
+            if not pergunta:
+                return jsonify({"error": "Pergunta original não encontrada"}), 404
+
+            # 2. Criar um novo ID e inserir a cópia
+            novo_id = str(uuid.uuid4())
+            sql_insert = """
+                INSERT INTO perguntas (
+                    id, materia_id, nivel, enunciado, 
+                    alt0, alt1, alt2, alt3, alt4, 
+                    correta, img_url
+                ) VALUES (
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s,
+                    %s, %s
+                )
+            """
+            cursor.execute(sql_insert, (
+                novo_id,
+                nova_materia_id,
+                pergunta['nivel'],
+                pergunta['enunciado'],
+                pergunta['alt0'],
+                pergunta['alt1'],
+                pergunta['alt2'],
+                pergunta['alt3'],
+                pergunta['alt4'],
+                pergunta['correta'],
+                pergunta['img_url']
+            ))
+
+        return jsonify({"message": "Pergunta copiada com sucesso!", "novo_id": novo_id}), 201
+
+    except Exception as e:
+         print(f"!!! Erro inesperado em copy_pergunta: {e}")
+         import traceback
+         traceback.print_exc()
+         return jsonify({"error": "Erro interno no servidor ao copiar pergunta"}), 500
+    finally:
+        if conn: conn.close()
+
 # ===========================
 # EXECUÇÃO
 # ===========================

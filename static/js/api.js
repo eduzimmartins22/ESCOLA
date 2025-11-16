@@ -130,6 +130,8 @@ deletePergunta: (id) =>
     method: "DELETE"
   }),
 
+copyPergunta: (payload) => apiPost('/perguntas/copy', payload),
+
   // ---------- CONTEÚDOS ----------
   listConteudos: (materiaId) =>
     apiGet(`/conteudos?materia_id=${materiaId}`), 

@@ -253,6 +253,10 @@ async function openTab(id, btn) {
     renderResumoQuestoes();
     renderListaPerguntas(); // Isto agora lerá o <select> de filtro (que estará vazio)
   }
+  if (id === "p_biblioteca") {
+    console.log(">> openTab: Chamando renderBiblioteca...");
+    await renderBiblioteca();
+  }
   if (id === "p_conteudos") {
     console.log(">> openTab: Chamando renderPConteudos..."); // LOG
     renderPConteudos();

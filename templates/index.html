@@ -111,6 +111,7 @@
           <h4>Professor</h4>
           <button data-tab="p_materias">Criar/Ver Matérias</button>
           <button data-tab="p_questoes">Perguntas e Distribuição</button>
+          <button data-tab="p_biblioteca">Biblioteca de Perguntas</button>
           <button data-tab="p_ver_sala">Ver Alunos da Sala</button>
           <button data-tab="p_conteudos">Conteúdos</button>
         </div>
@@ -406,6 +407,48 @@
               </div>
             </div>
           </section>
+
+          <section id="p_biblioteca" class="hidden">
+  <h2 class="title">Biblioteca de Perguntas</h2>
+  <p class="muted" style="text-align: center; max-width: 600px; margin: -10px auto 16px;">
+    Aqui pode ver perguntas de todas as matérias do sistema e copiá-las para uma das suas matérias.
+  </p>
+
+  <div class="card">
+    <div class="grid2">
+      <div class="form-group">
+        <label for="p_bib_origem">Ver perguntas da Matéria (Origem):</label>
+        <select id="p_bib_origem">
+          <option value="">-- Selecione uma matéria --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="p_bib_destino">Copiar para Minha Matéria (Destino):</label>
+        <select id="p_bib_destino">
+          <option value="">-- Selecione uma das SUAS matérias --</option>
+        </select>
+      </div>
+    </div>
+
+    <hr style="margin: 20px 0;">
+
+    <h3 style="margin: 0 0 12px;">Perguntas da Matéria de Origem</h3>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Enunciado</th>
+            <th>Nível</th>
+            <th style="width: 120px; text-align: right;">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="p_bib_lista_tbody">
+          <tr><td colspan="3" class="muted">Selecione uma matéria de origem para ver as perguntas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
           <section id="c_dash" class="hidden">
             <h2 class="title">Dashboard — Monitoramento</h2>

@@ -715,3 +715,115 @@ async function apagarPergunta(perguntaId) {
     alert(err.body?.message || 'Erro ao apagar pergunta');
   }
 }
+// ===========================================
+// NOVAS FUNÇÕES - BIBLIOTECA DE PERGUNTAS
+// (Cole este bloco no final de professor.js)
+// ===========================================
+
+/**
+ * Prepara a aba "Biblioteca de Perguntas".
+ * Popula o menu de "Origem" (todas as matérias) e "Destino" (só as do professor).
+ */
+async function renderBiblioteca() {
+  await refreshAllSelectsAsync(); // Garante que temos os dados mais recentes
+
+  const selectOrigem = sel('p_bib_origem');
+  const selectDestino = sel('p_bib_destino');
+
+  // 1. Popula Origem: (onlyOwned = false)
+  fillSelectWithMateriasId('p_bib_origem', window.appState.materias, false, null, null);
+  selectOrigem.insertAdjacentHTML('afterbegin', '<option value="">-- Selecione uma matéria --</option>');
+  selectOrigem.value = "";
+  
+  // 2. Popula Destino: (onlyOwned = true)
+  fillSelectWithMateriasId('p_bib_destino', window.appState.materias, true, null, null);
+  selectDestino.insertAdjacentHTML('afterbegin', '<option value="">-- Selecione uma das SUAS matérias --</option>');
+  selectDestino.value = "";
+
+  // 3. Liga o evento para mostrar as perguntas ao selecionar a origem
+  selectOrigem.onchange = renderBibliotecaPerguntas;
+  
+  // 4. Limpa a tabela
+  byId('p_bib_lista_tbody').innerHTML = '<tr><td colspan="3" class="muted">Selecione uma matéria de origem para ver as perguntas.</td></tr>';
+}
+
+/**
+ * Mostra as perguntas da matéria de "Origem" selecionada.
+ */
+function renderBibliotecaPerguntas() {
+  const materiaId = sel('p_bib_origem').value;
+  const tbody = byId('p_bib_lista_tbody');
+  tbody.innerHTML = '';
+
+  if (!materiaId) {
+    tbody.innerHTML = '<tr><td colspan="3" class="muted">Selecione uma matéria de origem para ver as perguntas.</td></tr>';
+    return;
+  }
+
+  const materia = (window.appState.materias || []).find(m => m.id === materiaId);
+  const perguntas = materia?.perguntas || [];
+
+  if (perguntas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="muted">Esta matéria não possui perguntas cadastradas.</td></tr>';
+    return;
+  }
+
+  perguntas.forEach(p => {
+    const tr = document.createElement('tr');
+    const enunciadoCurto = p.q.length > 70 ? p.q.substring(0, 70) + '...' : p.q;
+
+    tr.innerHTML = `
+      <td>${enunciadoCurto}</td>
+      <td>${cap(p.nivel)}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-action btn-editar" onclick="copiarPergunta('${p.id}')">Copiar</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * Copia a pergunta selecionada (ID) para a matéria de destino (ID).
+ */
+async function copiarPergunta(perguntaId) {
+  const destinoMateriaId = sel('p_bib_destino').value;
+
+  if (!destinoMateriaId) {
+    alert("Erro: Por favor, selecione uma 'Matéria de Destino' (uma das suas) antes de copiar.");
+    return;
+  }
+
+  const payload = {
+    pergunta_id: perguntaId,
+    nova_materia_id: destinoMateriaId
+  };
+
+  try {
+    // Desativa o botão temporariamente
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Copiando...';
+
+    await API.copyPergunta(payload);
+    
+    // Atualiza o cache local de perguntas
+    await refreshAllSelectsAsync(); 
+    
+    alert('Pergunta copiada com sucesso para a sua matéria!');
+
+    // Reativa o botão
+    btn.disabled = false;
+    btn.textContent = 'Copiar';
+
+  } catch (err) {
+    console.error("Erro ao copiar pergunta:", err);
+    alert(err.body?.message || 'Erro ao copiar pergunta');
+    // Reativa o botão em caso de erro
+    const btn = event.target;
+    btn.disabled = false;
+    btn.textContent = 'Copiar';
+  }
+}
