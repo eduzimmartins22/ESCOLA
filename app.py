@@ -191,7 +191,6 @@ def update_user(role, user_id):
                 fields.append("sala_id = %s")
                 params.append(data['salaId'] if data['salaId'] else None)
 
-            # --- CORREÇÃO 1: Lógica 'is_assistente' ---
             if 'is_assistente' in data:
                 fields.append("is_assistente = %s")
                 params.append(1 if data['is_assistente'] else 0) 
@@ -199,13 +198,21 @@ def update_user(role, user_id):
             if not fields:
                 return jsonify({"error": "Nenhum campo para atualizar"}), 400
 
-            # --- CORREÇÃO 2: Verificação de 'role' no SQL ---
-            # Converte 'professores' (API) para 'professor' (DB)
-            db_role = role.rstrip('es') if role.endswith('es') else role
+            # --- CORREÇÃO DEFINITIVA DE ROLE ---
+            # Mapeia o plural da URL para o singular do Banco de Dados
+            role_map = {
+                'alunos': 'aluno',
+                'professores': 'professor',
+                'coordenadores': 'coordenador',
+                'aluno': 'aluno',        # Caso venha singular
+                'professor': 'professor' # Caso venha singular
+            }
+            db_role = role_map.get(role, role) # Usa o mapa, ou o original se não achar
             
             params.append(user_id)
-            params.append(db_role) # Adiciona o role aos parâmetros
-            sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s AND role = %s" # Adiciona AND role = %s
+            params.append(db_role) 
+            
+            sql = f"UPDATE users SET {', '.join(fields)} WHERE id = %s AND role = %s"
 
             print(f"SQL: {sql}")
             print(f"Params: {params}")
@@ -213,7 +220,8 @@ def update_user(role, user_id):
             cursor.execute(sql, tuple(params))
            
             if cursor.rowcount == 0:
-                return jsonify({"error": "Usuário não encontrado"}), 404
+                # Se não encontrou, tenta sem o filtro de role apenas para debug (opcional)
+                return jsonify({"error": f"Usuário {user_id} com papel {db_role} não encontrado"}), 404
 
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
        

@@ -308,7 +308,7 @@ function responder(i) {
     }
   } else {
     byId('a_fb').textContent = '❌ Errou! Sequência final: ' + Q.streak;
-    salvarRanking(window.appState.user.nome, Q.streak);
+    //salvarRanking(window.appState.user.nome, Q.streak);
     Q.streak = 0; Q.nivel='facil'; byId('a_nivel').textContent = 'Nível: Fácil'; setProgress(0);
   }
   stats.respostas = (stats.respostas||0) + 1;
@@ -319,7 +319,9 @@ function responder(i) {
   novaPergunta();
 }
 function quizTentarNovamente() { Q.streak=0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0); novaPergunta(); }
-async function quizSair() { await salvarRanking(window.appState.user.nome, Q.streak); alert('Jogo encerrado. Sequência salva no ranking.'); }
+async function quizSair() {
+//await salvarRanking(window.appState.user.nome, Q.streak);
+alert('Jogo encerrado.'); }
 
 async function salvarRanking(nome, score) {
   try {
@@ -356,3 +358,215 @@ function resetarRanking() {
   renderRanking();
   alert('Ranking resetado.');
 }
+// ===================================================
+// --- INÍCIO DA PARTE 3: LÓGICA DO DESAFIO (RANKING) ---
+// ===================================================
+
+// 'D' (Desafio) é o nosso novo objeto de estado do quiz, separado do 'Q' (Prática)
+let D = { 
+  pool: [], // Um 'pool' com todas as perguntas da turma
+  nivel: 'facil', 
+  streak: 0, 
+  pergunta: null 
+};
+
+/**
+ * Chamado pelo openTab. Apenas garante que a tela de início do desafio esteja visível.
+ */
+async function renderDesafioView() {
+  // Garante que temos os dados mais recentes das matérias
+  await refreshAllSelectsAsync(); 
+  
+  // Mostra o botão "Começar" e esconde o quiz
+  byId('d_start_view').classList.remove('hidden');
+  byId('d_quiz_view').classList.add('hidden');
+  
+  // Limpa o feedback antigo
+  byId('d_fb').textContent = '';
+}
+
+/**
+ * Pega TODAS as perguntas de TODAS as matérias da sala do aluno
+ * e as junta num único 'pool' de perguntas.
+ */
+function compilarPerguntasDaTurma() {
+  const userSalaId = window.appState.user?.sala_id;
+  if (!userSalaId) {
+    console.error("Desafio: Aluno não está em nenhuma sala.");
+    return [];
+  }
+
+  // 1. Filtra as matérias que são da sala do aluno
+  const materiasDaSala = (window.appState.materias || []).filter(m => m.sala_id === userSalaId);
+  
+  // 2. Extrai as perguntas de cada matéria e as junta num array só
+  let todasAsPerguntas = [];
+  materiasDaSala.forEach(materia => {
+    if (materia.perguntas && materia.perguntas.length > 0) {
+      // Adiciona o nome da matéria em cada pergunta (para referência futura, se quisermos)
+      const perguntasDaMateria = materia.perguntas.map(p => ({...p, materiaNome: materia.nome}));
+      todasAsPerguntas.push(...perguntasDaMateria);
+    }
+  });
+
+  console.log(`Desafio: Compiladas ${todasAsPerguntas.length} perguntas de ${materiasDaSala.length} matérias.`);
+  return todasAsPerguntas;
+}
+
+/**
+ * Inicia o quiz do desafio.
+ */
+function desafioStart() {
+  const poolGeral = compilarPerguntasDaTurma();
+  
+  if (poolGeral.length === 0) {
+    alert("A sua turma ainda não tem perguntas cadastradas nas matérias. Peça aos seus professores para adicionarem.");
+    return;
+  }
+
+  // Reseta o estado do Desafio
+  D = {
+    pool: poolGeral,
+    nivel: 'facil',
+    streak: 0,
+    pergunta: null
+  };
+
+  // Configura a UI
+  byId('d_nivel').textContent = 'Nível: Fácil';
+  desafioSetProgress(0);
+  byId('d_start_view').classList.add('hidden');
+  byId('d_quiz_view').classList.remove('hidden');
+  
+  // Inicia o jogo
+  desafioNovaPergunta();
+}
+
+// Funções auxiliares do quiz "D" (Desafio)
+function desafioSetProgress(pct) { byId('d_prog').style.width = (pct || 0) + '%'; }
+function desafioPerguntasPorNivel(nivel) {
+  // Filtra o 'pool' geral de perguntas pelo nível
+  return (D.pool || []).filter(q => q.nivel === nivel);
+}
+
+/**
+ * Puxa uma nova pergunta do pool do desafio.
+ */
+function desafioNovaPergunta() {
+  const poolNivel = desafioPerguntasPorNivel(D.nivel);
+  
+  const qContainer = byId('d_q');
+  const ansContainer = byId('d_ans');
+
+  if (!poolNivel.length) { 
+      qContainer.innerHTML = `Parabéns! Você zerou todas as perguntas do nível ${D.nivel}!`;
+      ansContainer.innerHTML = '';
+      
+      // Se não houver mais perguntas fáceis, tenta ir pro médio, etc.
+      if (D.nivel === 'facil') D.nivel = 'medio';
+      else if (D.nivel === 'medio') D.nivel = 'dificil';
+      
+      // Tenta de novo com o próximo nível
+      const proximoPool = desafioPerguntasPorNivel(D.nivel);
+      if(proximoPool.length > 0) {
+        byId('d_nivel').textContent = 'Nível: ' + cap(D.nivel);
+        desafioNovaPergunta();
+      } else {
+        qContainer.innerHTML = 'Você zerou TODAS as perguntas da sua turma!';
+      }
+      return; 
+  }
+
+  // Sorteia uma pergunta do nível atual
+  D.pergunta = poolNivel[Math.floor(Math.random() * poolNivel.length)];
+
+  // Monta o HTML da pergunta (com imagem, se houver)
+  let htmlEnunciado = '';
+  if (D.pergunta.img_url) {
+      htmlEnunciado += `
+          <img src="${D.pergunta.img_url}" 
+               alt="Imagem da pergunta" 
+               style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--borda);"
+               onerror="this.style.display='none';">
+      `;
+  }
+  htmlEnunciado += `<p>${D.pergunta.q}</p>`;
+  qContainer.innerHTML = htmlEnunciado; 
+
+  // Limpa e recria os botões de resposta
+  ansContainer.innerHTML = '';
+  D.pergunta.a.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.textContent = t;
+    b.onclick = () => desafioResponder(i);
+    ansContainer.appendChild(b);
+  });
+}
+
+/**
+ * Processa a resposta do aluno no modo Desafio.
+ * ESTA FUNÇÃO RE-ATIVA O RANKING.
+ */
+function desafioResponder(i) {
+  const stats = window.appState.stats || { respostas: 0 };
+  
+  if (i === D.pergunta.correta) {
+    // --- ACERTOU ---
+    D.streak++; 
+    byId('d_fb').textContent = '✅ Correto! Sequência: ' + D.streak;
+    
+    // Avança a barra de progresso (a cada 5 acertos, sobe de nível)
+    desafioSetProgress(Math.min(100, (D.streak % 5) * 20));
+    
+    if (D.streak > 0 && D.streak % 5 === 0) {
+      if (D.nivel === 'facil') D.nivel = 'medio';
+      else if (D.nivel === 'medio') D.nivel = 'dificil';
+      byId('d_nivel').textContent = 'Nível: ' + cap(D.nivel);
+    }
+    
+  } else {
+    // --- ERROU ---
+    
+    // ########## INÍCIO DA CORREÇÃO ##########
+    
+    // 1. Guarda a pontuação final ANTES de a repor
+    const pontuacaoFinal = D.streak; 
+    
+    // 2. Atualiza a UI com a pontuação final
+    byId('d_fb').textContent = `❌ Errou! A resposta era '${D.pergunta.a[D.pergunta.correta]}'. Sequência final: ${pontuacaoFinal}`;
+    
+    // 3. Salva a pontuação final no ranking
+    salvarRanking(window.appState.user.nome, pontuacaoFinal);
+    
+    // 4. AGORA, repõe o jogo
+    D.streak = 0; 
+    D.nivel = 'facil'; 
+    byId('d_nivel').textContent = 'Nível: Fácil'; 
+    desafioSetProgress(0);
+    
+    // 5. Esconde o quiz e mostra o botão "Começar de novo"
+    byId('d_start_view').classList.remove('hidden');
+    byId('d_quiz_view').classList.add('hidden');
+    
+    // 6. Mostra o alerta com a pontuação final correta
+    alert(`Fim de jogo! Sua pontuação (${pontuacaoFinal}) foi enviada para o ranking da turma.`);
+    
+    // ########## FIM DA CORREÇÃO ##########
+    
+    return; // Para o jogo
+  }
+  
+  // Incrementa estatísticas gerais
+  stats.respostas = (stats.respostas || 0) + 1;
+  window.appState.stats = stats;
+  API.incrementStat({ stat_key: 'questions_answered' }).catch(err => {
+      console.error("Erro ao incrementar 'questions_answered':", err);
+  });
+
+  // Puxa a próxima pergunta
+  desafioNovaPergunta();
+}
+
+// ===================================================
+// --- FIM DA PARTE 3 ---
+// ===================================================

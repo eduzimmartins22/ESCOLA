@@ -229,6 +229,14 @@ function editarUsuario(id, role) {
   byId('edit_senha').placeholder = 'Digite NOVA senha (se desejar alterar)';
   byId('edit_mat').value = user.matricula || ''; // Usa a propriedade correta 'matricula'
   byId('edit_is_assistente').checked = user.is_assistente || false;
+  const divAssistente = byId('div_promote_assistente');
+  if (role === 'aluno') {
+      // Se for aluno, esconde a opção
+      divAssistente.style.display = 'none';
+  } else {
+      // Se for professor (ou outro), mostra a opção (restaura o display flex)
+      divAssistente.style.display = 'flex';
+  }
   document.getElementById('app').style.display = 'none';
   document.getElementById('c_edit_form').style.display = 'block';
 }

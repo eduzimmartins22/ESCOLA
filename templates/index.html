@@ -105,6 +105,7 @@
         <div class="menu" id="menu-aluno" class="hidden">
           <h4>Aluno</h4>
           <button data-tab="a_materias">Escolher Matéria</button>
+          <button data-tab="a_desafio">Desafio da Turma </button>
           <button data-tab="a_ranking">Ranking</button>
         </div>
         <div class="menu" id="menu-professor" class="hidden">
@@ -200,6 +201,39 @@
               </div>
             </div>
           </section>
+
+         <section id="a_desafio" class="hidden">
+  <h2 class="title">Desafio da Turma</h2>
+  <div class="card" style="max-width: 700px; margin: auto;">
+    <h3 style="margin: 0 0 6px">Quiz valendo Ranking</h3>
+    <p class="muted" style="margin-bottom: 12px;">
+      Prepare-se! Você receberá perguntas de **todas as matérias** da sua turma.
+      Seu objetivo é acertar o máximo em sequência. Se errar, sua pontuação vai para o ranking!
+    </p>
+
+    <div id="d_start_view">
+      <button class="btn verde" style="width: 100%;" onclick="desafioStart()">
+        Começar Desafio!
+      </button>
+    </div>
+
+    <div id="d_quiz_view" class="hidden">
+      <div class="progress">
+        <div id="d_prog"></div>
+      </div>
+      <p id="d_nivel">Nível: Fácil</p>
+      <div class="quizbox">
+        <div
+          id="d_q"
+          style="font-weight: 600; margin-bottom: 8px"
+        ></div>
+        <div id="d_ans" class="answers"></div>
+        <div id="d_fb" class="muted" style="margin-top: 6px"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
 
           <section id="p_ver_sala" class="hidden">
             <h2 class="title">Sala — Alunos</h2>
@@ -764,7 +798,7 @@
             </div>
             <div class="row">
                 <div><label>Matrícula</label><input id="edit_mat" /></div>
-                <div style="display: flex; align-items: center; padding-top: 20px;">
+                <div id="div_promote_assistente" style="display: flex; align-items: center; padding-top: 20px;">
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input id="edit_is_assistente" type="checkbox" style="width: auto;" />
                 <span>Promover a Assistente</span>

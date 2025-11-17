@@ -242,6 +242,10 @@ async function openTab(id, btn) {
     console.log(">> openTab: Chamando renderRanking..."); // LOG
     renderRanking();
   }
+  if (id === "a_desafio") {
+    console.log(">> openTab: Chamando renderDesafioView...");
+    await renderDesafioView();
+  }
   if (id === "p_materias") {
      console.log(">> openTab: Chamando renderProfMaterias..."); // LOG
      renderProfMaterias();
