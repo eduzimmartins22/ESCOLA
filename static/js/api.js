@@ -166,7 +166,10 @@ copyPergunta: (payload) => apiPost('/perguntas/copy', payload),
   // ---------- LOGS / RANKING / STATS ----------
   listLogs: () => apiGet(`/logs`), // CORRIGIDO
   createLog: (payload) => apiPost(`/logs`, payload),
-  listRanking: () => apiGet(`/ranking`), // CORRIGIDO
+  listRanking: (salaId) => {
+    const qs = salaId ? `?sala_id=${salaId}` : '';
+    return apiGet(`/ranking${qs}`);
+  },
   pushRanking: (payload) => apiPost(`/ranking`, payload), // CORRIGIDO
   stats: () => apiGet(`/stats`), // CORRIGIDO
   incrementStat: (payload) => apiPost(`/stats/increment`, payload),

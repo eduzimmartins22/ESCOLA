@@ -328,7 +328,11 @@
       <input id="p_q_img" type="file" accept="image/*" />
       <img id="p_q_preview" class="preview" />
     </div>
-
+    
+    <div class="form-group">
+  <label>Explicação / Resolução (Aparece ao errar)</label>
+  <textarea id="p_q_expl" rows="3" placeholder="Explique o porquê da resposta correta..."></textarea>
+</div>
     <div class="form-group alternativas">
       <label>Alternativas</label>
       <div class="alt">
@@ -960,6 +964,11 @@
               <img id="edit_p_preview" class="preview" style="max-width: 200px; margin-top: 8px;" />
               <span class="muted" id="edit_p_img_info">Envie um novo arquivo para substituir o atual.</span>
             </div>
+               
+            <div class="form-group">
+  <label>Explicação / Resolução</label>
+  <textarea id="edit_p_expl" rows="3" placeholder="Explique a resposta..."></textarea>
+</div>
 
             <div class="form-group alternativas">
               <label>Alternativas</label>

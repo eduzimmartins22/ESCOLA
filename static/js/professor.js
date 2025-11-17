@@ -162,6 +162,7 @@ async function adicionarPergunta() {
       byId("p_q_a4").value.trim(),
     ];
     const imgFile = byId("p_q_img")?.files[0];
+    const explicacao = byId("p_q_expl").value.trim();
 
     // Validações básicas
     if (!materiaId) return alert("Selecione uma matéria.");
@@ -181,6 +182,7 @@ async function adicionarPergunta() {
     fd.append("opcao_d", alternativas[3]);
     fd.append("opcao_e", alternativas[4]);
     fd.append("resposta_correta", correta);
+    fd.append("explicacao", explicacao);
     if (imgFile) fd.append("imagem", imgFile);
 
     // Debug opcional — mostra o que será enviado
@@ -608,6 +610,7 @@ function abrirModalEditarPergunta(perguntaId) {
   byId('edit_p_materia_nome').value = `${materia.nome} (Matéria não pode ser alterada)`;
   sel('edit_p_nivel').value = pergunta.nivel;
   byId('edit_p_enun').value = pergunta.q; // 'q' é o enunciado
+  byId('edit_p_expl').value = pergunta.explicacao || '';
   
   // Alternativas (pergunta.a é o array de alternativas)
   (pergunta.a || []).forEach((alt, i) => {
@@ -669,6 +672,7 @@ async function salvarEdicaoPergunta() {
     fd.append('opcao_d', val('edit_p_a3'));
     fd.append('opcao_e', val('edit_p_a4'));
     fd.append('resposta_correta', sel('edit_p_cor').value);
+    fd.append('explicacao', val('edit_p_expl'));
 
     const imgFile = byId('edit_p_img').files[0];
     if (imgFile) {

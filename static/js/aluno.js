@@ -307,7 +307,8 @@ function responder(i) {
       byId('a_nivel').textContent = 'Nível: ' + cap(Q.nivel);
     }
   } else {
-    byId('a_fb').textContent = '❌ Errou! Sequência final: ' + Q.streak;
+    const explicacaoTexto = Q.pergunta.explicacao ? `<br><br><strong> Explicação:</strong><br>${Q.pergunta.explicacao}` : '';
+    byId('a_fb').innerHTML = `❌ Errou! Sequência final: ${Q.streak} ${explicacaoTexto}`; // Use innerHTML para o <br> funcionar
     //salvarRanking(window.appState.user.nome, Q.streak);
     Q.streak = 0; Q.nivel='facil'; byId('a_nivel').textContent = 'Nível: Fácil'; setProgress(0);
   }
@@ -324,30 +325,57 @@ async function quizSair() {
 alert('Jogo encerrado.'); }
 
 async function salvarRanking(nome, score) {
+  // Obtém a sala do aluno logado
+  const salaId = window.appState.user?.sala_id; 
+
   try {
-    await API.pushRanking({ nome, score });
-    const list = await API.listRanking();
+    // Envia a sala junto com o score
+    await API.pushRanking({ nome, score, sala_id: salaId });
+
+    // Pede a lista atualizada DAQUELA sala
+    const list = await API.listRanking(salaId);
     window.appState.ranking = list || [];
   } catch (err) {
     console.error(err);
-    // fallback local
+    // fallback local (mantido igual)
     window.appState.ranking = window.appState.ranking || [];
     window.appState.ranking.push({ nome, score });
     window.appState.ranking.sort((a,b)=>b.score-a.score);
-    window.appState.ranking = window.appState.ranking.slice(0,50);
   }
   renderRanking();
 }
-function renderRanking() {
+
+async function renderRanking() { // Adicionei 'async' se quiser chamar API direto, mas aqui usaremos o cache ou faremos fetch novo
+
+  // Se não houver dados ou quisermos garantir atualização, buscamos agora
+  const salaId = window.appState.user?.sala_id;
+  if (salaId) {
+      try {
+          const list = await API.listRanking(salaId);
+          window.appState.ranking = list || [];
+      } catch(e) { console.error(e); }
+  }
+
   const r = window.appState.ranking || [];
   const tb = byId('a_tbRanking');
+  if (!tb) return; // Proteção
+
   tb.innerHTML = '';
+
+  if (r.length === 0) {
+     tb.innerHTML = '<tr><td colspan="3" class="muted">Seja o primeiro a pontuar na sua turma!</td></tr>';
+     return;
+  }
+
   r.slice(0,20).forEach((x,i)=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}º</td><td>${x.nome}</td><td>${x.score}</td>`;
+    // Adicionei uma classe para destacar o próprio aluno
+    const isMe = x.nome === window.appState.user.nome ? 'style="font-weight:bold; color:#2ea36a;"' : '';
+    tr.innerHTML = `<td ${isMe}>${i+1}º</td><td ${isMe}>${x.nome}</td><td ${isMe}>${x.score}</td>`;
     tb.appendChild(tr);
   });
 }
+
 function resetarRanking() {
   if (!confirm('Confirma resetar o ranking?')) return;
   API.deleteRanking().catch(err => {
@@ -525,18 +553,15 @@ function desafioResponder(i) {
     }
     
   } else {
-    // --- ERROU ---
-    
-    // ########## INÍCIO DA CORREÇÃO ##########
-    
-    // 1. Guarda a pontuação final ANTES de a repor
-    const pontuacaoFinal = D.streak; 
-    
-    // 2. Atualiza a UI com a pontuação final
-    byId('d_fb').textContent = `❌ Errou! A resposta era '${D.pergunta.a[D.pergunta.correta]}'. Sequência final: ${pontuacaoFinal}`;
-    
-    // 3. Salva a pontuação final no ranking
-    salvarRanking(window.appState.user.nome, pontuacaoFinal);
+    const pontuacaoFinal = D.streak;
+  const explicacaoTexto = D.pergunta.explicacao ? `\n\n Explicação:\n${D.pergunta.explicacao}` : '';
+
+  // Atualiza UI (Feedback visual na tela)
+  // Nota: No innerHTML usamos <br>, no alert usamos \n
+  const explicacaoHtml = D.pergunta.explicacao ? `<br><br><strong> Explicação:</strong><br>${D.pergunta.explicacao}` : '';
+  byId('d_fb').innerHTML = `❌ Errou! A resposta era '${D.pergunta.a[D.pergunta.correta]}'. Sequência final: ${pontuacaoFinal} ${explicacaoHtml}`;
+
+  salvarRanking(window.appState.user.nome, pontuacaoFinal);
     
     // 4. AGORA, repõe o jogo
     D.streak = 0; 
