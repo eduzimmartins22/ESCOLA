@@ -190,6 +190,10 @@ copyPergunta: (payload) => apiPost('/perguntas/copy', payload),
       method: "PUT",
       body: JSON.stringify(payload)
     }),
+  // ---------- DASHBOARD / HISTÓRICO ----------
+  registrarTentativa: (payload) => apiPost('/historico', payload),
+  
+  getDashboardMateria: (materiaId) => apiGet(`/dashboard/materia/${materiaId}`),
 };
 
 // Disponibiliza o objeto API globalmente (se necessário por outros scripts)

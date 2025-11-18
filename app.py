@@ -946,15 +946,16 @@ def list_ranking():
 
 @app.route('/api/ranking', methods=['POST'])
 def add_ranking_score():
-    """Adiciona uma nova pontuação ao ranking com sala_id."""
+    """Adiciona ou atualiza a pontuação no ranking (Mantém apenas a melhor)."""
     data = request.get_json()
 
     nome = data.get('nome')
     score = data.get('score')
-    sala_id = data.get('sala_id') # Novo campo
+    sala_id = data.get('sala_id')
+    user_id = data.get('user_id') # <-- Agora recebemos o ID do aluno
 
-    if not nome or score is None:
-        return jsonify({"error": "Nome e score são obrigatórios"}), 400
+    if not all([nome, score is not None, sala_id, user_id]):
+        return jsonify({"error": "Dados incompletos (nome, score, sala_id, user_id)"}), 400
 
     try:
         score_int = int(score)
@@ -964,17 +965,34 @@ def add_ranking_score():
     conn = get_db_connection()
     if not conn: return jsonify({"error": "Falha na conexão"}), 500
 
-    ranking_id = str(uuid.uuid4())
-
     try:
         with conn.cursor() as cursor:
-            # Insere incluindo a sala_id
-            sql = "INSERT INTO ranking (id, nome, score, sala_id) VALUES (%s, %s, %s, %s)"
-            cursor.execute(sql, (ranking_id, nome, score_int, sala_id))
-        return jsonify({"message": "Pontuação adicionada ao ranking", "id": ranking_id}), 201
+            # 1. Verifica se o aluno já tem pontuação nesta sala
+            sql_check = "SELECT id, score FROM ranking WHERE user_id = %s AND sala_id = %s"
+            cursor.execute(sql_check, (user_id, sala_id))
+            existente = cursor.fetchone()
+
+            if existente:
+                # CENÁRIO A: Já existe. Atualiza SÓ se a nova pontuação for maior.
+                recorde_atual = existente['score']
+                if score_int > recorde_atual:
+                    sql_update = "UPDATE ranking SET score = %s, created_at = NOW() WHERE id = %s"
+                    cursor.execute(sql_update, (score_int, existente['id']))
+                    msg = "Novo recorde pessoal!"
+                else:
+                    msg = "Não superou o recorde anterior."
+            else:
+                # CENÁRIO B: Primeira vez. Insere novo registro.
+                ranking_id = str(uuid.uuid4())
+                sql_insert = "INSERT INTO ranking (id, nome, score, sala_id, user_id) VALUES (%s, %s, %s, %s, %s)"
+                cursor.execute(sql_insert, (ranking_id, nome, score_int, sala_id, user_id))
+                msg = "Primeira pontuação registrada!"
+
+        return jsonify({"message": msg}), 200
+
     except Exception as e:
-        print(f"Erro ao adicionar ao ranking: {e}")
-        return jsonify({"error": "Erro interno ao adicionar ao ranking"}), 500
+        print(f"Erro ao atualizar ranking: {e}")
+        return jsonify({"error": "Erro interno"}), 500
     finally:
         if conn: conn.close()
 
@@ -1429,6 +1447,102 @@ def copy_pergunta():
          import traceback
          traceback.print_exc()
          return jsonify({"error": "Erro interno no servidor ao copiar pergunta"}), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/historico', methods=['POST'])
+def registrar_tentativa():
+    """Guarda se o aluno acertou ou errou uma pergunta."""
+    data = request.get_json()
+    # user_id pode vir do payload ou da sessão (aqui assumimos payload por simplicidade)
+    if not all(k in data for k in ['user_id', 'pergunta_id', 'materia_id']):
+        return jsonify({"error": "Dados incompletos"}), 400
+
+    acertou = bool(data.get('acertou'))
+    
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Erro DB"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            hist_id = str(uuid.uuid4())
+            sql = """
+                INSERT INTO historico_respostas (id, user_id, pergunta_id, materia_id, acertou)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql, (hist_id, data['user_id'], data['pergunta_id'], data['materia_id'], acertou))
+        return jsonify({"message": "Registado"}), 201
+    except Exception as e:
+        print(f"Erro ao salvar historico: {e}")
+        return jsonify({"error": "Erro interno"}), 500
+    finally:
+        if conn: conn.close()
+
+@app.route('/api/dashboard/materia/<materia_id>', methods=['GET'])
+def get_dashboard_materia(materia_id):
+    """Calcula as estatísticas para o dashboard do professor."""
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Erro DB"}), 500
+
+    stats = {
+        "total_respostas": 0,
+        "taxa_acerto": 0,
+        "top_erros": [], # Perguntas mais difíceis
+        "alunos_risco": [] # Alunos com baixo desempenho
+    }
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Totais Gerais
+            sql_geral = """
+                SELECT COUNT(*) as total, SUM(CASE WHEN acertou THEN 1 ELSE 0 END) as acertos
+                FROM historico_respostas WHERE materia_id = %s
+            """
+            cursor.execute(sql_geral, (materia_id,))
+            geral = cursor.fetchone()
+            
+            if geral and geral['total'] > 0:
+                stats['total_respostas'] = geral['total']
+                stats['taxa_acerto'] = round((geral['acertos'] / geral['total']) * 100, 1)
+
+            # 2. Top 5 Perguntas Mais Erradas
+            sql_erros = """
+                SELECT p.enunciado, p.nivel, 
+                       COUNT(h.id) as total,
+                       SUM(CASE WHEN h.acertou THEN 0 ELSE 1 END) as erros,
+                       ROUND((SUM(CASE WHEN h.acertou THEN 0 ELSE 1 END) / COUNT(h.id)) * 100, 1) as taxa_erro
+                FROM historico_respostas h
+                JOIN perguntas p ON h.pergunta_id = p.id
+                WHERE h.materia_id = %s
+                GROUP BY p.id
+                HAVING total > 0
+                ORDER BY taxa_erro DESC, total DESC
+                LIMIT 5
+            """
+            cursor.execute(sql_erros, (materia_id,))
+            stats['top_erros'] = cursor.fetchall()
+
+            # 3. Alunos em Risco (Taxa de acerto < 40% com pelo menos 3 tentativas)
+            sql_alunos = """
+                SELECT u.nome, 
+                       COUNT(h.id) as tentativas,
+                       ROUND((SUM(CASE WHEN h.acertou THEN 1 ELSE 0 END) / COUNT(h.id)) * 100, 1) as aproveitamento
+                FROM historico_respostas h
+                JOIN users u ON h.user_id = u.id
+                WHERE h.materia_id = %s AND u.role = 'aluno'
+                GROUP BY u.id
+                HAVING tentativas >= 3 AND aproveitamento < 40
+                ORDER BY aproveitamento ASC
+                LIMIT 10
+            """
+            cursor.execute(sql_alunos, (materia_id,))
+            stats['alunos_risco'] = cursor.fetchall()
+
+        return jsonify(stats)
+
+    except Exception as e:
+        print(f"Erro dashboard: {e}")
+        return jsonify({"error": "Erro interno"}), 500
     finally:
         if conn: conn.close()
 

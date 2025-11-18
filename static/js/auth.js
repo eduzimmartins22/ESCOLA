@@ -152,7 +152,7 @@ function enterApp() {
   // Define os IDs das tabs padrão para cada papel
   const defaultTabs = {
       aluno: 'a_materias',
-      professor: 'p_materias',
+      professor: 'p_dashboard',
       coordenador: 'c_dash'
   };
   const userRole = window.appState.user.role;
@@ -288,6 +288,17 @@ async function openTab(id, btn) {
   if (id === "c_banners") {
     console.log(">> openTab: Chamando renderBannersCoord..."); // LOG
     renderBannersCoord();
+  }
+  if (id === "p_dashboard") {
+   await refreshAllSelectsAsync();
+   fillSelectWithMateriasId('p_dash_materia', window.appState.materias, true);
+
+   // Limpa a tela anterior
+   byId('p_dash_content').classList.add('hidden');
+   sel('p_dash_materia').value = "";
+
+   // Liga o evento
+   sel('p_dash_materia').onchange = carregarDashboardProfessor;
   }
   if (id === 'p_ver_sala') {
     console.log(">> openTab: Chamando renderSalasProfessorSelect..."); // Log

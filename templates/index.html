@@ -110,6 +110,7 @@
         </div>
         <div class="menu" id="menu-professor" class="hidden">
           <h4>Professor</h4>
+          <button data-tab="p_dashboard">Estatísticas da Turma</button>
           <button data-tab="p_materias">Criar/Ver Matérias</button>
           <button data-tab="p_questoes">Perguntas e Distribuição</button>
           <button data-tab="p_biblioteca">Biblioteca de Perguntas</button>
@@ -484,6 +485,53 @@
           <tr><td colspan="3" class="muted">Selecione uma matéria de origem para ver as perguntas.</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<section id="p_dashboard" class="hidden">
+  <h2 class="title">Dashboard Pedagógico</h2>
+
+  <div class="card">
+    <label>Selecione a Matéria para analisar:</label>
+    <select id="p_dash_materia">
+       <option value="">-- Selecione --</option>
+    </select>
+  </div>
+
+  <div id="p_dash_content" class="hidden" style="margin-top: 20px;">
+    <div class="grid2">
+      <div class="card" style="background: #e0f2fe; border: 1px solid #bae6fd;">
+         <h4 style="margin:0; color:#0369a1;">Taxa de Acerto Global</h4>
+         <div id="dash_taxa" style="font-size: 32px; font-weight:bold; color:#0284c7;">0%</div>
+      </div>
+      <div class="card">
+         <h4 style="margin:0;">Total de Respostas</h4>
+         <div id="dash_total" style="font-size: 32px; font-weight:bold;">0</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px; border-left: 4px solid #ef4444;">
+       <h3 style="color: #b91c1c;">⚠️ Alunos que precisam de atenção</h3>
+       <p class="muted">Alunos com aproveitamento abaixo de 40%.</p>
+       <ul id="dash_alunos_risco" style="padding-left: 20px; margin-bottom:0;"></ul>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+       <h3>Perguntas Mais Difíceis (Top 5)</h3>
+       <div style="overflow-x: auto;">
+         <table style="font-size: 13px;">
+           <thead>
+             <tr>
+               <th>Enunciado</th>
+               <th>Nível</th>
+               <th>Erros</th>
+               <th>% Erro</th>
+             </tr>
+           </thead>
+           <tbody id="dash_tb_erros"></tbody>
+         </table>
+       </div>
     </div>
   </div>
 </section>

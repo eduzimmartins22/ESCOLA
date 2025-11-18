@@ -831,3 +831,58 @@ async function copiarPergunta(perguntaId) {
     btn.textContent = 'Copiar';
   }
 }
+
+async function carregarDashboardProfessor() {
+  const materiaId = sel('p_dash_materia').value;
+  const content = byId('p_dash_content');
+
+  if (!materiaId) {
+    content.classList.add('hidden');
+    return;
+  }
+
+  try {
+    const dados = await API.getDashboardMateria(materiaId);
+
+    // Preenche os cartões
+    byId('dash_taxa').textContent = dados.taxa_acerto + '%';
+    byId('dash_total').textContent = dados.total_respostas;
+
+    // Preenche Alunos em Risco
+    const listaAlunos = byId('dash_alunos_risco');
+    listaAlunos.innerHTML = '';
+    if (dados.alunos_risco.length === 0) {
+       listaAlunos.innerHTML = '<li class="muted">Nenhum aluno em situação crítica.</li>';
+    } else {
+       dados.alunos_risco.forEach(a => {
+         const li = document.createElement('li');
+         li.innerHTML = `<strong>${a.nome}</strong> — ${a.aproveitamento}% de acerto (${a.tentativas} tentativas)`;
+         listaAlunos.appendChild(li);
+       });
+    }
+
+    // Preenche Top Erros
+    const tbErros = byId('dash_tb_erros');
+    tbErros.innerHTML = '';
+    if (dados.top_erros.length === 0) {
+       tbErros.innerHTML = '<tr><td colspan="4" class="muted">Sem dados suficientes.</td></tr>';
+    } else {
+       dados.top_erros.forEach(e => {
+         const tr = document.createElement('tr');
+         tr.innerHTML = `
+           <td>${e.enunciado.substring(0, 50)}...</td>
+           <td>${cap(e.nivel)}</td>
+           <td style="color:red;">${e.erros}</td>
+           <td style="font-weight:bold;">${e.taxa_erro}%</td>
+         `;
+         tbErros.appendChild(tr);
+       });
+    }
+
+    content.classList.remove('hidden');
+
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao carregar dashboard.');
+  }
+}

@@ -296,51 +296,90 @@ function novaPergunta() {
   
 
 function responder(i) {
-  const stats = window.appState.stats || { respostas:0 };
-  if (i === Q.pergunta.correta) {
-    Q.streak++; Q.best = Math.max(Q.best, Q.streak);
+  const stats = window.appState.stats || { respostas: 0 };
+  
+  // 1. Verifica se acertou (necessário para o dashboard e lógica do jogo)
+  const acertou = (i === Q.pergunta.correta);
+
+  // 2. --- REGISTO NO DASHBOARD (A parte que faltava) ---
+  if (window.appState.user && Q.materiaId) {
+      API.registrarTentativa({
+          user_id: window.appState.user.id,
+          pergunta_id: Q.pergunta.id,
+          materia_id: Q.materiaId,
+          acertou: acertou
+      }).catch(console.error);
+  }
+  // ----------------------------------------------------
+
+  if (acertou) {
+    // --- ACERTOU ---
+    Q.streak++; 
+    Q.best = Math.max(Q.best, Q.streak);
     byId('a_fb').textContent = '✅ Correto!';
+    
+    // Lógica de subir nível
     setProgress(Math.min(100, (Q.streak%5)*20));
-    if (Q.streak>0 && Q.streak%5===0) {
-      if (Q.nivel === 'facil') Q.nivel='medio';
-      else if (Q.nivel === 'medio') Q.nivel='dificil';
+    if (Q.streak > 0 && Q.streak % 5 === 0) {
+      if (Q.nivel === 'facil') Q.nivel = 'medio';
+      else if (Q.nivel === 'medio') Q.nivel = 'dificil';
       byId('a_nivel').textContent = 'Nível: ' + cap(Q.nivel);
     }
+
   } else {
-    const explicacaoTexto = Q.pergunta.explicacao ? `<br><br><strong> Explicação:</strong><br>${Q.pergunta.explicacao}` : '';
-    byId('a_fb').innerHTML = `❌ Errou! Sequência final: ${Q.streak} ${explicacaoTexto}`; // Use innerHTML para o <br> funcionar
-    //salvarRanking(window.appState.user.nome, Q.streak);
-    Q.streak = 0; Q.nivel='facil'; byId('a_nivel').textContent = 'Nível: Fácil'; setProgress(0);
+    // --- ERROU ---
+    
+    // Lógica da Explicação (mantida)
+    const explicacaoTexto = Q.pergunta.explicacao 
+        ? `<br><br><strong>Explicação:</strong><br>${Q.pergunta.explicacao}` 
+        : '';
+      
+    byId('a_fb').innerHTML = `❌ Errou! Sequência final: ${Q.streak} ${explicacaoTexto}`;
+    
+    // Reseta o jogo
+    Q.streak = 0; 
+    Q.nivel = 'facil'; 
+    byId('a_nivel').textContent = 'Nível: Fácil'; 
+    setProgress(0);
   }
-  stats.respostas = (stats.respostas||0) + 1;
+  
+  // Estatísticas globais do aluno
+  stats.respostas = (stats.respostas || 0) + 1;
   window.appState.stats = stats;
-  API.incrementStat({ stat_key: 'questions_answered' }).catch(err => {
-      console.error("Erro ao incrementar 'questions_answered':", err);
-  });
+  API.incrementStat({ stat_key: 'questions_answered' }).catch(console.error);
+  
+  // Próxima pergunta
   novaPergunta();
 }
+
 function quizTentarNovamente() { Q.streak=0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0); novaPergunta(); }
 async function quizSair() {
 //await salvarRanking(window.appState.user.nome, Q.streak);
 alert('Jogo encerrado.'); }
 
 async function salvarRanking(nome, score) {
-  // Obtém a sala do aluno logado
+  // Obtém dados do aluno logado
   const salaId = window.appState.user?.sala_id; 
+  const userId = window.appState.user?.id; // <-- Precisamos disto agora
 
   try {
-    // Envia a sala junto com o score
-    await API.pushRanking({ nome, score, sala_id: salaId });
-
+    // Envia o ID do usuário junto
+    await API.pushRanking({ 
+        nome: nome, 
+        score: score, 
+        sala_id: salaId,
+        user_id: userId // <-- Novo campo enviado
+    });
+    
     // Pede a lista atualizada DAQUELA sala
     const list = await API.listRanking(salaId);
     window.appState.ranking = list || [];
   } catch (err) {
     console.error(err);
-    // fallback local (mantido igual)
+    // fallback local simples (não perfeito, mas evita crash visual)
     window.appState.ranking = window.appState.ranking || [];
-    window.appState.ranking.push({ nome, score });
-    window.appState.ranking.sort((a,b)=>b.score-a.score);
+    // Nota: O fallback local não consegue simular perfeitamente a lógica de "Melhor Score" sem recarregar
+    // por isso, dependemos do reload da API acima.
   }
   renderRanking();
 }
@@ -432,7 +471,7 @@ function compilarPerguntasDaTurma() {
   materiasDaSala.forEach(materia => {
     if (materia.perguntas && materia.perguntas.length > 0) {
       // Adiciona o nome da matéria em cada pergunta (para referência futura, se quisermos)
-      const perguntasDaMateria = materia.perguntas.map(p => ({...p, materiaNome: materia.nome}));
+      const perguntasDaMateria = materia.perguntas.map(p => ({...p, materiaNome: materia.nome, materia_id: materia.id}));
       todasAsPerguntas.push(...perguntasDaMateria);
     }
   });
@@ -531,19 +570,29 @@ function desafioNovaPergunta() {
   });
 }
 
-/**
- * Processa a resposta do aluno no modo Desafio.
- * ESTA FUNÇÃO RE-ATIVA O RANKING.
- */
 function desafioResponder(i) {
   const stats = window.appState.stats || { respostas: 0 };
   
-  if (i === D.pergunta.correta) {
+  // 1. Verifica se acertou
+  const acertou = (i === D.pergunta.correta);
+
+  // 2. --- REGISTO NO DASHBOARD ---
+  if (window.appState.user && D.pergunta.materia_id) {
+      API.registrarTentativa({
+          user_id: window.appState.user.id,
+          pergunta_id: D.pergunta.id,
+          materia_id: D.pergunta.materia_id,
+          acertou: acertou
+      }).catch(console.error);
+  }
+  // -------------------------------
+  
+  if (acertou) {
     // --- ACERTOU ---
     D.streak++; 
     byId('d_fb').textContent = '✅ Correto! Sequência: ' + D.streak;
     
-    // Avança a barra de progresso (a cada 5 acertos, sobe de nível)
+    // Avança a barra de progresso
     desafioSetProgress(Math.min(100, (D.streak % 5) * 20));
     
     if (D.streak > 0 && D.streak % 5 === 0) {
@@ -553,42 +602,47 @@ function desafioResponder(i) {
     }
     
   } else {
-    const pontuacaoFinal = D.streak;
-  const explicacaoTexto = D.pergunta.explicacao ? `\n\n Explicação:\n${D.pergunta.explicacao}` : '';
-
-  // Atualiza UI (Feedback visual na tela)
-  // Nota: No innerHTML usamos <br>, no alert usamos \n
-  const explicacaoHtml = D.pergunta.explicacao ? `<br><br><strong> Explicação:</strong><br>${D.pergunta.explicacao}` : '';
-  byId('d_fb').innerHTML = `❌ Errou! A resposta era '${D.pergunta.a[D.pergunta.correta]}'. Sequência final: ${pontuacaoFinal} ${explicacaoHtml}`;
-
-  salvarRanking(window.appState.user.nome, pontuacaoFinal);
+    // --- ERROU ---
     
-    // 4. AGORA, repõe o jogo
+    const pontuacaoFinal = D.streak; 
+    
+    // Explicação
+    const explicacaoHtml = D.pergunta.explicacao 
+        ? `<br><br><strong>Explicação:</strong><br>${D.pergunta.explicacao}` 
+        : '';
+        
+    const explicacaoAlert = D.pergunta.explicacao 
+        ? `\n\nExplicação:\n${D.pergunta.explicacao}` 
+        : '';
+
+    // Feedback Visual
+    byId('d_fb').innerHTML = `❌ Errou! A resposta era '${D.pergunta.a[D.pergunta.correta]}'. Sequência final: ${pontuacaoFinal} ${explicacaoHtml}`;
+    
+    // Salva no Ranking (Modo Desafio)
+    salvarRanking(window.appState.user.nome, pontuacaoFinal);
+    
+    // Reseta o jogo
     D.streak = 0; 
     D.nivel = 'facil'; 
     byId('d_nivel').textContent = 'Nível: Fácil'; 
     desafioSetProgress(0);
     
-    // 5. Esconde o quiz e mostra o botão "Começar de novo"
+    // UI
     byId('d_start_view').classList.remove('hidden');
     byId('d_quiz_view').classList.add('hidden');
     
-    // 6. Mostra o alerta com a pontuação final correta
-    alert(`Fim de jogo! Sua pontuação (${pontuacaoFinal}) foi enviada para o ranking da turma.`);
+    // Alerta Final
+    alert(`Fim de jogo! Sua pontuação (${pontuacaoFinal}) foi enviada para o ranking.${explicacaoAlert}`);
     
-    // ########## FIM DA CORREÇÃO ##########
-    
-    return; // Para o jogo
+    return; 
   }
   
-  // Incrementa estatísticas gerais
+  // Estatísticas globais
   stats.respostas = (stats.respostas || 0) + 1;
   window.appState.stats = stats;
-  API.incrementStat({ stat_key: 'questions_answered' }).catch(err => {
-      console.error("Erro ao incrementar 'questions_answered':", err);
-  });
+  API.incrementStat({ stat_key: 'questions_answered' }).catch(console.error);
 
-  // Puxa a próxima pergunta
+  // Próxima pergunta
   desafioNovaPergunta();
 }
 
