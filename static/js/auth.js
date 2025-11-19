@@ -28,8 +28,9 @@ function register(role) {
   }
 }
 
-async function login(role) {
+async function login(role, btn) {
   try {
+    setLoading(btn, true, 'Entrando...');
     let cpf, senha;
     if (role === 'aluno') {
       cpf = (val('a_cpf') || '').replace(/[^\d]/g, '');
@@ -41,8 +42,8 @@ async function login(role) {
       cpf = (val('c_cpf') || '').replace(/[^\d]/g, '');
       senha = val('c_senha');
     }
-    if (!cpf || !senha) return alert('Preencha CPF e senha.');
-    if (!cpfRegex.test(cpf)) return alert('CPF inválido. Use 11 dígitos.');
+    if (!cpf || !senha) { setLoading(btn, false); return alert('Preencha CPF e senha.'); }
+    if (!cpfRegex.test(cpf)) { setLoading(btn, false); return alert('CPF inválido. Use 11 dígitos.'); }
 
     const data = await API.login(cpf, senha, role);
     if (!data || !data.user) throw new Error('Resposta inválida do servidor');
@@ -54,11 +55,14 @@ async function login(role) {
   } catch (err) {
     console.error(err);
     alert(err.body?.message || err.message || 'Erro no login');
+    // Erro! Reseta o botão
+    setLoading(btn, false);
   }
 }
 
-async function submitRegister(role) {
+async function submitRegister(role, btn) {
   try {
+    setLoading(btn, true, 'Cadastrando...');
     if (role !== 'coordenador') return;
     const nome = val('reg_c_nome');
     const cpf = (val('reg_c_cpf') || '').replace(/[^\d]/g, '');
@@ -85,7 +89,8 @@ async function submitRegister(role) {
     document.getElementById('auth').style.display = 'block'; // Volta para a tela de login
   } catch (err) {
     console.error(err);
-    alert(err.body?.message || err.message || 'Erro ao cadastrar coordenador');
+    alert(err.body?.message || 'Erro ao cadastrar');
+    setLoading(btn, false); // Reseta no erro
   }
 }
 
@@ -108,25 +113,45 @@ function logout() {
     // Envia o log ANTES de limpar a sessão
     registrarLog("out"); 
 
-    // ### ADICIONE ESTA LINHA ###
-    // Garante que todas as secções da app são escondidas ANTES de mostrar o login
+    // Garante que todas as secções da app são escondidas
     document.querySelectorAll('main section').forEach(s => s.classList.add('hidden')); 
 
-    // Limpa a sessão e mostra a tela de login imediatamente
+    // Limpa a sessão
     window.appState.user = null;
     clearSession();
-    showAuth(); // Esconde #app e mostra #auth
+    
+    // --- CORREÇÃO AQUI: Reseta os botões de login ---
+    resetAllLoginButtons();
+    // -----------------------------------------------
 
-    // (Linha API.logout() removida ou comentada)
+    showAuth(); // Esconde #app e mostra #auth
 
   } catch (e) {
      console.error("Erro durante o logout:", e);
-     // Garante que mesmo com erro, as secções são escondidas, a sessão limpa e a tela de auth mostrada
      document.querySelectorAll('main section').forEach(s => s.classList.add('hidden')); 
      window.appState.user = null;
      clearSession();
+     resetAllLoginButtons(); // Garante o reset mesmo com erro
      showAuth();
   }
+}
+
+// Função auxiliar para restaurar os botões
+function resetAllLoginButtons() {
+  // Seleciona todos os botões dentro da secção de auth que possam estar "presos"
+  const buttons = document.querySelectorAll('#auth .btn');
+  
+  buttons.forEach(btn => {
+    // Usa a nossa função utilitária setLoading com 'false' para destravar
+    // Se o botão tiver texto original salvo, ele restaura. 
+    // Se não tiver (porque a página foi recarregada), definimos manualmente.
+    
+    setLoading(btn, false);
+
+    // Força o texto correto baseado no contexto (caso o _originalText tenha sido perdido)
+    if (btn.innerText === 'Entrando...') btn.innerText = 'Entrar';
+    if (btn.innerText === 'Cadastrando...') btn.innerText = 'Cadastrar';
+  });
 }
 
 // session restore on page load

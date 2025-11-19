@@ -241,8 +241,9 @@ function editarUsuario(id, role) {
   document.getElementById('c_edit_form').style.display = 'block';
 }
 
-async function salvarEdicao() {
+async function salvarEdicao(btn) {
   try {
+    setLoading(btn, true, 'Salvando...');
     // Lê todos os campos do formulário
     const id = val('edit_id'), 
           role = val('edit_role'), 
@@ -287,6 +288,8 @@ await API.updateUser(apiRole, id, payload);
   } catch(err) {
     console.error(err);
     alert('Erro ao salvar edição');
+  }finally {
+    setLoading(btn, false);
   }
 }
 

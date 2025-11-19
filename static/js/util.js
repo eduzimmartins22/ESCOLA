@@ -123,3 +123,32 @@ async function refreshAllSelectsAsync() {
     console.error('Erro no refreshAllSelectsAsync', err);
   }
 }
+/**
+ * Define o estado de carregamento de um botão.
+ * @param {HTMLElement} btn - O botão a ser alterado.
+ * @param {boolean} isLoading - true para bloquear, false para restaurar.
+ * @param {string} text - Texto opcional para mostrar (ex: "Aguarde...").
+ */
+function setLoading(btn, isLoading, text = 'Aguarde...') {
+  if (!btn) return;
+  
+  if (isLoading) {
+    // Guarda o texto original numa propriedade do elemento
+    btn._originalText = btn.innerHTML; 
+    // Define largura fixa para evitar que o botão "pule" de tamanho
+    btn.style.minWidth = btn.offsetWidth + 'px';
+    
+    btn.innerHTML = text;
+    btn.disabled = true;
+    btn.style.cursor = 'not-allowed';
+    btn.style.opacity = '0.7';
+  } else {
+    // Restaura
+    if (btn._originalText) btn.innerHTML = btn._originalText;
+    btn.disabled = false;
+    btn.style.cursor = 'pointer';
+    btn.style.opacity = '1';
+    // Remove a largura fixa
+    btn.style.minWidth = '';
+  }
+}

@@ -39,7 +39,7 @@
             </div>
           </div>
           <div class="actions">
-            <button class="btn azul" onclick="login('aluno')">Entrar</button>
+            <button class="btn azul" onclick="login('aluno', this)">Entrar</button>
           </div>
           <div class="muted">
             Se for seu primeiro acesso, procure a coordenadora da sua escola para realizar o cadastro.
@@ -54,7 +54,7 @@
             </div>
           </div>
           <div class="actions">
-            <button class="btn azul" onclick="login('professor')">
+            <button class="btn azul" onclick="login('professor', this)">
               Entrar
             </button>
           </div>
@@ -72,7 +72,7 @@
             <button class="btn verde" onclick="register('coordenador')">
               Cadastrar
             </button>
-            <button class="btn azul" onclick="login('coordenador')">
+            <button class="btn azul" onclick="login('coordenador', this)">
               Entrar
             </button>
           </div>
@@ -435,7 +435,7 @@
                 <button
                   class="btn verde"
                   style="margin-top: 10px; width: 100%;"
-                  onclick="adicionarConteudo()"
+                  onclick="adicionarConteudo(this)"
                 >
                   Enviar Conteúdo
                 </button>
@@ -819,7 +819,7 @@
             </div>
             <div></div> </div>
             <div class="actions">
-            <button class="btn verde" onclick="submitRegister('coordenador')">...</button>
+            <button class="btn verde" onclick="submitRegister('coordenador', this)">...</button>
             <button class="btn outline" onclick="cancelarCadastro()"> 
                 Cancelar
             </button>
@@ -861,7 +861,7 @@
                 <div><label>Senha</label><input id="edit_senha" type="password" /></div>
             </div>
             <div class="actions">
-                <button class="btn verde" onclick="salvarEdicao()">
+                <button class="btn verde" onclick="salvarEdicao(this)">
                     Salvar Edição
                 </button>
                 <button class="btn" onclick="cancelarEdicao()">
@@ -964,7 +964,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn verde" onclick="salvarEdicaoConteudo()">
+                <button class="btn verde" onclick="salvarEdicaoConteudo(this)">
                     Salvar Edição
                 </button>
                 <button class="btn outline" onclick="cancelarEdicaoConteudo()">
@@ -1039,7 +1039,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn verde" onclick="salvarEdicaoPergunta()">
+                <button class="btn verde" onclick="salvarEdicaoPergunta(this)">
                     Salvar Edição
                 </button>
                 <button class="btn outline" onclick="cancelarEdicaoPergunta()">

@@ -148,8 +148,10 @@ async function renderPQSelects() {
   }
 }
 
-async function adicionarPergunta() {
+async function adicionarPergunta(event) {
+  const btn = event ? event.target : null;
   try {
+    setLoading(btn, true, 'Criando...');
     const materiaId = sel("p_q_materia").value;
     const nivel = sel("p_q_nivel").value;
     const enun = byId("p_q_enun").value.trim();
@@ -206,6 +208,9 @@ async function adicionarPergunta() {
   } catch (err) {
     console.error("❌ Erro ao criar pergunta:", err);
     alert("Erro ao criar a pergunta.");
+  }finally {
+    // O 'finally' garante que o botão reseta sempre (sucesso ou erro)
+    setLoading(btn, false);
   }
 }
 
@@ -242,8 +247,9 @@ function renderResumoQuestoes() {
   `;
 }
 
-async function adicionarConteudo() {
+async function adicionarConteudo(btn) {
   try {
+    setLoading(btn, true, 'Enviando...');
     // --- INÍCIO DA INTERVENÇÃO CIRÚRGICA (Linha 147) ---
     const materiaId = sel('p_c_materia').value;
     if (!materiaId) return alert('Selecione a matéria.');
@@ -280,6 +286,8 @@ async function adicionarConteudo() {
   } catch (err) {
     console.error(err);
     alert(err.body?.message || 'Erro ao enviar conteúdo');
+  }finally {
+    setLoading(btn, false);
   }
 }
 
@@ -650,8 +658,9 @@ function cancelarEdicaoPergunta() {
 /**
  * Salva as alterações da pergunta (chama a API PUT).
  */
-async function salvarEdicaoPergunta() {
+async function salvarEdicaoPergunta(btn) {
   try {
+    setLoading(btn, true, 'Salvando...');
     const id = val('edit_p_id');
     const materiaId = val('edit_p_materia_id_original'); // Matéria original
     
@@ -692,6 +701,8 @@ async function salvarEdicaoPergunta() {
   } catch(err) {
     console.error("Erro ao salvar edição da pergunta:", err);
     alert(err.body?.message || 'Erro ao salvar edição');
+  }finally {
+    setLoading(btn, false);
   }
 }
 
@@ -781,7 +792,7 @@ function renderBibliotecaPerguntas() {
       <td>${cap(p.nivel)}</td>
       <td>
         <div class="table-actions">
-          <button class="btn-action btn-editar" onclick="copiarPergunta('${p.id}')">Copiar</button>
+          <button class="btn-action btn-editar" onclick="copiarPergunta('${p.id}', this)">Copiar</button>
         </div>
       </td>
     `;
@@ -792,7 +803,7 @@ function renderBibliotecaPerguntas() {
 /**
  * Copia a pergunta selecionada (ID) para a matéria de destino (ID).
  */
-async function copiarPergunta(perguntaId) {
+async function copiarPergunta(perguntaId, btn) {
   const destinoMateriaId = sel('p_bib_destino').value;
 
   if (!destinoMateriaId) {
@@ -806,10 +817,8 @@ async function copiarPergunta(perguntaId) {
   };
 
   try {
-    // Desativa o botão temporariamente
-    const btn = event.target;
-    btn.disabled = true;
-    btn.textContent = 'Copiando...';
+    // CORREÇÃO: Usa a função setLoading (certifique-se que 'btn' foi recebido)
+    setLoading(btn, true, 'Copiando...');
 
     await API.copyPergunta(payload);
     
@@ -818,17 +827,12 @@ async function copiarPergunta(perguntaId) {
     
     alert('Pergunta copiada com sucesso para a sua matéria!');
 
-    // Reativa o botão
-    btn.disabled = false;
-    btn.textContent = 'Copiar';
-
   } catch (err) {
     console.error("Erro ao copiar pergunta:", err);
     alert(err.body?.message || 'Erro ao copiar pergunta');
-    // Reativa o botão em caso de erro
-    const btn = event.target;
-    btn.disabled = false;
-    btn.textContent = 'Copiar';
+  } finally {
+    // CORREÇÃO: Restaura o botão sempre, mesmo se der erro
+    setLoading(btn, false);
   }
 }
 
