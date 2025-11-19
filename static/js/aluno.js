@@ -235,7 +235,16 @@ function showBannerInfo(b) {
 /* Quiz (mantive a lógica local: perguntas vêm das matérias já carregadas no appState) */
 let Q = { materiaId: null, nivel: 'facil', streak: 0, best:0, pergunta:null };
 function quizStart(materiaId) {
-  Q = { materiaId, nivel: 'facil', streak:0, best:0, pergunta:null };
+  // Adicionamos 'usedQuestions' para rastrear o que já saiu
+  Q = { 
+    materiaId, 
+    nivel: 'facil', 
+    streak: 0, 
+    best: 0, 
+    pergunta: null, 
+    usedQuestions: [] // <--- NOVO
+  };
+  
   byId('a_nivel').textContent = 'Nível: Fácil';
   setProgress(0);
   novaPergunta();
@@ -247,61 +256,61 @@ function perguntasPorNivel(materiaId, nivel) {
 }
 
 function novaPergunta() {
-  const pool = perguntasPorNivel(Q.materiaId, Q.nivel);
+  const fullPool = perguntasPorNivel(Q.materiaId, Q.nivel);
+  
+  // Filtra: Pega apenas as perguntas que NÃO estão na lista de usadas
+  let available = fullPool.filter(q => !Q.usedQuestions.includes(q.id));
 
-  const qContainer = byId('a_q'); // Elemento que conterá o enunciado E a imagem
-  const ansContainer = byId('a_ans'); // Elemento que conterá as respostas
+  const qContainer = byId('a_q');
+  const ansContainer = byId('a_ans');
 
-  if (!pool.length) { 
-      qContainer.innerHTML = 'Sem perguntas neste nível.'; // Limpa enunciado e imagem
-      ansContainer.innerHTML = ''; // Limpa respostas
-      return; 
+  // Se acabaram as perguntas inéditas deste nível
+  if (available.length === 0) { 
+      if (fullPool.length === 0) {
+          qContainer.innerHTML = 'Sem perguntas neste nível.';
+          ansContainer.innerHTML = '';
+          return; 
+      }
+      // Se tem perguntas, mas já usámos todas, limpamos a memória DESTE nível para recomeçar o ciclo
+      const idsDesteNivel = fullPool.map(p => p.id);
+      Q.usedQuestions = Q.usedQuestions.filter(id => !idsDesteNivel.includes(id));
+      available = fullPool; // Volta a ter todas disponíveis
   }
 
-  Q.pergunta = pool[Math.floor(Math.random() * pool.length)];
+  // Sorteia das disponíveis
+  Q.pergunta = available[Math.floor(Math.random() * available.length)];
+  
+  // Marca como usada para não repetir logo em seguida
+  Q.usedQuestions.push(Q.pergunta.id);
 
-  // --- LÓGICA DA IMAGEM ADICIONADA ---
+  // --- Renderização (Mantendo a lógica de Imagem + Texto) ---
   let htmlEnunciado = '';
-
-  // 1. Adiciona a imagem SE ela existir
   if (Q.pergunta.img_url) {
-      console.log(">> novaPergunta: Exibindo imagem:", Q.pergunta.img_url);
       htmlEnunciado += `
           <img src="${Q.pergunta.img_url}" 
                alt="Imagem da pergunta" 
                style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--borda);"
-               onerror="this.style.display='none'; console.error('Erro ao carregar imagem da pergunta:', '${Q.pergunta.img_url}');">
+               onerror="this.style.display='none';">
       `;
   }
+  htmlEnunciado += `<p>${Q.pergunta.q}</p>`;
 
-  // 2. Adiciona o texto do enunciado
-  htmlEnunciado += `<p>${Q.pergunta.q}</p>`; // Envolve o texto num <p> para melhor espaçamento
-
-  // Define o conteúdo do container do enunciado
   qContainer.innerHTML = htmlEnunciado; 
-
-  // Limpa as respostas antigas
   ansContainer.innerHTML = '';
 
-  // Adiciona os botões de resposta
   Q.pergunta.a.forEach((t, i) => {
     const b = document.createElement('button');
     b.textContent = t;
     b.onclick = () => responder(i);
     ansContainer.appendChild(b);
   });
-  // --- FIM DAS ALTERAÇÕES ---
 }
-
-  
 
 function responder(i) {
   const stats = window.appState.stats || { respostas: 0 };
-  
-  // 1. Verifica se acertou (necessário para o dashboard e lógica do jogo)
   const acertou = (i === Q.pergunta.correta);
 
-  // 2. --- REGISTO NO DASHBOARD (A parte que faltava) ---
+  // Registo no Dashboard
   if (window.appState.user && Q.materiaId) {
       API.registrarTentativa({
           user_id: window.appState.user.id,
@@ -310,7 +319,6 @@ function responder(i) {
           acertou: acertou
       }).catch(console.error);
   }
-  // ----------------------------------------------------
 
   if (acertou) {
     // --- ACERTOU ---
@@ -318,41 +326,70 @@ function responder(i) {
     Q.best = Math.max(Q.best, Q.streak);
     byId('a_fb').textContent = '✅ Correto!';
     
-    // Lógica de subir nível
-    setProgress(Math.min(100, (Q.streak%5)*20));
+    // Atualiza a barra de progresso (reseta visualmente a cada nível)
+    setProgress(Math.min(100, (Q.streak % 5) * 20));
+    
+    // --- LÓGICA DE NÍVEIS E CICLO ---
     if (Q.streak > 0 && Q.streak % 5 === 0) {
-      if (Q.nivel === 'facil') Q.nivel = 'medio';
-      else if (Q.nivel === 'medio') Q.nivel = 'dificil';
-      byId('a_nivel').textContent = 'Nível: ' + cap(Q.nivel);
+      if (Q.nivel === 'facil') {
+          Q.nivel = 'medio';
+          byId('a_nivel').textContent = 'Nível: ' + cap(Q.nivel);
+          alert("Parabéns! Você subiu para o Nível Médio."); // Opcional: Feedback de nível
+      } 
+      else if (Q.nivel === 'medio') {
+          Q.nivel = 'dificil';
+          byId('a_nivel').textContent = 'Nível: ' + cap(Q.nivel);
+          alert("Excelente! Você alcançou o Nível Difícil."); // Opcional: Feedback de nível
+      } 
+      else if (Q.nivel === 'dificil') {
+          // --- AQUI ESTÁ A MUDANÇA ---
+          // Se completou 5 difíceis, zera o jogo
+          alert('PARABÉNS! Você zerou o quiz desta matéria! O jogo recomeçará no Nível Fácil.');
+          
+          // Reseta tudo para o início
+          Q.streak = 0;
+          Q.nivel = 'facil';
+          Q.usedQuestions = []; // Limpa a memória para permitir que as perguntas apareçam de novo
+          byId('a_nivel').textContent = 'Nível: Fácil';
+          setProgress(0);
+      }
     }
+
+    // Avança para a próxima (seja do próximo nível ou do início se resetou)
+    novaPergunta();
 
   } else {
     // --- ERROU ---
-    
-    // Lógica da Explicação (mantida)
     const explicacaoTexto = Q.pergunta.explicacao 
         ? `<br><br><strong>Explicação:</strong><br>${Q.pergunta.explicacao}` 
         : '';
       
-    byId('a_fb').innerHTML = `❌ Errou! Sequência final: ${Q.streak} ${explicacaoTexto}`;
+    byId('a_fb').innerHTML = `❌ Errou! A resposta certa era a alternativa correta. ${explicacaoTexto}`;
     
-    // Reseta o jogo
-    Q.streak = 0; 
-    Q.nivel = 'facil'; 
-    byId('a_nivel').textContent = 'Nível: Fácil'; 
-    setProgress(0);
+    // Mantém o estado atual (não zera nada)
   }
   
-  // Estatísticas globais do aluno
+  // Estatísticas
   stats.respostas = (stats.respostas || 0) + 1;
   window.appState.stats = stats;
   API.incrementStat({ stat_key: 'questions_answered' }).catch(console.error);
-  
-  // Próxima pergunta
-  novaPergunta();
+}
+ 
+function quizTentarNovamente() { 
+    // 1. Reseta o estado interno
+    Q.streak = 0; 
+    Q.nivel = 'facil'; 
+    Q.usedQuestions = []; // Limpa a memória para as perguntas poderem aparecer de novo
+    
+    // 2. Reseta a interface
+    byId('a_nivel').textContent = 'Nível: Fácil'; 
+    byId('a_fb').textContent = ''; // Limpa a mensagem de erro/acerto
+    setProgress(0); // Zera a barra de progresso
+    
+    // 3. Começa de novo
+    novaPergunta(); 
 }
 
-function quizTentarNovamente() { Q.streak=0; Q.nivel='facil'; byId('a_nivel').textContent='Nível: Fácil'; setProgress(0); novaPergunta(); }
 async function quizSair() {
 //await salvarRanking(window.appState.user.nome, Q.streak);
 alert('Jogo encerrado.'); }

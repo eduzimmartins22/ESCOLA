@@ -220,8 +220,15 @@ def update_user(role, user_id):
             cursor.execute(sql, tuple(params))
            
             if cursor.rowcount == 0:
-                # Se não encontrou, tenta sem o filtro de role apenas para debug (opcional)
-                return jsonify({"error": f"Usuário {user_id} com papel {db_role} não encontrado"}), 404
+                # O MySQL retorna 0 se os dados novos forem iguais aos antigos.
+                # Vamos verificar se o usuário REALMENTE existe para decidir se é erro ou não.
+                cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+                if cursor.fetchone():
+                    # O usuário existe, então foi apenas "sem mudanças". Retornamos sucesso (200).
+                    return jsonify({"message": "Dados salvos (sem alterações detectadas)."}), 200
+                else:
+                    # O usuário realmente não existe. Retornamos erro (404).
+                    return jsonify({"error": f"Usuário {user_id} com papel {db_role} não encontrado"}), 404
 
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
        
@@ -312,8 +319,17 @@ def update_sala(sala_id):
         with conn.cursor() as cursor:
             sql = "UPDATE salas SET nome = %s, capacidade = %s WHERE id = %s"
             result = cursor.execute(sql, (data['nome'], data['capacidade'], sala_id))
+            
+            # --- LÓGICA CORRIGIDA ---
             if result == 0:
-                return jsonify({"error": "Sala não encontrada"}), 404
+                # Verifica se a sala existe mesmo
+                cursor.execute("SELECT id FROM salas WHERE id = %s", (sala_id,))
+                if cursor.fetchone():
+                    return jsonify({"message": "Sala atualizada (sem alterações)."}), 200
+                else:
+                    return jsonify({"error": "Sala não encontrada"}), 404
+            # ------------------------
+
         return jsonify({"message": "Sala atualizada com sucesso!"}), 200
     except Exception as e:
         print(f"Erro ao atualizar sala: {e}")
@@ -528,8 +544,16 @@ def update_materia(materia_id):
         with conn.cursor() as cursor:
             sql = "UPDATE materias SET nome = %s, sala_id = %s WHERE id = %s"
             result = cursor.execute(sql, (data['nome'], data['sala_id'], materia_id))
+            
+            # --- LÓGICA CORRIGIDA ---
             if result == 0:
-                return jsonify({"error": "Matéria não encontrada"}), 404
+                cursor.execute("SELECT id FROM materias WHERE id = %s", (materia_id,))
+                if cursor.fetchone():
+                     return jsonify({"message": "Matéria atualizada (sem alterações)."}), 200
+                else:
+                    return jsonify({"error": "Matéria não encontrada"}), 404
+            # ------------------------
+
         return jsonify({"message": "Matéria atualizada com sucesso!"}), 200
     except Exception as e:
         print(f"Erro ao atualizar matéria: {e}")
@@ -906,6 +930,73 @@ def delete_banner(banner_id):
         if conn:
             conn.close()
             print("Conexão DB fechada.") # Log
+
+@app.route('/api/banners/<banner_id>', methods=['PUT'])
+def update_banner(banner_id):
+    """Atualiza um banner existente."""
+    print(f"--- Update Banner {banner_id} ---")
+    
+    # Lê os dados do formulário (mesmos nomes do create_banner)
+    titulo = request.form.get('tit')
+    data_evento = request.form.get('data')
+    hora = request.form.get('hora')
+    local = request.form.get('local')
+    materias = request.form.get('mats')
+    dicas = request.form.get('dicas')
+
+    if not titulo:
+        return jsonify({"error": "Título é obrigatório"}), 400
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"error": "Falha na conexão DB"}), 500
+
+    try:
+        with conn.cursor() as cursor:
+            # 1. Buscar imagem antiga
+            sql_find = "SELECT img_url FROM banners WHERE id = %s"
+            cursor.execute(sql_find, (banner_id,))
+            row = cursor.fetchone()
+            if not row: return jsonify({"error": "Banner não encontrado"}), 404
+            
+            current_img_url = row['img_url']
+            
+            # 2. Processar nova imagem (se houver)
+            img_file = request.files.get('img')
+            if img_file and img_file.filename != '':
+                try:
+                    # Remove antiga
+                    if current_img_url and current_img_url.startswith('/static/uploads/'):
+                        old_path = os.path.join(app.root_path, app.static_folder, 'uploads', os.path.basename(current_img_url))
+                        if os.path.exists(old_path): os.remove(old_path)
+                    
+                    # Salva nova
+                    upload_folder = os.path.join(app.root_path, app.static_folder, 'uploads')
+                    filename = str(uuid.uuid4()) + "_" + secure_filename(img_file.filename)
+                    save_path = os.path.join(upload_folder, filename)
+                    img_file.save(save_path)
+                    current_img_url = f"/static/uploads/{filename}"
+                except Exception as e:
+                    print(f"Erro upload banner: {e}")
+
+            # 3. Atualizar dados
+            sql_update = """
+                UPDATE banners 
+                SET tit=%s, data_evento=%s, hora=%s, local=%s, materias=%s, dicas=%s, img_url=%s
+                WHERE id=%s
+            """
+            # Trata data/hora vazios
+            data_db = data_evento if data_evento else None
+            hora_db = hora if hora else None
+            
+            cursor.execute(sql_update, (titulo, data_db, hora_db, local, materias, dicas, current_img_url, banner_id))
+
+        return jsonify({"message": "Banner atualizado com sucesso!"}), 200
+
+    except Exception as e:
+        print(f"Erro update banner: {e}")
+        return jsonify({"error": "Erro interno"}), 500
+    finally:
+        if conn: conn.close()
 
 @app.route('/api/ranking', methods=['GET'])
 def list_ranking():

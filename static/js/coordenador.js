@@ -685,28 +685,41 @@ function renderSingleBannerPreview(b, containerElement) {
         d.appendChild(infoDiv);
         console.log("--- Passo 5: Div de info adicionado ---");
 
-        // --- Cria e adiciona o Botão Apagar ---
+        // --- CRIAÇÃO DOS BOTÕES DE AÇÃO ---
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.display = 'flex';
+        actionsDiv.style.flexDirection = 'column'; // Botões um em cima do outro ou row se preferir
+        actionsDiv.style.gap = '5px';
+        actionsDiv.style.marginLeft = '10px';
+        actionsDiv.style.alignSelf = 'center';
+
+        // Botão Editar
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn'; 
+        editBtn.style.backgroundColor = '#3b82f6'; // Azul
+        editBtn.style.color = 'white';
+        editBtn.style.fontSize = '12px';
+        editBtn.style.padding = '5px 10px';
+        editBtn.textContent = 'Editar';
+        editBtn.onclick = function(e) {
+            e.stopPropagation();
+            editarBanner(b); // Chama a função passando o objeto banner inteiro
+        };
+
+        // Botão Apagar (código existente ajustado)
         const deleteButton = document.createElement('button');
-        // Usa a classe base 'btn' e adiciona uma classe específica 'btn-delete'
         deleteButton.className = 'btn btn-delete'; 
-        // Mantém apenas estilos essenciais de layout que não vêm do .btn
-        deleteButton.style.marginLeft = '10px'; 
-        deleteButton.style.alignSelf = 'center';
-        deleteButton.style.flexShrink = '0'; // Impede que o botão encolha
         deleteButton.textContent = 'Apagar';
         const bannerIdForClick = b.id; 
         deleteButton.onclick = function(event) { 
             event.stopPropagation();
-            if (typeof apagarBanner === 'function') { 
-                apagarBanner(bannerIdForClick); 
-            } else { 
-                console.error("Função apagarBanner não definida!"); 
-            }
+            apagarBanner(bannerIdForClick); 
         }; 
-        d.appendChild(deleteButton); 
-        console.log("--- Passo 6: Botão Apagar adicionado ---");
 
-        // Adiciona o elemento banner completo ao container
+        actionsDiv.appendChild(editBtn);
+        actionsDiv.appendChild(deleteButton);
+        d.appendChild(actionsDiv);
+
         containerElement.appendChild(d);
         console.log("--- Passo 7: Banner completo adicionado ao container (FIM) ---");
 
@@ -745,4 +758,73 @@ async function apagarBanner(bannerId) {
         const errorMsg = err.body?.message || err.message || 'Erro desconhecido ao apagar banner.';
         alert(`Erro ao apagar banner: ${errorMsg}`);
     }
+}
+function editarBanner(b) {
+  console.log("Editando banner:", b);
+  
+  // Preenche o formulário
+  byId('edit_ban_id').value = b.id;
+  byId('edit_ban_tit').value = b.tit || '';
+  
+  // Formata a data para o input date (YYYY-MM-DD)
+  if (b.data_evento) {
+      // Assume que a data vem no formato ISO ou similar. Tenta cortar os primeiros 10 chars
+      try { byId('edit_ban_data').value = b.data_evento.substring(0, 10); } catch(e) {}
+  } else {
+      byId('edit_ban_data').value = '';
+  }
+  
+  byId('edit_ban_hora').value = b.hora || '';
+  byId('edit_ban_local').value = b.local || '';
+  byId('edit_ban_mats').value = b.materias || '';
+  byId('edit_ban_dicas').value = b.dicas || '';
+  
+  byId('edit_ban_img').value = ''; // Limpa input file
+  byId('edit_ban_img_info').textContent = b.img_url ? 'Imagem atual existe. Envie nova para substituir.' : 'Sem imagem.';
+
+  // Mostra o modal
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('c_edit_banner_form').style.display = 'block';
+}
+
+function cancelarEdicaoBanner() {
+  document.getElementById('c_edit_banner_form').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function salvarEdicaoBanner(btn) {
+  try {
+    setLoading(btn, true, 'Salvando...');
+    
+    const id = val('edit_ban_id');
+    const tit = val('edit_ban_tit');
+    
+    if (!tit) return alert('O título é obrigatório.');
+
+    const fd = new FormData();
+    fd.append('tit', tit);
+    fd.append('data', val('edit_ban_data'));
+    fd.append('hora', val('edit_ban_hora'));
+    fd.append('local', val('edit_ban_local'));
+    fd.append('mats', val('edit_ban_mats'));
+    fd.append('dicas', val('edit_ban_dicas'));
+    
+    const img = byId('edit_ban_img').files[0];
+    if (img) {
+        fd.append('img', img);
+    }
+
+    await API.updateBanner(id, fd);
+
+    alert('Banner atualizado!');
+    cancelarEdicaoBanner();
+    await refreshAllSelectsAsync();
+    renderBannersCoord();
+
+  } catch(err) {
+    console.error(err);
+    alert('Erro ao editar banner');
+  } finally {
+    setLoading(btn, false);
+  }
 }

@@ -180,10 +180,7 @@
                   <div id="a_fb" class="muted" style="margin-top: 6px"></div>
                   <div class="actions" style="margin-top: 8px">
                     <button class="btn outline" onclick="quizTentarNovamente()">
-                      Tentar novamente
-                    </button>
-                    <button class="btn outline" onclick="quizSair()">
-                      Sair
+                      Reiniciar Jogo
                     </button>
                   </div>
                 </div>
@@ -1050,6 +1047,60 @@
         <div class="right">
             <h2>Edição de Pergunta</h2>
             <p>Altere os dados da pergunta. Se enviar uma nova imagem, ela substituirá a antiga.</p>
+        </div>
+    </div>
+</section>
+<section id="c_edit_banner_form" class="hidden auth">
+    <div class="top">
+        <div class="left">
+            <h3>Editar Banner</h3>
+            <input type="hidden" id="edit_ban_id">
+            
+            <div class="form-group">
+              <label>Imagem (Opcional)</label>
+              <input id="edit_ban_img" type="file" accept="image/*" />
+              <span class="muted" id="edit_ban_img_info"></span>
+            </div>
+
+            <div class="form-group">
+              <label>Título</label>
+              <input id="edit_ban_tit" />
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Data</label><input id="edit_ban_data" type="date" />
+              </div>
+              <div>
+                <label>Hora</label><input id="edit_ban_hora" type="time" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Local</label>
+              <input id="edit_ban_local" />
+            </div>
+            <div class="form-group">
+              <label>Matérias</label>
+              <input id="edit_ban_mats" />
+            </div>
+            <div class="form-group">
+              <label>Dicas</label>
+              <input id="edit_ban_dicas" />
+            </div>
+
+            <div class="actions">
+                <button class="btn verde" onclick="salvarEdicaoBanner(this)">
+                    Salvar Edição
+                </button>
+                <button class="btn outline" onclick="cancelarEdicaoBanner()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+        <div class="right">
+            <h2>Editar Evento</h2>
+            <p>Atualize as informações da prova ou evento.</p>
         </div>
     </div>
 </section>

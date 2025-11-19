@@ -162,6 +162,11 @@ copyPergunta: (payload) => apiPost('/perguntas/copy', payload),
   listBanners: () => apiGet(`/banners`), // CORRIGIDO
   createBanner: (formData) => apiPost(`/banners`, formData), // CORRIGIDO
   deleteBanner: (id) => apiFetch(`/banners/${id}`, { method: "DELETE" }),
+  updateBanner: (id, formData) => 
+    apiFetch(`/banners/${id}`, {
+      method: "PUT",
+      body: formData
+    }),
 
   // ---------- LOGS / RANKING / STATS ----------
   listLogs: () => apiGet(`/logs`), // CORRIGIDO
