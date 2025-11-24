@@ -122,8 +122,10 @@ def create_user():
 @app.route('/api/users/<role>', methods=['GET'])
 def list_users(role):
     """Lista todos os usuários de um determinado perfil."""
-    valid_roles_map = {'alunos': 'aluno', 'professores': 'professor', 'coordenadores': 'coordenador',
-                       'aluno': 'aluno', 'professor': 'professor', 'coordenador': 'coordenador'}
+    valid_roles_map = {
+        'alunos': 'aluno', 'professores': 'professor', 'coordenadores': 'coordenador',
+        'aluno': 'aluno', 'professor': 'professor', 'coordenador': 'coordenador'
+    }
     if role not in valid_roles_map:
         return jsonify({"error": "Perfil inválido"}), 400
 
@@ -135,8 +137,15 @@ def list_users(role):
 
     try:
         with conn.cursor() as cursor:
-            # Seleciona explicitamente as colunas com snake_case
+            # Seleciona colunas (incluindo is_assistente)
             sql = "SELECT id, nome, cpf, matricula, sala_id, role, is_assistente FROM users WHERE role = %s"
+            
+            # --- PROTEÇÃO DO ADMIN MESTRE ---
+            # Se estivermos listando coordenadores, escondemos o ADMIN01
+            if db_role == 'coordenador':
+                sql += " AND matricula != 'ADMIN01'"
+            # --------------------------------
+
             cursor.execute(sql, (db_role,))
             users = cursor.fetchall()
             return jsonify(users)

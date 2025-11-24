@@ -2,7 +2,6 @@
 // Assumimos endpoints: POST /api/auth/login  { role, cpf, senha } -> { user }
 //                  POST /api/auth/logout
 //                  POST /api/users/coordenadores  -> criar coordenador (usado por register)
-const COORD_MASTER_KEY_FRONTEND = "fn@2025";
 const cpfRegex = /^\d{11}$/;
 
 function bindRoleTabs() {
@@ -17,15 +16,6 @@ function bindRoleTabs() {
       });
     });
   });
-}
-
-function register(role) {
-  if (role === 'coordenador') {
-    // Esconde a tela de login principal
-    document.getElementById('auth').style.display = 'none';
-    // Mostra a tela de cadastro de coordenador
-    document.getElementById('c_register_form').style.display = 'block';
-  }
 }
 
 async function login(role, btn) {
@@ -58,54 +48,6 @@ async function login(role, btn) {
     // Erro! Reseta o botão
     setLoading(btn, false);
   }
-}
-
-async function submitRegister(role, btn) {
-  try {
-    setLoading(btn, true, 'Cadastrando...');
-    if (role !== 'coordenador') return;
-    const nome = val('reg_c_nome');
-    const cpf = (val('reg_c_cpf') || '').replace(/[^\d]/g, '');
-    const mat = val('reg_c_mat');
-    const senha = val('reg_c_senha');
-    // ### LEITURA DA CHAVE MESTRE ###
-    const masterKey = val('reg_c_masterkey'); 
-
-    // ### VALIDAÇÃO DA CHAVE MESTRE (INSEGURA - APENAS FRONTEND) ###
-    if (!masterKey || masterKey !== COORD_MASTER_KEY_FRONTEND) {
-        return alert('Chave Mestra inválida!');
-    }
-    // ### FIM DA VALIDAÇÃO ###
-
-    if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
-    if (!cpfRegex.test(cpf)) return alert('CPF inválido.');
-
-    const payload = { nome, cpf, mat, senha, role: role };
-    // Não enviamos a masterKey para o backend nesta versão simples
-    await API.createUser(payload); 
-
-    alert('Coordenador cadastrado!');
-    document.getElementById('c_register_form').style.display = 'none';
-    document.getElementById('auth').style.display = 'block'; // Volta para a tela de login
-  } catch (err) {
-    console.error(err);
-    alert(err.body?.message || 'Erro ao cadastrar');
-    setLoading(btn, false); // Reseta no erro
-  }
-}
-
-function cancelarCadastro() {
-  // Limpa os campos do formulário (opcional)
-  byId('reg_c_nome').value = '';
-  byId('reg_c_cpf').value = '';
-  byId('reg_c_mat').value = '';
-  byId('reg_c_senha').value = '';
-  byId('reg_c_masterkey').value = ''; 
-
-  // Esconde o formulário de cadastro
-  document.getElementById('c_register_form').style.display = 'none';
-  // Mostra o formulário de login novamente
-  document.getElementById('auth').style.display = 'block'; 
 }
 
 function logout() {
@@ -305,6 +247,7 @@ async function openTab(id, btn) {
   if (id === "c_prof") {
     console.log(">> openTab: Chamando renderProfsCoord..."); // LOG
     renderProfsCoord();
+    renderCoordsCoord();
   }
   if (id === "c_alunos") {
     console.log(">> openTab: Chamando renderAlunosCoord..."); // LOG

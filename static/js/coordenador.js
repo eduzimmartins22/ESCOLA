@@ -1,5 +1,40 @@
 // coordenador.js
-const COORD_MASTER_PASSWORD = 'fn@2025'; // ainda usado só client-side se desejar; validação deve ser server-side
+
+async function coordCriarCoordenador(btn) {
+  try {
+    const nome = val('new_coord_nome');
+    const cpf = (val('new_coord_cpf')||'').replace(/[^\d]/g,'');
+    const senha = val('new_coord_senha');
+
+    if (!nome || !cpf || !senha) return alert('Preencha nome, CPF e senha.');
+    if (cpf.length !== 11) return alert('CPF inválido.');
+
+    setLoading(btn, true, 'Criando...');
+
+    // Cria o coordenador usando a API existente (que já suporta role='coordenador')
+    await API.createUser({ 
+        nome, 
+        cpf, 
+        senha, 
+        role: 'coordenador',
+        mat: 'COORD' // Matrícula padrão ou adicione campo se quiser
+    });
+
+    alert('Novo Coordenador cadastrado com sucesso!');
+    
+    // Limpa os campos
+    byId('new_coord_nome').value = '';
+    byId('new_coord_cpf').value = '';
+    byId('new_coord_senha').value = '';
+
+    renderCoordsCoord();
+  } catch (err) {
+    console.error(err);
+    alert(err.body?.message || 'Erro ao criar coordenador');
+  } finally {
+    setLoading(btn, false);
+  }
+}
 
 async function coordCriarProfessor() {
   try {
@@ -183,13 +218,10 @@ async function renderAlunosCoord() {
   }
 }
 
-
-    
-
-
 async function apagarUsuario(id, role) {
   try {
     if (!confirm(`Tem certeza que deseja apagar este(a) ${role}?`)) return;
+    
     if (role === 'sala') {
       if (!confirm('Ao apagar a sala, os alunos associados a ela serão desvinculados. Deseja continuar?')) return;
       // desvincular alunos e deletar sala
@@ -201,10 +233,18 @@ async function apagarUsuario(id, role) {
     } else {
       await API.deleteUser(role, id);
     }
+
     await refreshAllSelectsAsync();
+    
+    // --- ATUALIZAÇÃO DAS TABELAS ---
     if (role === 'aluno') renderAlunosCoord();
     if (role === 'professor') renderProfsCoord();
     if (role === 'sala') renderSalasCoord();
+    
+    // ADICIONE ESTA LINHA:
+    if (role === 'coordenador') renderCoordsCoord(); 
+    // -----------------------------
+
     alert('Usuário excluído!');
   } catch(err) {
     console.error(err);
@@ -219,6 +259,8 @@ function editarUsuario(id, role) {
     user = (window.appState.users.alunos||[]).find(u=>u.id===id);
   } else if (role === 'professor') {
     user = (window.appState.users.professores||[]).find(u=>u.id===id);
+  } else if (role === 'coordenador') { // <--- ADICIONE ESTE BLOCO
+    user = (window.appState.users.coordenadores||[]).find(u=>u.id===id);
   }
   if (!user) return alert('Usuário não encontrado para edição.');
   byId('edit_id').value = user.id;
@@ -230,12 +272,13 @@ function editarUsuario(id, role) {
   byId('edit_mat').value = user.matricula || ''; // Usa a propriedade correta 'matricula'
   byId('edit_is_assistente').checked = user.is_assistente || false;
   const divAssistente = byId('div_promote_assistente');
-  if (role === 'aluno') {
-      // Se for aluno, esconde a opção
-      divAssistente.style.display = 'none';
-  } else {
-      // Se for professor (ou outro), mostra a opção (restaura o display flex)
+  
+  // A lógica agora é restritiva: Só aparece se for EXATAMENTE 'professor'
+  if (role === 'professor') {
       divAssistente.style.display = 'flex';
+  } else {
+      // Esconde para Alunos e também para Coordenadores
+      divAssistente.style.display = 'none';
   }
   document.getElementById('app').style.display = 'none';
   document.getElementById('c_edit_form').style.display = 'block';
@@ -284,6 +327,7 @@ await API.updateUser(apiRole, id, payload);
     // AGORA atualiza a tabela na tela com os novos dados
     if (role === 'aluno') renderAlunosCoord(); 
     if (role === 'professor') renderProfsCoord();
+    if (role === 'coordenador') renderCoordsCoord();
 
   } catch(err) {
     console.error(err);
@@ -826,5 +870,42 @@ async function salvarEdicaoBanner(btn) {
     alert('Erro ao editar banner');
   } finally {
     setLoading(btn, false);
+  }
+}
+
+async function renderCoordsCoord() {
+  try {
+    // Pede a lista (o backend já vai filtrar o ADMIN01)
+    const users = await API.listUsers('coordenadores');
+    
+    // Atualiza o cache local
+    window.appState.users.coordenadores = users || [];
+    
+    const tb = byId('c_tbCoords');
+    if (!tb) return;
+    tb.innerHTML = '';
+    
+    if (!users.length) { 
+      tb.innerHTML = '<tr><td colspan="4" class="muted">Nenhum outro coordenador cadastrado.</td></tr>'; 
+      return; 
+    }
+    
+    users.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${c.nome}</td>
+        <td>${c.cpf}</td>
+        <td>${c.matricula||'-'}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn-action btn-editar" onclick="editarUsuario('${c.id}','coordenador')">Editar</button>
+            <button class="btn-action btn-apagar" onclick="apagarUsuario('${c.id}','coordenador')">Apagar</button>
+          </div>
+        </td>
+      `;
+      tb.appendChild(tr);
+    });
+  } catch(err) {
+    console.error(err);
   }
 }

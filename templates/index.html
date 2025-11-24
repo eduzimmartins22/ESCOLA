@@ -69,13 +69,8 @@
             <div><label>Senha</label><input id="c_senha" type="password" /></div>
           </div>
           <div class="actions">
-            <button class="btn verde" onclick="register('coordenador')">
-              Cadastrar
-            </button>
-            <button class="btn azul" onclick="login('coordenador', this)">
-              Entrar
-            </button>
-          </div>
+  <button class="btn azul"  onclick="login('coordenador', this)">Entrar</button>
+</div>
         </div>
       </div>
       <div class="right">
@@ -120,7 +115,7 @@
         <div class="menu" id="menu-coordenador" class="hidden">
           <h4>Coordenador</h4>
           <button data-tab="c_dash">Dashboard</button>
-          <button data-tab="c_prof">Gerenciar Professores</button>
+          <button data-tab="c_prof">Gerenciar Equipe</button>
           <button data-tab="c_alunos">Gerenciar Alunos</button>
           <button data-tab="c_salas">Gerenciar Salas</button>
           <button data-tab="c_materias">Gerenciar Matéria</button>
@@ -576,7 +571,31 @@
           </section>
 
           <section id="c_prof" class="hidden">
-  <h2 class="title">Gerenciar Professores</h2>
+  <h2 class="title">Gerenciar Equipe</h2>
+<div class="coord-form-card" style="margin-bottom: 20px;">
+      <h3>Criar Novo Coordenador</h3>
+      
+      <div class="form-group">
+        <label>Nome</label>
+        <input id="new_coord_nome" />
+      </div>
+      
+      <div class="form-group">
+        <label>CPF</label>
+        <input id="new_coord_cpf" type="number" />
+      </div>
+      
+      <div class="form-group">
+        <label>Senha</label>
+        <input id="new_coord_senha" type="password" />
+      </div>
+      
+      <div class="actions">
+         <button class="btn verde" onclick="coordCriarCoordenador(this)">
+           Cadastrar Coordenador
+         </button>
+      </div>
+    </div>
   
   <div class="coord-section">
     <!-- Card de Criação -->
@@ -603,6 +622,21 @@
           Cadastrar Professor
         </button>
       </div>
+    </div>
+
+<div class="coord-table-card" style="margin-bottom: 30px; border-top: 2px dashed #e5e7eb; padding-top: 20px;">
+      <h3 style="color: #1f2937;">Coordenadores da Equipe</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Matrícula</th>
+            <th style="text-align: right;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="c_tbCoords"></tbody>
+      </table>
     </div>
 
     <!-- Card de Tabela -->
@@ -796,43 +830,6 @@
         </main>
       </div>
     </section>
-
-    <section id="c_register_form" class="hidden auth">
-    <div class="top">
-        <div class="left">
-            <h3>Cadastro de Coordenador</h3>
-            <p class="muted">Preencha os dados para criar uma nova conta de coordenador.</p>
-            <div class="row">
-                <div><label>Nome</label><input id="reg_c_nome" /></div>
-                <div><label>CPF</label><input id="reg_c_cpf" type="number" /></div>
-            </div>
-            <div class="row">
-                <div><label>Matrícula</label><input id="reg_c_mat" /></div>
-                <div><label>Senha</label><input id="reg_c_senha" type="password" /></div>
-            </div>
-            <div class="row" style="margin-top: 12px;"> <div> 
-                <label>Chave Mestre</label>
-                <input id="reg_c_masterkey" type="password" placeholder="Chave de segurança" />
-            </div>
-            <div></div> </div>
-            <div class="actions">
-            <button class="btn verde" onclick="submitRegister('coordenador', this)">...</button>
-            <button class="btn outline" onclick="cancelarCadastro()"> 
-                Cancelar
-            </button>
-        </div>
-        </div>
-        <div class="right">
-            <h2>Processo de Cadastro</h2>
-            <p>Este processo é exclusivo e protegido por senha mestra, garantindo a integridade dos dados de acesso à plataforma.</p>
-            <ul>
-                <li>Segurança reforçada</li>
-                <li>Controle de acesso exclusivo</li>
-                <li>Prevenção de cadastros não autorizados</li>
-            </ul>
-        </div>
-    </div>
-</section>
 
 <section id="c_edit_form" class="hidden auth">
     <div class="top">
