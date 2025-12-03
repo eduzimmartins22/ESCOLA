@@ -29,3 +29,5 @@ Transformar o processo de estudo em algo mais interativo e eficiente, oferecendo
 
 Este projeto está em desenvolvimento e visa ser uma ferramenta de apoio escolar focada em resultados, organização e motivação do aluno no período pré-avaliações.
 
+<img width="1907" height="848" alt="professor" src="https://github.com/user-attachments/assets/8dfbd69c-8108-4ab7-8acb-35eb83bbbf2b" />
+<img width="1909" height="945" alt="coordenador" src="https://github.com/user-attachments/assets/4f684e32-0cc8-4e59-818e-b48731538ce7" />
